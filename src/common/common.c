@@ -46,15 +46,18 @@ extern char log_dest[];
 
 void stream_write(t_hydra_console *con, const char *data, const uint32_t size)
 {
-	BaseSequentialStream* chp = con->bss;
+	BaseSequentialStream* chp;
+	if(con != NULL)
+	{
+		chp = con->bss;
+		if (!size)
+			return;
 
-	if (!size)
-		return;
+		chnWrite(chp, (uint8_t *)data, size);
 
-	chnWrite(chp, (uint8_t *)data, size);
-
-	if (con->log_file.obj.fs)
-		file_append(&(con->log_file), (uint8_t *)data, size);
+		if (con->log_file.obj.fs)
+			file_append(&(con->log_file), (uint8_t *)data, size);
+	}
 }
 
 void print(void *user, const char *str)
