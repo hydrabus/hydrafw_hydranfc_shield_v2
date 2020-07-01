@@ -36,4 +36,6 @@ bsp_status_t bsp_spi_write_u8(bsp_dev_spi_t dev_num, uint8_t* tx_data, uint8_t n
 bsp_status_t bsp_spi_read_u8(bsp_dev_spi_t dev_num, uint8_t* rx_data, uint8_t nb_data);
 bsp_status_t bsp_spi_write_read_u8(bsp_dev_spi_t dev_num, uint8_t* tx_data, uint8_t* rx_data, uint8_t nb_data);
 
+SPI_HandleTypeDef* bsp_spi_get_handle(bsp_dev_spi_t dev_num);
+
 #endif /* _BSP_SPI_H_ */

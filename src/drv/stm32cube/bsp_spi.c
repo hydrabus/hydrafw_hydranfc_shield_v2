@@ -358,3 +358,10 @@ bsp_status_t bsp_spi_write_read_u8(bsp_dev_spi_t dev_num, uint8_t* tx_data, uint
 	return status;
 }
 
+SPI_HandleTypeDef* bsp_spi_get_handle(bsp_dev_spi_t dev_num)
+{
+	SPI_HandleTypeDef* hspi;
+	hspi = &spi_handle[dev_num];
+
+	return hspi;
+}
