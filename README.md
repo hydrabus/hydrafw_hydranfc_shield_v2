@@ -50,6 +50,7 @@ HydraNFC Shield v2 is for anyone interested in Learning/Developping/Debugging/Ha
   * Quartz oscillator operating with 27.12 MHz crystal with fast start-up 
 
 **Key Features of HydraFW (for HydraBus v1/HydraNFC Shield v2 hardware) firmware using [STMicroelectronics RFAL for ST25R3916](https://www.st.com/content/st_com/en/products/embedded-software/st25-nfc-rfid-software/stsw-st25rfal002.html):**
+
 This firmware is fully open source and based on HydraFW and is specific to HydraBus v1 with HydraNFC Shield v2 it use [STMicroelectronics RFAL for ST25R3916](https://www.st.com/content/st_com/en/products/embedded-software/st25-nfc-rfid-software/stsw-st25rfal002.html)
 The RFAL simplifies the development of applications by encapsulating device and protocol details.
 * Complete middleware to build NFC enabled applications based on the ST25R3916 device
@@ -77,3 +78,4 @@ The RFAL simplifies the development of applications by encapsulating device and 
   * ISO18092
 * MISRA C:2012 compliant
 * Free, user-friendly license terms
+
