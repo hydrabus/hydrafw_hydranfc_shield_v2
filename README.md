@@ -80,3 +80,4 @@ The STMicroelectronics RFAL simplifies the development of applications by encaps
 * MISRA C:2012 compliant
 * Free, user-friendly license terms
 
+The firmware will support Special stream and Transparent modes to implement other custom protocols in reader/writer mode (potentially also P2P), card emulation mode and even unique sniffer mode.
