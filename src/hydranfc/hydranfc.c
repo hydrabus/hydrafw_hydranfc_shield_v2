@@ -814,7 +814,7 @@ static void scan(t_hydra_console *con)
 {
 	mode_config_proto_t* proto = &con->mode->proto;
 
-	if (proto->config.hydranfc.dev_function == NFC_TYPEA)
+	if (proto->config.hydranfc.dev_function == NFC_A)
 		hydranfc_scan_mifare(con);
 	else if (proto->config.hydranfc.dev_function == NFC_VICINITY)
 		hydranfc_scan_vicinity(con);

@@ -78,10 +78,14 @@ enum {
 	T_PERIOD,
 	T_CONTINUOUS,
 	T_SCAN,
-#ifdef HYDRANFC
+#if defined(HYDRANFC) || defined(HYDRANFC_V2)
 	T_NFC,
-	T_TYPEA,
-	T_VICINITY,
+	/*
+	T_NFCA,
+	T_NFCB,
+	T_NFCV,
+	T_NFCF,
+	*/
 	T_EMUL_MIFARE,
 	T_EMUL_ISO14443A,
 	T_REGISTERS,

@@ -1,7 +1,7 @@
 /*
  * HydraBus/HydraNFC
  *
- * Copyright (C) 2014-2015 Benjamin VERNOUX
+ * Copyright (C) 2014-2020 Benjamin VERNOUX
  * Copyright (C) 2014 Bert Vermeulen <bert@biot.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,6 +35,9 @@
 #include "hydrabus.h"
 #ifdef HYDRANFC
 #include "hydranfc.h"
+#endif
+#ifdef HYDRANFC_V2
+#include "hydranfc_v2.h"
 #endif
 #include "hydrabus/hydrabus_bbio.h"
 #include "hydrabus/hydrabus_sump.h"
@@ -124,7 +127,7 @@ int main(void)
 {
 	int sleep_ms, i;
 	int local_nb_console;
-#ifdef HYDRANFC
+#if defined(HYDRANFC) || defined(HYDRANFC_V2)
 	bool hydranfc_detected;
 #endif
 
@@ -186,6 +189,10 @@ int main(void)
 	/* Check HydraNFC */
 	hydranfc_detected = hydranfc_is_detected();
 #endif
+#ifdef HYDRANFC_V2
+	/* Check HydraNFC */
+	hydranfc_detected = hydranfc_v2_is_detected();
+#endif
 	/*
 	 * Normal main() thread activity.
 	 */
@@ -236,10 +243,20 @@ int main(void)
 			sleep_ms = BLINK_SLOW;
 		ULED_OFF;
 
-#ifdef HYDRANFC
+#if defined(HYDRANFC)
 		if(hydranfc_detected == TRUE) {
 			/* If K3_BUTTON is pressed */
 			if (K3_BUTTON) {
+				hydranfc_cleanup(NULL);
+				hydranfc_init(NULL);
+				chThdSleepMilliseconds(1000);
+			}
+		}
+#endif
+#if defined(HYDRANFC_V2)
+		if(hydranfc_detected == TRUE) {
+			/* If K1_BUTTON is pressed */
+			if (K1_BUTTON) {
 				hydranfc_cleanup(NULL);
 				hydranfc_init(NULL);
 				chThdSleepMilliseconds(1000);

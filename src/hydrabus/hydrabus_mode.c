@@ -55,7 +55,7 @@ extern const mode_exec_t mode_smartcard_exec;
 extern t_token tokens_mode_spi[];
 extern t_token tokens_mode_i2c[];
 extern t_token tokens_mode_uart[];
-#ifdef HYDRANFC
+#if defined(HYDRANFC) || defined(HYDRANFC_V2)
 extern t_token tokens_mode_nfc[];
 #endif
 extern t_token tokens_mode_jtag[];
@@ -76,7 +76,7 @@ static struct {
 	{ T_SPI, tokens_mode_spi, &mode_spi_exec },
 	{ T_I2C, tokens_mode_i2c, &mode_i2c_exec },
 	{ T_UART, tokens_mode_uart, &mode_uart_exec },
-#ifdef HYDRANFC
+#if defined(HYDRANFC) || defined(HYDRANFC_V2)
 	{ T_NFC, tokens_mode_nfc, &mode_nfc_exec },
 #endif
 	{ T_JTAG, tokens_mode_jtag, &mode_jtag_exec },

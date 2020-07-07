@@ -86,10 +86,14 @@ t_token_dict tl_dict[] = {
 	{ T_PERIOD, "period" },
 	{ T_CONTINUOUS, "continuous" },
 	{ T_SCAN, "scan" },
-#ifdef HYDRANFC
+#if defined(HYDRANFC) || defined(HYDRANFC_V2)
 	{ T_NFC, "nfc" },
-	{ T_TYPEA, "typea" },
-	{ T_VICINITY, "vicinity" },
+	/*
+	{ T_NFCA, "nfc-a" },
+	{ T_NFCB, "nfc-b" },
+	{ T_NFCV, "nfc-v" },
+	{ T_NFCF, "nfc-f" },
+	*/
 	{ T_EMUL_MIFARE, "emul-mifare" },
 	{ T_EMUL_ISO14443A, "emul-3a" },
 	{ T_REGISTERS, "registers" },
@@ -309,7 +313,7 @@ t_token tokens_mode_trigger[] = {
 	{ }
 };
 
-#ifdef HYDRANFC
+#if defined(HYDRANFC) || defined(HYDRANFC_V2)
 
 t_token tokens_mode_nfc_show[] = {
 	{
@@ -369,20 +373,32 @@ t_token tokens_mode_nfc_sniff[] = {
 	{ }
 };
 
+// For future add selection of NFC A/B/V/F to scan
+/*
+	{\
+		T_NFCA,\
+		.help = "NFC-A (ISO14443A => MIFARE...)"\
+	},\
+	{\
+		T_NFCB,\
+		.help = "NFC-B (ISO14443B)"\
+	},\
+	{\
+		T_NFCV,\
+		.help = "NFC-V Vicinity (ISO/IEC 15693)"\
+	},\
+	{\
+		T_NFCF,\
+		.help = "NFC-F Felica"\
+	},\
+*/
+
 #define NFC_PARAMETERS \
 	{\
-		T_TYPEA,\
-		.help = "TypeA (ISO14443A => MIFARE...)"\
-	},\
-	{\
-		T_VICINITY,\
-		.help = "Vicinity (ISO/IEC 15693)"\
-	},\
-	{\
 		T_SCAN,\
-		.subtokens = tokens_mode_nfc_scan,\
 		.help = "Scan"\
 	},\
+/*
 	{\
 		T_READ_MF_ULTRALIGHT,\
 		.arg_type = T_ARG_STRING,\
@@ -419,6 +435,7 @@ t_token tokens_mode_nfc_sniff[] = {
 		T_DIRECT_MODE_1,\
 		.help = "Enter Direct Mode 1 (IO5/PC4=CLK, IO6/PC2=Data)"\
 	},
+*/
 
 t_token tokens_sd[];
 t_token tokens_mode_nfc[] = {
@@ -444,7 +461,7 @@ t_token tokens_nfc[] = {
 	NFC_PARAMETERS
 	{ }
 };
-#endif /* ifdef HYDRANFC */
+#endif /* ifdef HYDRANFC or HYDRANFC_V2 */
 
 t_token tokens_parity[] = {
 	{ T_NONE },
@@ -2141,7 +2158,7 @@ t_token tl_tokens[] = {
 		.help = "UART mode",
 		.help_full = "Configuration: uart [device (1/2)] [speed (value in bauds)] [parity (none/even/odd)] [stop-bits (1/2)]\r\nInteraction: <read/write (value:repeat)>"
 	},
-#ifdef HYDRANFC
+#if defined(HYDRANFC) || defined(HYDRANFC_V2)
 	{
 		T_NFC,
 		.subtokens = tokens_nfc,
