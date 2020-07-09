@@ -24,7 +24,7 @@ HydraNFC Shield v2 is for anyone interested in Learning/Developping/Debugging/Ha
   * NFC-V / ISO15693 up to 53 kb/s
   * NFC-A / ISO14443A and NFC-F / FeliCa™ card emulation
   * Active and passive peer to peer initiator and target modes, up to 424 kbit/s
-  * Low level modes (Special stream and Transparent modes) to implement MIFARE Classic® compliant or other custom protocols 
+  * Low level mode to implement MIFARE Classic® compliant or other custom protocols 
 * Key features
   * 1.6W output power at 5V with Differential Antenna and Variable capacitors for NFC Automatic antenna tuning (AAT)
     * Reader/writer mode range is more than 12cm for NFC-A (ISO14443A) Tags(Credit Card format)
@@ -80,4 +80,4 @@ The STMicroelectronics RFAL simplifies the development of applications by encaps
 * MISRA C:2012 compliant
 * Free, user-friendly license terms
 
-The firmware will support Special stream and Transparent modes to implement other custom protocols in reader/writer mode (potentially also P2P), card emulation mode and even unique sniffer mode.
+The firmware will support Special stream mode to implement other custom protocols in reader/writer mode (potentially also P2P), card emulation mode and even unique sniffer mode.
