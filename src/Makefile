@@ -13,7 +13,7 @@ export STM32F4XX ?= 1
 #Set to 2 to include HydraNFC V2 Shield (ST25R3916) extension support
 export HYDRAFW_HYDRANFC ?= 2
 
-export HYDRAFW_DEBUG ?= 0
+export HYDRAFW_DEBUG ?= 1
 export FW_REVISION := $(shell python build-scripts/hydrafw-revision.py)
 
 HYDRAFW_OPTS =
