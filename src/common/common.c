@@ -30,7 +30,7 @@
 #include "microsd.h"
 #include "hydrabus_sd.h"
 
-#define HYDRAFW_VERSION "HydraFW (HydraBus) " HYDRAFW_GIT_TAG " " HYDRAFW_CHECKIN_DATE
+#define HYDRAFW_VERSION "HydraFW (HydraBus v1/HydraNFC Shield v2) " HYDRAFW_GIT_TAG " " HYDRAFW_CHECKIN_DATE
 #define TEST_WA_SIZE    THD_WORKING_AREA_SIZE(256)
 
 /* CCM = .ram4 */
