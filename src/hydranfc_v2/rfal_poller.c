@@ -45,7 +45,9 @@
 #include "rfal_dpo.h"
 
 #include "bsp_uart.h"
-#include "common.h"
+
+#include "rfal_poller.h"
+
 /*
 // tag content
 #include "lib_NDEF.h"
@@ -164,10 +166,10 @@ static uint32_t timeRssi = 0;                                           /* Use t
 * LOCAL FUNCTION PROTOTYPES
 ******************************************************************************
 */
-static bool RfalPollerTechDetection(t_hydra_console *con);
+static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_tech);
 static bool RfalPollerCollResolution(t_hydra_console *con);
-static bool RfalPollerDeactivate( void );
-static void RfalPollerRun(t_hydra_console *con);
+static bool RfalPollerDeactivate(void);
+static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech);
 
 /*
 void cprintf(t_hydra_console *con, const char *fmt, ...)
@@ -256,9 +258,38 @@ static void setRadio(t_hydra_console *con)
 #endif
 }
 
-/* Control display when no tag is detected (instruction + radio button) */
-void tagDetectionNoTag(t_hydra_console *con)
+void nfc_technology_to_str(nfc_technology_t nfc_tech, nfc_technology_str_t* str_tag)
 {
+	switch(nfc_tech)
+	{
+		case NFC_ALL:
+			strcpy(str_tag->str, "A/B/V/F");
+			break;
+		case NFC_A:
+			strcpy(str_tag->str, "A");
+			break;
+		case NFC_B:
+			strcpy(str_tag->str, "B");
+			break;
+		case NFC_ST25TB:
+			strcpy(str_tag->str, "ST25TB");
+			break;
+		case NFC_V:
+			strcpy(str_tag->str, "V");
+			break;
+		case NFC_F:
+			strcpy(str_tag->str, "F");
+			break;
+		default:
+			strcpy(str_tag->str, "Unknown");
+			break;
+	}
+}
+
+/* Control display when no tag is detected (instruction + radio button) */
+void tagDetectionNoTag(t_hydra_console *con, nfc_technology_t nfc_tech)
+{
+	nfc_technology_str_t tag;
 #ifndef FREEZE_DISPLAY
 	BSP_LCD_SetColors(0x0000,0xFFFF);
 
@@ -281,7 +312,8 @@ void tagDetectionNoTag(t_hydra_console *con)
 	Menu_DisplayCenterString(7,"the antenna...");
 #endif
 	instructionsDisplayed = true;
-	cprintf(con, "Place tags above the antenna...(or press UBTN to exit)\r\n");
+	nfc_technology_to_str(nfc_tech, &tag);
+	cprintf(con, "Place NFC-%s tag(s) above the antenna...(or press UBTN to exit)\r\n", tag.str);
 }
 
 /* Helper method to retrieve UID from a tag structure */
@@ -1015,7 +1047,7 @@ static uint8_t manageInput(t_hydra_console *con)
 /** @brief Scan Tags
 	* Detect and display tags in the field.
 	*/
-void ScanTags(t_hydra_console *con)
+void ScanTags(t_hydra_console *con, nfc_technology_t nfc_tech)
 {
 #ifndef FREEZE_DISPLAY
 	Menu_MsgStatus("Tag detection","",MSG_INFO);
@@ -1027,9 +1059,8 @@ void ScanTags(t_hydra_console *con)
 
 	//Menu_SetStyle(PLAIN);
 	detectMode = DETECT_MODE_POLL;
-	tagDetectionNoTag(con);
 
-	RfalPollerRun(con);
+	RfalPollerRun(con, nfc_tech);
 }
 
 /*!
@@ -1042,7 +1073,7 @@ void ScanTags(t_hydra_console *con)
  * 
  ******************************************************************************
  */
-static void RfalPollerRun(t_hydra_console *con)
+static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 {
 	/* Initialize RFAL */
 	platformLog("\n\r RFAL Poller started \r\n");
@@ -1084,7 +1115,7 @@ static void RfalPollerRun(t_hydra_console *con)
 			/*******************************************************************************/
 			case RFAL_POLLER_STATE_TECHDETECT:
 			{
-				if( !RfalPollerTechDetection(con) ) /* Poll for nearby devices in different technologies */
+				if( !RfalPollerTechDetection(con, nfc_tech) ) /* Poll for nearby devices in different technologies */
 				{
 					gState = RFAL_POLLER_STATE_DEACTIVATION; /* If no device was found, restart loop */
 					break;
@@ -1134,20 +1165,22 @@ static void RfalPollerRun(t_hydra_console *con)
 						displayTag(i, "", NULL);
 					if(gDevCnt == 0)
 					{
-						tagDetectionNoTag(con);
+						tagDetectionNoTag(con, nfc_tech);
 						instructionsDisplayed = true;
 					}
 				}
 				RfalPollerDeactivate();	/* If a card has been activated, properly deactivate the device */
 				rfalFieldOff();	/* Turn the Field Off powering down any device nearby */
+				/*
 				for(delay = 0; delay < 100; delay++)
 				{
 					if(manageInput(con))
 					{
 						return;
 					}
-					platformDelay( 1 );	/* Remain a certain period with field off */
+					platformDelay(1); // Remain a certain period with field off
 				}
+				*/
 				if( (detectMode == DETECT_MODE_AWAKEN) && (gDevCnt == 0) )
 				{
 					// no more tags, restart wakeup mode
@@ -1159,6 +1192,7 @@ static void RfalPollerRun(t_hydra_console *con)
 				}
 
 				gState = RFAL_POLLER_STATE_INIT;	/* Restart the loop */
+				return; /* We exit */
 				break;
 			}
 			/*******************************************************************************/
@@ -1169,9 +1203,6 @@ static void RfalPollerRun(t_hydra_console *con)
 		{
 			return;
 		}
-		/* Wait a bit in order to display all text */
-		chThdYield();
-		chThdSleepMilliseconds(10);
 	} while(1);
 }
 
@@ -1187,7 +1218,7 @@ static void RfalPollerRun(t_hydra_console *con)
  * 
  ******************************************************************************
  */
-static bool RfalPollerTechDetection(t_hydra_console *con)
+static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_tech)
 {
 	(void)(con);
 	ReturnCode           err;
@@ -1195,100 +1226,114 @@ static bool RfalPollerTechDetection(t_hydra_console *con)
 	rfalNfcbSensbRes     sensbRes;
 	rfalNfcvInventoryRes invRes;
 	uint8_t              sensbResLen;
-	uint8_t          chipId;
 	
 	gTechsFound = RFAL_POLLER_FOUND_NONE;
 	/*******************************************************************************/
 	/* NFC-A Technology Detection                                                  */
 	/*******************************************************************************/
-	err = rfalNfcaPollerInitialize(); /* Initialize RFAL for NFC-A */
-	if( err != ERR_NONE )
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_A))
 	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcaPollerInitialize err=%d\r\n", err);
-	}
-	rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
-	err = rfalNfcaPollerTechnologyDetection(RFAL_COMPLIANCE_MODE_NFC, &sensRes ); /* Poll for NFC-A devices */
-	if( err == ERR_NONE )
-	{
-		gTechsFound |= RFAL_POLLER_FOUND_A;
-	} else
-	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcaPollerTechnologyDetection err=%d\r\n", err);
+		err = rfalNfcaPollerInitialize(); /* Initialize RFAL for NFC-A */
+		if( err != ERR_NONE )
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcaPollerInitialize err=%d\r\n", err);
+		}
+		rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
+		err = rfalNfcaPollerTechnologyDetection(RFAL_COMPLIANCE_MODE_NFC, &sensRes ); /* Poll for NFC-A devices */
+		if( err == ERR_NONE )
+		{
+			gTechsFound |= RFAL_POLLER_FOUND_A;
+		} else
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcaPollerTechnologyDetection err=%d\r\n", err);
+		}
 	}
 
 	/*******************************************************************************/
 	/* NFC-B Technology Detection                                                  */
 	/*******************************************************************************/
-	err = rfalNfcbPollerInitialize(); /* Initialize RFAL for NFC-B */
-	if( err != ERR_NONE )
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_B))
 	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcbPollerInitialize err=%d\r\n", err);
+		err = rfalNfcbPollerInitialize(); /* Initialize RFAL for NFC-B */
+		if( err != ERR_NONE )
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcbPollerInitialize err=%d\r\n", err);
+		}
+		rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
+		err = rfalNfcbPollerTechnologyDetection(RFAL_COMPLIANCE_MODE_NFC, &sensbRes, &sensbResLen ); /* Poll for NFC-B devices */
+		if( err == ERR_NONE )
+		{
+			gTechsFound |= RFAL_POLLER_FOUND_B;
+		} else
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcbPollerTechnologyDetection err=%d\r\n", err);
+		}
 	}
-	rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
-	err = rfalNfcbPollerTechnologyDetection(RFAL_COMPLIANCE_MODE_NFC, &sensbRes, &sensbResLen ); /* Poll for NFC-B devices */
-	if( err == ERR_NONE )
-	{
-		gTechsFound |= RFAL_POLLER_FOUND_B;
-	} else
-	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcbPollerTechnologyDetection err=%d\r\n", err);
-	}
-	
+
 	/*******************************************************************************/
-	/* ST25TB Technology Detection                                                  */
+	/* ST25TB Technology Detection                                                 */
 	/*******************************************************************************/
-	err = rfalSt25tbPollerInitialize(); /* Initialize RFAL for NFC-B */
-	if( err != ERR_NONE )
+	if(nfc_tech == NFC_ST25TB)
 	{
-		//cprintf(con, "RfalPollerTechDetection rfalSt25tbPollerInitialize err=%d\r\n", err);
-	}
-	rfalFieldOnAndStartGT();
-	/* As field is already On only starts GT timer */
-	err = rfalSt25tbPollerCheckPresence( &chipId);
-	if( err == ERR_NONE )
-	{
-		gTechsFound |= RFAL_POLLER_FOUND_ST25TB;
-	} else
-	{
-		//cprintf(con, "RfalPollerTechDetection rfalSt25tbPollerCheckPresence err=%d\r\n", err);
+		uint8_t          chipId;
+		err = rfalSt25tbPollerInitialize(); /* Initialize RFAL for NFC-B */
+		if( err != ERR_NONE )
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalSt25tbPollerInitialize err=%d\r\n", err);
+		}
+		rfalFieldOnAndStartGT();
+		/* As field is already On only starts GT timer */
+		err = rfalSt25tbPollerCheckPresence( &chipId);
+		if( err == ERR_NONE )
+		{
+			gTechsFound |= RFAL_POLLER_FOUND_ST25TB;
+		} else
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalSt25tbPollerCheckPresence err=%d\r\n", err);
+		}
 	}
 
 	/*******************************************************************************/
 	/* NFC-F Technology Detection                                                  */
 	/*******************************************************************************/
-	err = rfalNfcfPollerInitialize( RFAL_BR_212 ); /* Initialize RFAL for NFC-F */
-	if( err != ERR_NONE )
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_F))
 	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcfPollerInitialize err=%d\r\n", err);
-	}
-	rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
-	err = rfalNfcfPollerCheckPresence(); /* Poll for NFC-F devices */
-	if( err == ERR_NONE )
-	{
-		gTechsFound |= RFAL_POLLER_FOUND_F;
-	} else
-	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcfPollerCheckPresence err=%d\r\n", err);
+		err = rfalNfcfPollerInitialize( RFAL_BR_212 ); /* Initialize RFAL for NFC-F */
+		if( err != ERR_NONE )
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcfPollerInitialize err=%d\r\n", err);
+		}
+		rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
+		err = rfalNfcfPollerCheckPresence(); /* Poll for NFC-F devices */
+		if( err == ERR_NONE )
+		{
+			gTechsFound |= RFAL_POLLER_FOUND_F;
+		} else
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcfPollerCheckPresence err=%d\r\n", err);
+		}
 	}
 
 	/*******************************************************************************/
 	/* NFC-V Technology Detection                                                  */
 	/*******************************************************************************/
-	err = rfalNfcvPollerInitialize(); /* Initialize RFAL for NFC-V */
-	if( err != ERR_NONE )
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_V))
 	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcvPollerInitialize err=%d\r\n", err);
+		err = rfalNfcvPollerInitialize(); /* Initialize RFAL for NFC-V */
+		if( err != ERR_NONE )
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcvPollerInitialize err=%d\r\n", err);
+		}
+		rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
+		err = rfalNfcvPollerCheckPresence( &invRes ); /* Poll for NFC-V devices */
+		if( err == ERR_NONE )
+		{
+			gTechsFound |= RFAL_POLLER_FOUND_V;
+		} else
+		{
+			//cprintf(con, "RfalPollerTechDetection rfalNfcvPollerCheckPresence err=%d\r\n", err);
+		}
 	}
-	rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
-	err = rfalNfcvPollerCheckPresence( &invRes ); /* Poll for NFC-V devices */
-	if( err == ERR_NONE )
-	{
-		gTechsFound |= RFAL_POLLER_FOUND_V;
-	} else
-	{
-		//cprintf(con, "RfalPollerTechDetection rfalNfcvPollerCheckPresence err=%d\r\n", err);
-	}
-	
 	return (gTechsFound != RFAL_POLLER_FOUND_NONE);
 }
 

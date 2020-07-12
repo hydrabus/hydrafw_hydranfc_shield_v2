@@ -86,14 +86,14 @@ t_token_dict tl_dict[] = {
 	{ T_PERIOD, "period" },
 	{ T_CONTINUOUS, "continuous" },
 	{ T_SCAN, "scan" },
-#if defined(HYDRANFC) || defined(HYDRANFC_V2)
+#if defined(HYDRANFC_V2)
 	{ T_NFC, "nfc" },
-	/*
-	{ T_NFCA, "nfc-a" },
-	{ T_NFCB, "nfc-b" },
-	{ T_NFCV, "nfc-v" },
-	{ T_NFCF, "nfc-f" },
-	*/
+	{ T_NFC_ALL, "nfc-all" },
+	{ T_NFC_A, "nfc-a" },
+	{ T_NFC_B, "nfc-b" },
+	{ T_NFC_ST25TB, "nfc-st25tb" },
+	{ T_NFC_V, "nfc-v" },
+	{ T_NFC_F, "nfc-f" },
 	{ T_EMUL_MIFARE, "emul-mifare" },
 	{ T_EMUL_ISO14443A, "emul-3a" },
 	{ T_REGISTERS, "registers" },
@@ -313,7 +313,7 @@ t_token tokens_mode_trigger[] = {
 	{ }
 };
 
-#if defined(HYDRANFC) || defined(HYDRANFC_V2)
+#if defined(HYDRANFC_V2)
 
 t_token tokens_mode_nfc_show[] = {
 	{
@@ -373,30 +373,35 @@ t_token tokens_mode_nfc_sniff[] = {
 	{ }
 };
 
-// For future add selection of NFC A/B/V/F to scan
-/*
-	{\
-		T_NFCA,\
-		.help = "NFC-A (ISO14443A => MIFARE...)"\
-	},\
-	{\
-		T_NFCB,\
-		.help = "NFC-B (ISO14443B)"\
-	},\
-	{\
-		T_NFCV,\
-		.help = "NFC-V Vicinity (ISO/IEC 15693)"\
-	},\
-	{\
-		T_NFCF,\
-		.help = "NFC-F Felica"\
-	},\
-*/
-
 #define NFC_PARAMETERS \
 	{\
+		T_NFC_ALL,\
+		.help = "Select technology NFC-A/B/V/F"\
+	},\
+	{\
+		T_NFC_A,\
+		.help = "Select technology NFC-A (ISO14443A includes MIFARE...)"\
+	},\
+	{\
+		T_NFC_B,\
+		.help = "Select technology NFC-B (ISO14443B)"\
+	},\
+	{\
+		T_NFC_ST25TB,\
+		.help = "Select technology NFC-B (ISO14443B ST25TB)"\
+	},\
+	{\
+		T_NFC_V,\
+		.help = "Select technology NFC-V Vicinity (ISO/IEC 15693)"\
+	},\
+	{\
+		T_NFC_F,\
+		.help = "Select technology NFC-F Felica"\
+	},\
+	{\
 		T_SCAN,\
-		.help = "Scan"\
+		.subtokens = tokens_mode_nfc_scan,\
+		.help = "Scan selected technology (NFC-A/B/V/F...)"\
 	},\
 /*
 	{\
@@ -2158,7 +2163,7 @@ t_token tl_tokens[] = {
 		.help = "UART mode",
 		.help_full = "Configuration: uart [device (1/2)] [speed (value in bauds)] [parity (none/even/odd)] [stop-bits (1/2)]\r\nInteraction: <read/write (value:repeat)>"
 	},
-#if defined(HYDRANFC) || defined(HYDRANFC_V2)
+#if defined(HYDRANFC_V2)
 	{
 		T_NFC,
 		.subtokens = tokens_nfc,

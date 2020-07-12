@@ -47,6 +47,8 @@
 #include "st25r3916.h"
 #include "st25r3916_irq.h"
 
+#include "rfal_poller.h"
+
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos);
 static int show(t_hydra_console *con, t_tokenline_parsed *p);
 
@@ -68,14 +70,6 @@ static rfalDpoEntry dpoSetup[] = {
 #endif
 
 void (* st25r3916_irq_fn)(void) = NULL;
-
-enum {
-	NFC_A,
-	NFC_B,
-	NFC_V,
-	NFC_F,
-	NFC_EMUL_UID_14443A
-} nfc_function_t;
 
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
@@ -135,7 +129,8 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	 * Used for communication with ST25R3916 in SPI mode with NSS.
 	 */
 	mode_con1.proto.config.spi.dev_gpio_pull = MODE_CONFIG_DEV_GPIO_NOPULL;
-	mode_con1.proto.config.spi.dev_speed = 5; /* 5 250 000 Hz */
+	//mode_con1.proto.config.spi.dev_speed = 5; /* 5 250 000 Hz */
+	mode_con1.proto.config.spi.dev_speed = 6; /* 10 500 000 Hz */
 	mode_con1.proto.config.spi.dev_phase = 1;
 	mode_con1.proto.config.spi.dev_polarity = 0;
 	mode_con1.proto.config.spi.dev_bit_lsb_msb = DEV_FIRSTBIT_MSB;
@@ -853,29 +848,14 @@ void hydranfc_v2_scan_vicinity(t_hydra_console *con)
 }
 #endif
 
-extern void ScanTags(t_hydra_console *con);
-
-static void scan(t_hydra_console *con)
+static void scan(t_hydra_console *con, nfc_technology_t nfc_tech)
 {
-	/* Init st25r3916 IRQ function callback */
-	st25r3916_irq_fn = st25r3916Isr;
-
-	ScanTags(con);
-
-	irq_count = 0;
-	st25r3916_irq_fn = NULL;
-
-/*
-	if (proto->config.hydranfc.dev_function == NFC_TYPEA)
-		hydranfc_v2_scan_mifare(con);
-	else if (proto->config.hydranfc.dev_function == NFC_VICINITY)
-		hydranfc_v2_scan_vicinity(con);
-*/
+	ScanTags(con, nfc_tech);
 }
 
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 {
-	int dev_func;
+	int nfc_tech;
 	mode_config_proto_t* proto = &con->mode->proto;
 	int action, period, t;
 	bool continuous;
@@ -911,23 +891,31 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		case T_SHOW:
 			t += show(con, p);
 			break;
-/*
-		case T_NFCA:
-			proto->config.hydranfc.dev_function = NFC_A;
+
+		case T_NFC_ALL:
+			proto->config.hydranfc.nfc_technology = NFC_ALL;
 			break;
 
-		case T_NFCB:
-			proto->config.hydranfc.dev_function = NFC_B;
+		case T_NFC_A:
+			proto->config.hydranfc.nfc_technology = NFC_A;
 			break;
 
-		case T_NFCV:
-			proto->config.hydranfc.dev_function = NFC_V;
+		case T_NFC_B:
+			proto->config.hydranfc.nfc_technology = NFC_B;
 			break;
 
-		case T_NFCF:
-			proto->config.hydranfc.dev_function = NFC_F;
+		case T_NFC_ST25TB:
+			proto->config.hydranfc.nfc_technology = NFC_ST25TB;
 			break;
-*/
+
+		case T_NFC_V:
+			proto->config.hydranfc.nfc_technology = NFC_V;
+			break;
+
+		case T_NFC_F:
+			proto->config.hydranfc.nfc_technology = NFC_F;
+			break;
+
 		case T_PERIOD:
 			t += 2;
 			memcpy(&period, p->buf + p->tokens[t], sizeof(int));
@@ -999,37 +987,29 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 	switch(action) {
 	case T_SCAN:
-		dev_func = proto->config.hydranfc.dev_function;
+	{
+		nfc_technology_str_t tag_tech_str;
+		nfc_tech = proto->config.hydranfc.nfc_technology;
 
+		/* Init st25r3916 IRQ function callback */
+		st25r3916_irq_fn = st25r3916Isr;
+
+		nfc_technology_to_str(nfc_tech, &tag_tech_str);
 		if (continuous) {
-			cprintf(con, "Scanning NFC-A/B/V/F");
+			cprintf(con, "Scanning NFC-%s ", tag_tech_str.str);
 			cprintf(con, "with %dms period. Press user button to stop.\r\n", period);
 			while (!hydrabus_ubtn()) {
-				scan(con);
+				scan(con, nfc_tech);
 				chThdSleepMilliseconds(period);
 			}
 		} else {
-			scan(con);
+			scan(con, nfc_tech);
 		}
-		/*
-		if( (dev_func == NFC_TYPEA) || (dev_func == NFC_VICINITY) ) {
-			if (continuous) {
-				cprintf(con, "Scanning %s ",
-					proto->config.hydranfc.dev_function == NFC_TYPEA ? "MIFARE" : "Vicinity");
-				cprintf(con, "with %dms period. Press user button to stop.\r\n", period);
-				while (!hydrabus_ubtn()) {
-					scan(con);
-					chThdSleepMilliseconds(period);
-				}
-			} else {
-				scan(con);
-			}
-		} else {
-			cprintf(con, "Please select TypeA or Vicinity mode first.\r\n");
-			return 0;
-		}
-		*/
+
+		irq_count = 0;
+		st25r3916_irq_fn = NULL;
 		break;
+	}
 
 	case T_READ_MF_ULTRALIGHT:
 		cprintf(con, "T_READ_MF_ULTRALIGHT not implemented.\r\n");
@@ -1165,24 +1145,15 @@ static int show(t_hydra_console *con, t_tokenline_parsed *p)
 {
 	mode_config_proto_t* proto = &con->mode->proto;
 	int tokens_used;
+	nfc_technology_str_t tag_tech_str;
 
 	tokens_used = 0;
 	if (p->tokens[1] == T_REGISTERS) {
 		tokens_used++;
 		show_registers(con);
 	} else {
-
-		switch(proto->config.hydranfc.dev_function) {
-		case NFC_A:
-			cprintf(con, "Protocol: NFC_A (ISO14443A => MIFARE...)\r\n");
-			break;
-		case NFC_V:
-			cprintf(con, "Protocol: NFC_V Vicinity (ISO/IEC 15693)\r\n");
-			break;
-		default:
-			cprintf(con, "Protocol: Unknown\r\n");
-			break;
-		}
+		nfc_technology_to_str(proto->config.hydranfc.nfc_technology, &tag_tech_str);
+		cprintf(con, "Selected technology: NFC-%s\r\n", tag_tech_str.str);
 	}
 
 	return tokens_used;
@@ -1202,7 +1173,7 @@ static int init(t_hydra_console *con, t_tokenline_parsed *p)
 	if(con != NULL)
 	{
 		proto = &con->mode->proto;
-		proto->config.hydranfc.dev_function = NFC_A;
+		proto->config.hydranfc.nfc_technology = NFC_ALL;
 	}
 
 	if(init_gpio_spi_nfc(con) ==  FALSE) {

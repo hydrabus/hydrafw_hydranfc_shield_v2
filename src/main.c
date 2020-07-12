@@ -127,8 +127,8 @@ int main(void)
 {
 	int sleep_ms, i;
 	int local_nb_console;
-#if defined(HYDRANFC) || defined(HYDRANFC_V2)
-	bool hydranfc_detected;
+#if defined(HYDRANFC_V2)
+	bool hydranfc_shield_v2_detected;
 #endif
 
 	bsp_enter_usb_dfu();
@@ -185,13 +185,9 @@ int main(void)
 	/* Wait for USB Enumeration. */
 	chThdSleepMilliseconds(100);
 
-#ifdef HYDRANFC
-	/* Check HydraNFC */
-	hydranfc_detected = hydranfc_is_detected();
-#endif
 #ifdef HYDRANFC_V2
-	/* Check HydraNFC */
-	hydranfc_detected = hydranfc_v2_is_detected();
+	/* Check HydraNFC Shield v2 */
+	hydranfc_shield_v2_detected = hydranfc_v2_is_detected();
 #endif
 	/*
 	 * Normal main() thread activity.
@@ -243,18 +239,8 @@ int main(void)
 			sleep_ms = BLINK_SLOW;
 		ULED_OFF;
 
-#if defined(HYDRANFC)
-		if(hydranfc_detected == TRUE) {
-			/* If K3_BUTTON is pressed */
-			if (K3_BUTTON) {
-				hydranfc_cleanup(NULL);
-				hydranfc_init(NULL);
-				chThdSleepMilliseconds(1000);
-			}
-		}
-#endif
 #if defined(HYDRANFC_V2)
-		if(hydranfc_detected == TRUE) {
+		if(hydranfc_shield_v2_detected == TRUE) {
 			/* If K1_BUTTON is pressed */
 			if (K1_BUTTON) {
 				hydranfc_cleanup(NULL);

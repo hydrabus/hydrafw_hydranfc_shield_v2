@@ -162,7 +162,7 @@ typedef struct {
 } sump_config_t;
 
 typedef struct {
-	uint8_t dev_function;
+	uint8_t nfc_technology;
 } hydranfc_config_t;
 
 #define MODE_CONFIG_PROTO_BUFFER_SIZE (256)

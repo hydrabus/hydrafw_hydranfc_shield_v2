@@ -194,7 +194,7 @@ static struct cmd_map {
 	{ T_SPI, cmd_mode_init },
 	{ T_I2C, cmd_mode_init },
 	{ T_UART, cmd_mode_init },
-#if defined(HYDRANFC) || defined(HYDRANFC_V2)
+#if defined(HYDRANFC_V2)
 	{ T_NFC, cmd_mode_init },
 #endif
 	{ T_CAN, cmd_mode_init },
