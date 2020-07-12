@@ -9,7 +9,6 @@ MAKEFLAGS += --no-builtin-rules
 # Set CPU target (default STM32F4XX)
 export STM32F4XX ?= 1
 
-#Set to 1 to include HydraNFC V1 Shield (TRF7970A) extension support
 #Set to 2 to include HydraNFC V2 Shield (ST25R3916) extension support
 export HYDRAFW_HYDRANFC ?= 2
 
@@ -17,10 +16,6 @@ export HYDRAFW_DEBUG ?= 1
 export FW_REVISION := $(shell python build-scripts/hydrafw-revision.py)
 
 HYDRAFW_OPTS =
-
-ifeq ($(HYDRAFW_HYDRANFC),1)
-HYDRAFW_OPTS += -DHYDRANFC
-endif
 
 ifeq ($(HYDRAFW_HYDRANFC),2)
 HYDRAFW_OPTS += -DHYDRANFC_V2
@@ -149,11 +144,6 @@ ifeq ($(STM32F4XX),1)
 include drv/stm32cube/stm32f4xx_hal.mk
 endif
 
-ifeq ($(HYDRAFW_HYDRANFC),1)
-include hydranfc/trf7970a/trf7970a.mk
-include hydranfc/hydranfc.mk
-endif
-
 ifeq ($(HYDRAFW_HYDRANFC),2)
 include hydranfc_v2/hydranfc_v2.mk
 include hydranfc_v2/hal.mk
@@ -186,11 +176,6 @@ CSRC = $(STARTUPSRC) \
 
 ifeq ($(STM32F4XX),1)
 CSRC += $(STM32F4XX_HAL_SRC)
-endif
-
-ifeq ($(HYDRAFW_HYDRANFC),1)
-CSRC += $(TRFSRC) \
-        $(HYDRANFCSRC)
 endif
 
 ifeq ($(HYDRAFW_HYDRANFC),2)
@@ -240,11 +225,6 @@ INCDIR = $(CHIBIOS)/os/license \
 
 ifeq ($(STM32F4XX),1)
 INCDIR += $(STM32F4XX_HAL_INC)
-endif
-
-ifeq ($(HYDRAFW_HYDRANFC),1)
-INCDIR += $(TRFINC) \
-          $(HYDRANFCINC)
 endif
 
 ifeq ($(HYDRAFW_HYDRANFC),2)
