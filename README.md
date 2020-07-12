@@ -9,7 +9,7 @@ You can Buy HydraBus v1/HydraNFC Shield v2 Online: http://hydrabus.com/buy-onlin
 ![HydraBus+HydraNFC Shield V2 boards](HydraBus_v1_HydraNFC_Shield_v2.jpg)
 
 HydraNFC Shield v2 is based on [STMicroelectronics ST25R3916 NFC chipset](https://www.st.com/en/nfc/st25r3916.html) which is today the most powerful and versatile NFC chipset available on the market.
-HydraNFC Shield v2 is for anyone interested in Learning/Developping/Debugging/Hacking/Penetration Testing for basic or advanced NFC communications.
+HydraNFC Shield v2 is for anyone interested in Learning/Developping/Debugging/Hacking/Penetration Testing basic or advanced NFC communications.
 
 **Key Features of HydraNFC Shield V2 hardware (with HydraNFC v2 Antenna):**
 * Operating modes
@@ -27,7 +27,7 @@ HydraNFC Shield v2 is for anyone interested in Learning/Developping/Debugging/Ha
   * Low level mode to implement MIFARE Classic® compliant or other custom protocols 
 * Key features
   * 1.6W output power at 5V with Differential Antenna and Variable capacitors for NFC Automatic antenna tuning (AAT)
-    * Reader/writer mode range is more than 12cm for NFC-A (ISO14443A) Tags(Credit Card format)
+    * Reader/writer mode range is more than 12cm for NFC-A (ISO14443A) Tags(8.5cm x 5.4cm)
     * Reader/writer mode range is more than 16cm for NFC-V (ISO15693) Tags(ST25 Tag 5cm x 5cm)
   * Dynamic power output (DPO) controls the field strength to stay within given limits
   * Active wave shaping (AWS) reduces over-and under-shoots
@@ -80,4 +80,4 @@ The STMicroelectronics RFAL simplifies the development of applications by encaps
 * MISRA C:2012 compliant
 * Free, user-friendly license terms
 
-The firmware will support Special stream mode to implement other custom protocols in reader/writer mode (potentially also P2P), card emulation mode and even unique sniffer mode.
+The firmware will support low level mode to implement other custom protocols in reader/writer mode (potentially also P2P), card emulation mode and even unique real-time sniffer mode.
