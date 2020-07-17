@@ -43,6 +43,7 @@
 #include "hydrabus/hydrabus_sump.h"
 
 #include "bsp.h"
+#include "bsp_print_dbg.h"
 
 #include "script.h"
 
@@ -146,6 +147,12 @@ int main(void)
 
 	bsp_scs_dwt_cycle_counter_enabled();
 
+#ifdef MAKE_DEBUG
+	// set SWO on PB3
+	palSetPadMode(GPIOB, 3, PAL_MODE_ALTERNATE(0));
+	printf_dbg("DEBUG Trace started\n");
+#endif
+
 	/* Configure PA0 (UBTN), PA4 (ULED) and initialize the SD driver. */
 	hydrabus_init();
 
@@ -194,6 +201,7 @@ int main(void)
 	 */
 	chRegSetThreadName("main");
 	while (TRUE) {
+
 		local_nb_console = 0;
 		for (i = 0; i < 2; i++) {
 			if (!consoles[i].thread) {
@@ -203,6 +211,9 @@ int main(void)
 				consoles[i].thread = chThdCreateFromHeap(NULL,
 						     CONSOLE_WA_SIZE, consoles[i].thread_name, NORMALPRIO,
 						     console, &consoles[i]);
+#ifdef MAKE_DEBUG
+				printf_dbg("USB %d console started (%p)\n", i+1, consoles[i].thread);
+#endif
 			} else {
 				if (chThdTerminatedX(consoles[i].thread))
 					/* This console thread terminated. */
