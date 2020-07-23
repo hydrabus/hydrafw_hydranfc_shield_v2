@@ -33,6 +33,7 @@
  * \return void
  *
  */
+#ifdef MAKE_DEBUG
 void print_dbg(const char *data, const uint32_t size)
 {
 #ifdef USE_HOST_DEBUG
@@ -60,6 +61,7 @@ void print_dbg(const char *data, const uint32_t size)
 	(void)size;
 #endif
 }
+#endif
 
 /** \brief printf debug through Semi Hosting(SWD debug)
  *
@@ -68,6 +70,7 @@ void print_dbg(const char *data, const uint32_t size)
  * \return void
  *
  */
+#ifdef MAKE_DEBUG
 void printf_dbg(const char *fmt, ...)
 {
 #ifdef USE_HOST_DEBUG
@@ -101,3 +104,4 @@ void printf_dbg(const char *fmt, ...)
 	(void)fmt;
 #endif
 }
+#endif

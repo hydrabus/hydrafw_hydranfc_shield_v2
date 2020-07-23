@@ -36,7 +36,8 @@ HYDRABUSSRC = hydrabus/hydrabus.c \
             hydrabus/hydrabus_mode_wiegand.c \
             hydrabus/hydrabus_mode_lin.c \
             hydrabus/hydrabus_bbio_aux.c \
-            hydrabus/hydrabus_aux.c
+            hydrabus/hydrabus_aux.c \
+            hydrabus/console_cfg.c
 
 # Required include directories
 HYDRABUSINC = ./hydrabus

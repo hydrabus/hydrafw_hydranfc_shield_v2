@@ -46,6 +46,7 @@
 #include "bsp_print_dbg.h"
 
 #include "script.h"
+#include "hydrabus/console_cfg.h"
 
 #define INIT_SCRIPT_NAME "initscript"
 
@@ -55,6 +56,13 @@ volatile int nb_console = 0;
 SerialUSBDriver SDU1;
 /* USB2: Virtual serial port over USB. */
 SerialUSBDriver SDU2;
+
+static SerialConfig ser_usart_default_cfg = {
+ 115200,
+ 0,
+ 0,
+ 0,
+};
 
 extern t_token tl_tokens[];
 extern t_token_dict tl_dict[];
@@ -66,9 +74,13 @@ t_mode_config mode_con1 = { .proto={ .dev_num = 0 }, .cmd={ 0 } };
 t_tokenline tl_con2;
 t_mode_config mode_con2 = { .proto={ .dev_num = 0 }, .cmd={ 0 } };
 
+t_tokenline tl_con3;
+t_mode_config mode_con3 = { .proto={ .dev_num = 0 }, .cmd={ 0 } };
+
 t_hydra_console consoles[] = {
-	{ .thread_name="console USB1", .sdu=&SDU1, .tl=&tl_con1, .mode = &mode_con1 },
-	{ .thread_name="console USB2", .sdu=&SDU2, .tl=&tl_con2, .mode = &mode_con2 }
+	{ .thread_name="console USB1", .sdu=&SDU1, .tl=&tl_con1, .mode = &mode_con1, .is_enabled = TRUE },
+	{ .thread_name="console USB2", .sdu=&SDU2, .tl=&tl_con2, .mode = &mode_con2, .is_enabled = TRUE },
+	{ .thread_name="console USART", .sd=NULL, .tl=&tl_con3, .mode = &mode_con3, .is_enabled = FALSE }
 };
 
 THD_FUNCTION(console, arg)
@@ -200,6 +212,64 @@ int main(void)
 	 * Normal main() thread activity.
 	 */
 	chRegSetThreadName("main");
+
+	uint32_t usart_speed = 0;
+	bool custom_console_config = FALSE, useUSB1 = TRUE, useUSB2 = TRUE;
+	int usart_console_no = 0;
+
+	custom_console_config = console_read_sd_config(&usart_console_no, &usart_speed, &useUSB1, &useUSB2);
+
+	if (custom_console_config) {
+
+		switch(usart_console_no)
+		{
+		case 1:
+			sdInit();
+			/* Configure & Enable USART) */
+			ser_usart_default_cfg.speed = usart_speed;
+			sdStart(&SD1, &ser_usart_default_cfg);
+
+			// USART1
+			palSetPadMode(GPIOA, 9, PAL_MODE_ALTERNATE(7)); // USART1_TX => RX FTDI YELLOW
+			palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7)); // USART1_RX <= TX FTDI ORANGE
+
+			consoles[2].sd = &SD1;
+			break;
+		case 2:
+			sdInit();
+			/* Configure & Enable USART) */
+			ser_usart_default_cfg.speed = usart_speed;
+			sdStart(&SD2, &ser_usart_default_cfg);
+
+			// USART2
+			palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));
+			palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
+
+			consoles[2].sd = &SD2;
+			break;
+		case 3:
+			// TBC
+			break;
+		default:
+			break;
+		}
+
+		if (consoles[2].sd != NULL) {
+
+			consoles[2].thread = chThdCreateFromHeap(NULL,
+					     CONSOLE_WA_SIZE, consoles[2].thread_name, NORMALPRIO,
+					     console, &consoles[2]);
+			consoles[2].is_enabled = TRUE;
+			nb_console++;
+			printf_dbg("USART %d console started (%p) at %ldbps\n",
+					usart_console_no, consoles[2].thread, ser_usart_default_cfg.speed);
+		}
+
+		// disable USB consoles that we do not need
+		consoles[0].is_enabled = useUSB1;
+		consoles[1].is_enabled = useUSB2;
+	}
+
 	while (TRUE) {
 
 		local_nb_console = 0;
@@ -207,22 +277,23 @@ int main(void)
 			if (!consoles[i].thread) {
 				if (consoles[i].sdu->config->usbp->state != USB_ACTIVE)
 					continue;
-				/* Spawn new console thread.*/
+				/* Spawn new console thread if enabled*/
+				if (!consoles[0].is_enabled)
+					continue;
 				consoles[i].thread = chThdCreateFromHeap(NULL,
 						     CONSOLE_WA_SIZE, consoles[i].thread_name, NORMALPRIO,
 						     console, &consoles[i]);
-#ifdef MAKE_DEBUG
+				local_nb_console++;
 				printf_dbg("USB %d console started (%p)\n", i+1, consoles[i].thread);
-#endif
 			} else {
-				if (chThdTerminatedX(consoles[i].thread))
+				if (chThdTerminatedX(consoles[i].thread)) {
 					/* This console thread terminated. */
 					consoles[i].thread = NULL;
+					printf_dbg("USB %d console terminated\n", i+1);
+				}
 			}
-			if (consoles[i].sdu->config->usbp->state == USB_ACTIVE)
-				local_nb_console++;
 		}
-		nb_console = local_nb_console;
+		nb_console += local_nb_console;
 
 		/* HydraBus ULED blink. */
 		if (hydrabus_ubtn())
