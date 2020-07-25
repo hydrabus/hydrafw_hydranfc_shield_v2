@@ -92,11 +92,13 @@ typedef struct hydra_console {
 	thread_t *thread;
 	union {
 		SerialUSBDriver *sdu;
+		SerialDriver *sd;
 		BaseSequentialStream *bss;
 	};
 	t_tokenline *tl;
 	t_mode_config *mode;
 	int console_mode;
+	bool is_enabled;
 	FIL log_file;
 } t_hydra_console;
 

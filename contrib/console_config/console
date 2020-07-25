@@ -1,0 +1,32 @@
+# HydraBus console configuration file
+# This file must be present in the Root of Hydrabus SD Card. However, its presense is optional.
+# If it is not found (or no SD card found for that matter) at startup then only USB1 and USB2
+# consoles are spawn as soon as USB bus becomes active (i.e. old 'compatibility' behaviour)
+#
+# Comments start with #
+#
+# USB1/USB2 usage: "USB<num>=<status>", where
+# num is 1 for USB1 or 2 for USB2;
+# status is 1 to enable console or 0 to disable (important if you want to power via USB but don't want to use the console)
+#
+# USART options: "USART=<status>;<num>;<speed>", where 
+# status is 1 to enable console or 0 to disable;
+# num is USART number (1,2 or 3)
+# speed is speed in bps (make sure you set the speed within Hydrabus USART speed range)
+# max speed compatible with Linux non-custom speeds is 4000000 bps (check with stty on your system)
+# only one USART console allowed at the moment. Note that each console instance take 4k+ more memory from the heap!
+#
+# At the moment USART3 is WIP; and USART2 has max tested speed of 2000000 bps.
+#
+# --- example 1: enable USB2 and USART1 ---
+# USB1=0
+# USB2=1
+# USART=1;1;4000000
+#
+# --- example 2: enable USB1 and USB2 only ---
+# USB1=1
+# USB2=1
+# USART=0;1;4000000
+USB1=1
+USB2=0
+USART=1;2;2000000
