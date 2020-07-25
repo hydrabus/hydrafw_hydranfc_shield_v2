@@ -164,7 +164,12 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	D4_OFF;
 
 	palSetPadMode(GPIOB, 0, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+
+#ifndef MAKE_DEBUG
+	// can't use LED on PB3 if using SWO
 	palSetPadMode(GPIOB, 3, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+#endif
+
 	palSetPadMode(GPIOB, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
 	palSetPadMode(GPIOB, 5, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
 
