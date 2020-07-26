@@ -34,11 +34,23 @@
 #undef NS2RTT
 #define NS2RTT(nsec) ( (US2ST(nsec)/1000) )
 
+extern int ULED_state;
 /* ULED PA4 Configured as Output for Test */
 #undef ULED_ON
-#define ULED_ON  (palSetPad(GPIOA, 4))
+//#define ULED_ON  (palSetPad(GPIOA, 4))
+#define ULED_ON() \
+    do { \
+        palSetPad(GPIOA, 4); \
+        ULED_state=1; \
+    } while (0)
+
 #undef ULED_OFF
-#define ULED_OFF (palClearPad(GPIOA, 4))
+//#define ULED_OFF (palClearPad(GPIOA, 4))
+#define ULED_OFF() \
+do { \
+	palClearPad(GPIOA, 4); \
+    ULED_state=0; \
+} while (0)
 
 /* PB3 Test */
 #undef TST_ON

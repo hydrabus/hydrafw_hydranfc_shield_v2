@@ -44,6 +44,8 @@ uint8_t g_sbuf[NB_SBUFFER+128] __attribute__ ((aligned (4)));
 extern uint32_t debug_flags;
 extern char log_dest[];
 
+int ULED_state;
+
 void stream_write(t_hydra_console *con, const char *data, const uint32_t size)
 {
 	BaseSequentialStream* chp;
