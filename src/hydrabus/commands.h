@@ -80,6 +80,7 @@ enum {
 	T_SCAN,
 #if defined(HYDRANFC_V2)
 	T_NFC,
+	T_DNFC,
 	T_NFC_ALL,
 	T_NFC_A,
 	T_NFC_B,

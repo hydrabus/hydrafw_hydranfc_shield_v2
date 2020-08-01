@@ -196,6 +196,7 @@ static struct cmd_map {
 	{ T_UART, cmd_mode_init },
 #if defined(HYDRANFC_V2)
 	{ T_NFC, cmd_mode_init },
+	{ T_DNFC, cmd_mode_init },
 #endif
 	{ T_CAN, cmd_mode_init },
 	{ T_ADC, cmd_adc },

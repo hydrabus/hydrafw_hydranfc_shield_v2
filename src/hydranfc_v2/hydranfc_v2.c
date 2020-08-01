@@ -69,7 +69,7 @@ static rfalDpoEntry dpoSetup[] = {
 };
 #endif
 
-void (* st25r3916_irq_fn)(void) = NULL;
+static void (* st25r3916_irq_fn)(void) = NULL;
 
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
@@ -88,7 +88,7 @@ void rfalPreTransceiveCb(void)
 	rfalDpoAdjust();
 }
 
-ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
+static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
 {
 	ReturnCode err;
 	/* RFAL initalisation */
@@ -1121,7 +1121,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	return t - token_pos;
 }
 
-void show_registers(t_hydra_console *con)
+static void show_registers(t_hydra_console *con)
 {
 	ReturnCode err;
 	unsigned int i;
