@@ -2212,6 +2212,7 @@ t_token tl_tokens[] = {
 		.subtokens = tokens_sd,
 		.help = "SD card management"
 	},
+/*
 	{
 		T_ADC,
 		.subtokens = tokens_adc,
@@ -2275,6 +2276,7 @@ t_token tl_tokens[] = {
 		.help = "UART mode",
 		.help_full = "Configuration: uart [device (1/2)] [speed (value in bauds)] [parity (none/even/odd)] [stop-bits (1/2)]\r\nInteraction: <read/write (value:repeat)>"
 	},
+*/
 #if defined(HYDRANFC_V2)
 	{
 		T_NFC,
@@ -2288,6 +2290,7 @@ t_token tl_tokens[] = {
 		.help_full = "Configuration: spi2 [frequency (value hz/khz/mhz)]\r\nInteraction: [cs-on/cs-off] <read/write (value:repeat)> [exit]"
 	},
 #endif
+/*
 	{
 		T_CAN,
 		.subtokens = tokens_can,
@@ -2328,6 +2331,7 @@ t_token tl_tokens[] = {
 		.help = "SMARTCARD mode",
 		.help_full = "Configuration: smartcard\r\nInteraction: <read/write (value:repeat)>"
 	},
+*/
 	{
 		T_DEBUG,
 		.subtokens = tokens_debug,

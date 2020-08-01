@@ -102,20 +102,25 @@ THD_FUNCTION(console, arg)
 	while (1) {
 		input = get_char(con);
 		switch(input) {
+/* remove cmd_bbio()
 		case 0:
+
 			if (++i == 20) {
 				cmd_bbio(con);
 				i=0;
 			}
 			break;
+*/
 		/* SUMP identification is 5*\x00 \x02 */
 		/* Allows to enter SUMP mode autmomatically */
+/* remove sump()
 		case 2:
 			if(i == 5) {
 				cprintf(con, "1ALS");
 				sump(con);
 			}
 			break;
+ */
 		default:
 			i=0;
 			tl_input(con->tl, input);
