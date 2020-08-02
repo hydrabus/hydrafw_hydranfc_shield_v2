@@ -483,7 +483,7 @@ t_token tokens_mode_dnfc_show[] = {
 #define DNFC_PARAMETERS \
 	{ T_FREQUENCY, \
 		.arg_type = T_ARG_FLOAT, \
-		.help = "Bus frequency" },
+		.help = "Set SPI Bus frequency" },
 
 t_token tokens_mode_dnfc[] = {
 	{
@@ -501,43 +501,43 @@ t_token tokens_mode_dnfc[] = {
 	{
 		T_READ,
 		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
-		.help = "Read byte (repeat with :<num>)"
+		.help = "SPI Read byte (repeat with :<num>)"
 	},
 	{
 		T_HD,
 		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
-		.help = "Read byte (repeat with :<num>) and print hexdump"
+		.help = "SPI Read byte (repeat with :<num>) and print hexdump"
 	},
 	{
 		T_WRITE,
 		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
-		.help = "Write byte (repeat with :<num>)"
+		.help = "SPI Write byte (repeat with :<num>)"
 	},
 	{
 		T_ARG_UINT,
 		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
-		.help = "Write byte (repeat with :<num>)"
+		.help = "SPI Write byte (repeat with :<num>)"
 	},
 	{
 		T_ARG_STRING,
-		.help = "Write string"
+		.help = "SPI Write string"
 	},
 	{
 		T_CS_ON,
-		.help = "Alias for \"chip-select on\""
+		.help = "SPI Alias for \"chip-select on\""
 	},
 	{
 		T_CS_OFF,
-		.help = "Alias for \"chip-select off\""
+		.help = "SPI Alias for \"chip-select off\""
 	},
 	/* BP commands */
 	{
 		T_LEFT_SQ,
-		.help = "Alias for \"chip-select on\""
+		.help = "SPI Alias for \"chip-select on\""
 	},
 	{
 		T_RIGHT_SQ,
-		.help = "Alias for \"chip-select off\""
+		.help = "SPI Alias for \"chip-select off\""
 	},
 	{
 		T_AMPERSAND,
@@ -552,7 +552,7 @@ t_token tokens_mode_dnfc[] = {
 	{
 		T_TILDE,
 		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
-		.help = "Write a random byte (repeat with :<num>)"
+		.help = "SPI Write a random byte (repeat with :<num>)"
 	},
 	{
 		T_AUX_ON,

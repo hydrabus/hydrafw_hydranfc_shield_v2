@@ -102,7 +102,7 @@ typedef struct {
 			rfalNfcbListenDevice nfcb; /* NFC-B Listen Device instance */
 			rfalNfcfListenDevice nfcf; /* NFC-F Listen Device instance */
 			rfalNfcvListenDevice nfcv; /* NFC-V Listen Device instance */
-			rfalSt25tbListenDevice st25tb; /* NFC-V Listen Device instance */
+			rfalSt25tbListenDevice st25tb; /* NFC-B Listen Device instance */
 	}dev; /* Device's instance */
 	union{
 			rfalIsoDepDevice isoDep; /* ISO-DEP instance */
