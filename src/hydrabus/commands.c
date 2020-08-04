@@ -105,8 +105,13 @@ t_token_dict tl_dict[] = {
 	{ T_FRAME_TIME, "frame-time" },
 	{ T_PCAP, "pcap" },
 	{ T_BIN, "bin" },
-	{ T_DIRECT_MODE_0, "dm0" },
-	{ T_DIRECT_MODE_1, "dm1" },
+	{ T_SET_NFC_MODE, "set-nfc-mode"},
+	{ T_GET_NFC_MODE, "get-nfc-mode"},
+	{ T_NFC_MODE, "nfc-mode"},
+	{ T_NFC_MODE_TX_BITRATE, "nfc-mode-tx_br"},
+	{ T_NFC_MODE_RX_BITRATE, "nfc-mode-rx_br"},
+	{ T_NFC_TRANSPARENT, "nfc-transp" },
+	{ T_NFC_STREAM, "nfc-stream" },
 #endif
 	{ T_SNIFF, "sniff" },
 	{ T_GPIO, "gpio" },
@@ -480,6 +485,25 @@ t_token tokens_mode_dnfc_show[] = {
 	{ }
 };
 
+t_token tokens_set_nfc_mode[] = {
+	{
+		T_NFC_MODE,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC Mode\r\n\tNONE=0, POLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6\r\n\tPOLL_NFCV=7, POLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11=, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
+	},
+	{
+		T_NFC_MODE_TX_BITRATE,
+		.arg_type = T_ARG_UINT,
+		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237, BR_KEEP=255"
+	},
+	{
+		T_NFC_MODE_RX_BITRATE,
+		.arg_type = T_ARG_UINT,
+		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237, BR_KEEP=255"
+	},
+	{ }
+};
+
 #define DNFC_PARAMETERS \
 	{ T_FREQUENCY, \
 		.arg_type = T_ARG_FLOAT, \
@@ -491,12 +515,30 @@ t_token tokens_mode_dnfc[] = {
 		.subtokens = tokens_mode_dnfc_show,
 		.help = "Show DNFCv2 parameters"
 	},
+	DNFC_PARAMETERS
 	{
 		T_TRIGGER,
 		.subtokens = tokens_mode_trigger,
 		.help = "Setup DNFCv2 SPI2 trigger"
 	},
-	DNFC_PARAMETERS
+	{
+		T_SET_NFC_MODE,
+		.subtokens = tokens_set_nfc_mode,
+		.help = "Set NFC Mode and TX/RX BitRate in kbit/s"
+	},
+	{
+		T_GET_NFC_MODE,
+		.help = "Get NFC Mode"
+	},
+	{
+		T_NFC_TRANSPARENT,
+		.help = "Enter NFC Transparent Mode"
+	},
+	{
+		T_NFC_STREAM,
+		.help = "Enter NFC Stream Mode"
+	},
+
 	/* SPI-specific commands */
 	{
 		T_READ,

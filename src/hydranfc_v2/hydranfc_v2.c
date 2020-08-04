@@ -983,8 +983,6 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			memcpy(&mifare_uid, p->buf + p->tokens[t], sizeof(int));
 			break;
 		case T_EMUL_ISO14443A:
-		case T_DIRECT_MODE_0:
-		case T_DIRECT_MODE_1:
 			action = p->tokens[t];
 			break;
 		}
@@ -1088,30 +1086,6 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		cprintf(con, "T_EMUL_ISO14443A not implemented.\r\n");
 		// TODO T_EMUL_ISO14443A
 		//hydranfc_emul_iso14443a(con);
-		break;
-
-	case T_DIRECT_MODE_0:
-		/* 
-		TODO Test Transparent mode
-		TX encoding:
-			In Transparent mode, the framing and FIFO are bypassed, and the MOSI pin directly drives
-			the modulation of the transmitter.
-		RX decoding:
-			In Transparent mode the framing and FIFO are bypassed. The digitized subcarrier signal
-			directly drives the MISO pin
-		*/
-		break;
-
-	case T_DIRECT_MODE_1:
-		/* 
-		TODO Test Stream mode
-		TX encoding:
-			In Stream mode the framing is bypassed. The FIFO data directly defines the modulation
-			data sent to the transmitter.
-		RX decoding:
-			In Stream mode the framing is bypassed. The digitized subcarrier signal is directly stored in
-			the FIFO.
-		*/
 		break;
 
 	default:

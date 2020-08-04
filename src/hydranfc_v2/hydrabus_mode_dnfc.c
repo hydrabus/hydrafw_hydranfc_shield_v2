@@ -40,6 +40,7 @@
 #include "rfal_chip.h"
 #include "st25r3916.h"
 #include "st25r3916_irq.h"
+#include "st25r3916_com.h"
 
 #include "rfal_poller.h"
 
@@ -47,7 +48,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos);
 static int show(t_hydra_console *con, t_tokenline_parsed *p);
 
 static const char* str_pins_spi2= {
-	"CS:   PC1 (SW)\r\nSCK:  PB10\r\nMISO: PC2\r\nMOSI: PC3\r\n"
+	"CS:   PC1 (SW)\r\nSCK:  PB10\r\nMISO: PC2\r\nMOSI: PC3\r\nIRQ: PA1\r\n"
 };
 static const char* str_prompt_dnfc2= { "dnfc2" PROMPT };
 
@@ -279,12 +280,16 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	float arg_float;
 	int t, i;
 	bsp_status_t bsp_status;
+	int action;
+	int nfc_mode,nfc_mode_tx_bitrate, nfc_mode_rx_bitrate;
 
+	action = nfc_mode =  nfc_mode_tx_bitrate = nfc_mode_rx_bitrate = 0;
 	for (t = token_pos; p->tokens[t]; t++) {
 		switch (p->tokens[t]) {
 		case T_SHOW:
 			t += show(con, p);
 			break;
+
 		case T_FREQUENCY:
 			t += 2;
 			memcpy(&arg_float, p->buf + p->tokens[t], sizeof(float));
@@ -304,9 +309,68 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 				return t;
 			}
 			break;
+
+		case T_NFC_MODE:
+			t += 2;
+			memcpy(&nfc_mode, p->buf + p->tokens[t], sizeof(int));
+			break;
+
+		case T_NFC_MODE_TX_BITRATE:
+			t += 2;
+			memcpy(&nfc_mode_tx_bitrate, p->buf + p->tokens[t], sizeof(int));
+			break;
+
+		case T_NFC_MODE_RX_BITRATE:
+			t += 2;
+			memcpy(&nfc_mode_rx_bitrate, p->buf + p->tokens[t], sizeof(int));
+			break;
+
+		case T_SET_NFC_MODE:
+		case T_GET_NFC_MODE:
+		case T_NFC_TRANSPARENT:
+		case T_NFC_STREAM:
+			action = p->tokens[t];
+			break;
+
 		default:
 			return t - token_pos;
 		}
+	}
+
+	switch(action) {
+		case T_SET_NFC_MODE:
+			{
+				ReturnCode err;
+				cprintf(con, "T_NFC_MODE = %d\r\n", nfc_mode);
+				cprintf(con, "T_NFC_MODE_TX_BITRATE = %d\r\n", nfc_mode_tx_bitrate);
+				cprintf(con, "T_NFC_MODE_RX_BITRATE = %d\r\n", nfc_mode_rx_bitrate);
+				err = rfalSetMode(nfc_mode, nfc_mode_tx_bitrate, nfc_mode_rx_bitrate);
+				if(err == ERR_NONE)	{
+					cprintf(con, "rfalSetMode OK\r\n");
+				} else {
+					cprintf(con, "rfalSetMode Error %d\r\n", err);
+				}
+			}
+			break;
+
+		case T_GET_NFC_MODE:
+			{
+				rfalMode mode;
+				mode = rfalGetMode();
+				cprintf(con, "nfc-mode = %d\r\n", mode);
+			}
+			break;
+
+		case T_NFC_TRANSPARENT:
+			cprintf(con, "ST25R3916_CMD_TRANSPARENT_MODE executed\r\n");
+			st25r3916_irq_fn = NULL; /* Disable IRQ */
+			// st25r3916DisableInterrupts(ST25R3916_IRQ_MASK_ALL);
+			st25r3916ExecuteCommand(ST25R3916_CMD_TRANSPARENT_MODE);
+			break;
+
+		case T_NFC_STREAM:
+			cprintf(con, "T_NFC_STREAM not implemented\r\n");
+			break;
 	}
 
 	return t - token_pos;
@@ -466,4 +530,3 @@ const mode_exec_t mode_dnfc_exec = {
 	.cleanup = &cleanup,
 	.get_prompt = &get_prompt,
 };
-
