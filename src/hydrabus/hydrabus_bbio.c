@@ -60,6 +60,7 @@ int cmd_bbio(t_hydra_console *con)
 			case BBIO_SPI:
 				bbio_mode_spi(con);
 				break;
+/*
 			case BBIO_I2C:
 				bbio_mode_i2c(con);
 				break;
@@ -79,15 +80,18 @@ int cmd_bbio(t_hydra_console *con)
 			case BBIO_CAN:
 				bbio_mode_can(con);
 				break;
+*/
 			case BBIO_PIN:
 				bbio_mode_pin(con);
 				break;
+/*
 			case BBIO_FLASH:
 				bbio_mode_flash(con);
 				break;
 			case BBIO_SMARTCARD:
 				bbio_mode_smartcard(con);
 				break;
+*/
 #ifdef HYDRANFC
 			case BBIO_NFC_READER:
 				bbio_mode_hydranfc_reader(con);
@@ -97,6 +101,7 @@ int cmd_bbio(t_hydra_console *con)
 				/* Needed for flashrom detection */
 				cprint(con, "Hydrabus\r\n", 10);
 				return TRUE;
+/*
 			case BBIO_VOLT:
 				bbio_adc(con);
 				continue;
@@ -106,6 +111,7 @@ int cmd_bbio(t_hydra_console *con)
 			case BBIO_FREQ:
 				bbio_freq(con);
 				continue;
+*/
 			case BBIO_RESET:
 				break;
 			default:
