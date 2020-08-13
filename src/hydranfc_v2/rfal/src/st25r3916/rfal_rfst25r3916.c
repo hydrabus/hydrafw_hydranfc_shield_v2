@@ -3322,7 +3322,7 @@ ReturnCode rfalListenStart( uint32_t lmMask, const rfalLmConfPA *confA, const rf
     {
         gRFAL.state     = RFAL_STATE_LM;
         gRFAL.Lm.mdMask = lmMask;
-        
+
         gRFAL.Lm.rxBuf    = rxBuf;
         gRFAL.Lm.rxBufLen = rxBufLen;
         gRFAL.Lm.rxLen    = rxLen;

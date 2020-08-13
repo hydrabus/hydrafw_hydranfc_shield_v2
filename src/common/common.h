@@ -141,6 +141,9 @@ uint8_t reverse_u8(uint8_t value);
 uint16_t reverse_u16(uint16_t value);
 uint32_t reverse_u32(uint32_t value);
 
+extern bool buf_ascii2hex(uint8_t *ascii_buf, uint8_t *hex_buf, uint32_t *hex_buflen);
+extern int buf_hex2ascii(uint8_t *ascii_buf, uint8_t *hex_buf, uint32_t hex_buflen, char *byte_prefix, char *byte_suffix);
+
 uint8_t hydrabus_ubtn(void);
 
 #endif /* _COMMON_H_ */

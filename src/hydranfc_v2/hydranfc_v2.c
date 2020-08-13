@@ -48,6 +48,13 @@
 #include "st25r3916_irq.h"
 
 #include "rfal_poller.h"
+#include "hydranfc_v2_ce.h"
+
+extern void hydranfc_ce_common(t_hydra_console *con);
+extern uint32_t user_uid_len;
+extern uint8_t user_uid[8];
+extern uint8_t user_sak;
+extern uint8_t *user_uri;
 
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos);
 static int show(t_hydra_console *con, t_tokenline_parsed *p);
@@ -302,7 +309,7 @@ THD_FUNCTION(key_sniff, arg)
 			//hydranfc_sniff_14443A(NULL, TRUE, FALSE, FALSE);
 			D1_OFF;
 		}
-		
+
 		/* If K2_BUTTON is pressed */
 		if (K2_BUTTON)
 		{
@@ -858,6 +865,52 @@ static void scan(t_hydra_console *con, nfc_technology_t nfc_tech)
 	ScanTags(con, nfc_tech);
 }
 
+static void hydranfc_card_emul_iso14443a(t_hydra_console *con)
+{
+	uint8_t ascii_buf[48];
+
+	// check if we have good uid and sak
+	if (user_tag_properties.uid_len == 0) {
+		cprintf(con, "Card Emulation failed: UID not set\r\n");
+		return;
+	}
+	if (user_tag_properties.sak_len == 0) {
+		cprintf(con, "Card Emulation failed: SAK not set\r\n");
+		return;
+	}
+
+	if (user_tag_properties.level4_enabled) {
+		switch (user_tag_properties.t4tEmulationMode) {
+		case T4T_MODE_URI:
+			if (user_tag_properties.uri == NULL) {
+				cprintf(con, "Card Emulation failed: URI not set\r\n");
+				return;
+			}
+			break;
+		default:
+			cprintf(con, "Card Emulation failed: unknown t4t mode %d\r\n", user_tag_properties.t4tEmulationMode);
+			return;
+		}
+	}
+
+	cprintf(con, "Card Emulation started using:\r\n");
+	buf_hex2ascii(ascii_buf, user_tag_properties.uid, user_tag_properties.uid_len, "0x", " ");
+	cprintf(con, "UID %s\r\n", ascii_buf);
+	buf_hex2ascii(ascii_buf, user_tag_properties.sak, user_tag_properties.sak_len, "0x", " ");
+	cprintf(con, "SAK %s\r\n", ascii_buf);
+	if (user_tag_properties.uri != NULL) {
+		cprintf(con, "URI %s\r\n", user_tag_properties.uri);
+	}
+
+	/* Init st25r3916 IRQ function callback */
+	st25r3916_irq_fn = st25r3916Isr;
+
+	hydranfc_ce_common(con);
+
+	irq_count = 0;
+	st25r3916_irq_fn = NULL;
+}
+
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 {
 	int nfc_tech;
@@ -982,11 +1035,69 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			t += 2;
 			memcpy(&mifare_uid, p->buf + p->tokens[t], sizeof(int));
 			break;
+
 		case T_EMUL_ISO14443A:
+		case T_SET_EMUL_TAG_PROPERTIES:
+			action = p->tokens[t];
+			break;
+
+		case T_EMUL_T4T:
+			action = p->tokens[t];
+			if (p->tokens[t+1] == 0 || p->tokens[t+2] != 0) {
+				cprintf(con, "Invalid parameter(s).\r\n");
+				return t;
+			}
+			break;
+
 		case T_DIRECT_MODE_0:
 		case T_DIRECT_MODE_1:
 			action = p->tokens[t];
 			break;
+
+		case T_EMUL_TAG_PROPERTY_UID:
+//			printf_dbg("token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
+			t += 2;
+			if (p->tokens[t-1] == T_ARG_STRING) {
+				memcpy(&str_offset, &p->tokens[t], sizeof(int));
+				if (!buf_ascii2hex((uint8_t *)(p->buf + str_offset), user_tag_properties.uid, &user_tag_properties.uid_len)) {
+					cprintf(con, "CE Properties: can't interpret UID\r\n");
+					return t;
+				} else if (!(user_tag_properties.uid_len == 4 || user_tag_properties.uid_len == 7)) {
+					cprintf(con, "CE Properties: wrong UID length (need 4 or 7)\r\n");
+					return t;
+				}
+			} else {
+				cprintf(con, "CE Properties: Invalid UID\r\n");
+				return t;
+			}
+			break;
+		case T_EMUL_TAG_PROPERTY_SAK:
+			t += 2;
+			if (p->tokens[t-1] == T_ARG_STRING) {
+				memcpy(&str_offset, &p->tokens[t], sizeof(int));
+				if (!buf_ascii2hex((uint8_t *)(p->buf + str_offset), user_tag_properties.sak, &user_tag_properties.sak_len)) {
+					cprintf(con, "CE Properties: can't interpret SAK\r\n");
+					return t;
+				} else if (user_tag_properties.sak_len != 1) {
+					cprintf(con, "CE Properties: wrong SAK length (need 1)\r\n");
+					return t;
+				}
+			} else {
+				cprintf(con, "CE Properties: Invalid SAK\r\n");
+				return t;
+			}
+			break;
+		case T_EMUL_TAG_PROPERTY_URI:
+//			printf_dbg("uri: token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
+			if (p->tokens[t+1] == T_ARG_STRING) {
+				memcpy(&str_offset, &p->tokens[t+2], sizeof(int));
+				user_tag_properties.uri = (uint8_t *)(p->buf + str_offset);
+				t += 2;
+			} else {
+				user_tag_properties.t4tEmulationMode = T4T_MODE_URI;
+			}
+			break;
+
 		}
 	}
 
@@ -1085,13 +1196,19 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		break;
 
 	case T_EMUL_ISO14443A:
-		cprintf(con, "T_EMUL_ISO14443A not implemented.\r\n");
-		// TODO T_EMUL_ISO14443A
-		//hydranfc_emul_iso14443a(con);
+		cprintf(con, "ISO14443A card emulation.\r\n");
+		hydranfc_card_emul_iso14443a(con);
+		break;
+
+	case T_EMUL_T4T:
+		cprintf(con, "Type 4 Tag emulation.\r\n");
+		user_tag_properties.level4_enabled = true;
+		hydranfc_card_emul_iso14443a(con);
+		user_tag_properties.level4_enabled = false;
 		break;
 
 	case T_DIRECT_MODE_0:
-		/* 
+		/*
 		TODO Test Transparent mode
 		TX encoding:
 			In Transparent mode, the framing and FIFO are bypassed, and the MOSI pin directly drives
@@ -1103,7 +1220,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		break;
 
 	case T_DIRECT_MODE_1:
-		/* 
+		/*
 		TODO Test Stream mode
 		TX encoding:
 			In Stream mode the framing is bypassed. The FIFO data directly defines the modulation
@@ -1174,6 +1291,8 @@ static int init(t_hydra_console *con, t_tokenline_parsed *p)
 {
 	mode_config_proto_t* proto;
 	int tokens_used = 0;
+
+	memset(&user_tag_properties, 0, sizeof(user_tag_properties));
 
 	if(con != NULL)
 	{

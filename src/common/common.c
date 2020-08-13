@@ -518,3 +518,53 @@ uint8_t hydrabus_ubtn(void)
 {
 	return bsp_gpio_pin_read(BSP_GPIO_PORTA, 0);
 }
+
+bool buf_ascii2hex(uint8_t *ascii_buf, uint8_t *hex_buf, uint32_t *hex_buflen)
+{
+	if (ascii_buf == NULL || hex_buf == NULL || hex_buflen == NULL) {
+		return false;
+	}
+
+	int result, ii=0, io=0;
+
+	while (ascii_buf[ii]) {
+		result = sscanf((char *)&ascii_buf[ii], "%02hhx", &hex_buf[io]);
+		if (result !=1) {
+			return false;
+		}
+		ii +=2;
+		io++;
+	}
+	*hex_buflen = io;
+	return true;
+}
+
+// return num of ascii bytes written or negative num for error
+// byte_prefix or byte_suffix can be NULL (otherwise former is typical "0x" and latter " ")
+int buf_hex2ascii(uint8_t *ascii_buf, uint8_t *hex_buf, uint32_t hex_buflen, char *byte_prefix, char *byte_suffix)
+{
+	if (ascii_buf == NULL || hex_buf == NULL) {
+		return -1;
+	}
+
+	int result;
+	uint32_t ii=0, io=0;
+	char empty_str[1] = { '\0' };
+	if (byte_prefix == NULL) {
+		byte_prefix = empty_str;
+	}
+	if (byte_suffix == NULL) {
+		byte_suffix = empty_str;
+	}
+
+	for (ii = 0; ii < hex_buflen; ii++)
+	{
+		result = sprintf((char *)&ascii_buf[io], "%s%02X%s", byte_prefix, hex_buf[ii], byte_suffix);
+		if (result <0)
+			return result;
+		io += result;
+	}
+
+	return io;
+}
+

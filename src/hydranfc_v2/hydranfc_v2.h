@@ -37,8 +37,13 @@ extern unsigned char nfc_tx_rawdata_buf[NFC_TX_RAWDATA_BUF_SIZE+1];
 
 /* TODO macro in HAL... */
 /* USer Button K1/2 Configured as Input */
+#ifdef HYDRANFC_V2_NO_BTNS
+#define K1_BUTTON FALSE
+#define K2_BUTTON FALSE
+#else
 #define K1_BUTTON (palReadPad(GPIOB, 8))
 #define K2_BUTTON (palReadPad(GPIOB, 9))
+#endif
 
 /* LEDs D1/D2/D3/D4 Configured as Output */
 #define D1_ON  (palSetPad(GPIOB, 0))

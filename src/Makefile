@@ -11,6 +11,8 @@ export STM32F4XX ?= 1
 
 #Set to 2 to include HydraNFC V2 Shield (ST25R3916) extension support
 export HYDRAFW_HYDRANFC ?= 2
+#Set to 1 for early HydraNFC V2 revisions, which don't have buttons K1 and K2
+export HYDRAFW_NO_BTNS_HYDRANFC ?= 1
 
 export HYDRAFW_DEBUG ?= 1
 export FW_REVISION := $(shell python build-scripts/hydrafw-revision.py)
@@ -19,6 +21,10 @@ HYDRAFW_OPTS =
 
 ifeq ($(HYDRAFW_HYDRANFC),2)
 HYDRAFW_OPTS += -DHYDRANFC_V2
+endif
+
+ifeq ($(HYDRAFW_NO_BTNS_HYDRANFC),1)
+HYDRAFW_OPTS += -DHYDRANFC_V2_NO_BTNS
 endif
 
 # Compiler options here.
@@ -34,7 +40,8 @@ ifeq ($(HYDRAFW_DEBUG),1)
   USE_OPT += -ggdb
   USE_OPT += -fstack-usage
   USE_OPT += -Og
-#  USE_OPT += -fcallgraph-info
+  USE_OPT += -Wshadow
+  USE_OPT += -Wformat=2
   USE_LTO = no
 else
   USE_OPT += -Os
@@ -322,8 +329,11 @@ FORCE:
 ifeq ($(USE_VERBOSE_COMPILE),yes)
 	echo Creating ./common/hydrafw_version.hdr
 	-rm -f $(OBJDIR)/common.o
-    python build-scripts/hydrafw-version.py ./common/hydrafw_version.hdr
+	python build-scripts/hydrafw-version.py ./common/hydrafw_version.hdr
 else
+	@echo Compiler Version
+	$(CC) --version
+	@echo
 	@echo Creating ./common/hydrafw_version.hdr
 	@rm -f $(OBJDIR)/common.o
 	@python build-scripts/hydrafw-version.py ./common/hydrafw_version.hdr
