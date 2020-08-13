@@ -50,7 +50,7 @@ void print_dbg(const char *data, const uint32_t size)
 
 #else
 	{
-		int i;
+		uint32_t i;
 		/* SWV Debug requires PB3 configured as SWO & connected to SWD last pin */
 		for(i = 0; i<size; i++)
 			ITM_SendChar(data[i]); /* core_cm4.h */

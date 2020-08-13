@@ -112,6 +112,11 @@ t_token_dict tl_dict[] = {
 	{ T_NFC_MODE_RX_BITRATE, "nfc-mode-rx_br"},
 	{ T_NFC_TRANSPARENT, "nfc-transp" },
 	{ T_NFC_STREAM, "nfc-stream" },
+	{ T_SET_EMUL_TAG_PROPERTIES, "ce" },
+	{ T_EMUL_TAG_PROPERTY_UID, "uid" },
+	{ T_EMUL_TAG_PROPERTY_SAK, "sak" },
+	{ T_EMUL_TAG_PROPERTY_URI, "uri" },
+	{ T_EMUL_T4T, "emul-t4t" },
 #endif
 	{ T_SNIFF, "sniff" },
 	{ T_GPIO, "gpio" },
@@ -379,6 +384,34 @@ t_token tokens_mode_nfc_sniff[] = {
 	{ }
 };
 
+t_token tokens_set_emul_tag_properties[] = {
+	{
+			T_EMUL_TAG_PROPERTY_UID,
+			.arg_type = T_ARG_STRING,
+			.help = "Set UID to be used for Card Emulation; 4 or 7 bytes. Hex string with no spaces or prefixes, e.g. f1e2d3c4"
+	},
+	{
+			T_EMUL_TAG_PROPERTY_SAK,
+			.arg_type = T_ARG_STRING,
+			.help = "Set (final) SAK to be used for Card Emulation. 1 byte hex with no spaces or prefixes, e.g. 20"
+	},
+	{
+			T_EMUL_TAG_PROPERTY_URI,
+			.arg_type = T_ARG_STRING,
+			.help = "Set URI to be used for T4T Card Emulation"
+	},
+	{ }
+};
+
+t_token tokens_emul_t4t[] = {
+	{
+			T_EMUL_TAG_PROPERTY_URI,
+			.help = "Emulate T4T with preset URI"
+	},
+	{ }
+};
+
+
 #define NFC_PARAMETERS \
 	{\
 		T_NFC_ALL,\
@@ -409,6 +442,20 @@ t_token tokens_mode_nfc_sniff[] = {
 		.subtokens = tokens_mode_nfc_scan,\
 		.help = "Scan selected technology (NFC-A/B/V/F...)"\
 	},\
+	{\
+		T_EMUL_ISO14443A,\
+		.help = "Emul Tag ISO14443A"\
+	},\
+	{\
+		T_SET_EMUL_TAG_PROPERTIES,\
+		.subtokens = tokens_set_emul_tag_properties,\
+		.help = "Set Tag properties for Card Emulation (UID, SAK, T4T params...)"\
+	},\
+	{\
+		T_EMUL_T4T,\
+		.subtokens = tokens_emul_t4t,\
+		.help = "Emulate Type 4 Tag with preset Tag properties"\
+	},\
 /*
 	{\
 		T_READ_MF_ULTRALIGHT,\
@@ -434,10 +481,12 @@ t_token tokens_mode_nfc_sniff[] = {
 		.arg_type = T_ARG_UINT,\
 		.help = "Emul Tag Mifare UID (uid)"\
 	},\
-	{\
-		T_EMUL_ISO14443A,\
-		.help = "Emul Tag ISO14443A SDD UID"\
-	},\
+
+//	{\
+//		T_EMUL_ISO14443A,\
+//		.help = "Emul Tag ISO14443A SDD UID"\
+//	},\
+
 	{\
 		T_DIRECT_MODE_0,\
 		.help = "Enter Direct Mode 0 (IO6/PC2=subcarrier)"\
