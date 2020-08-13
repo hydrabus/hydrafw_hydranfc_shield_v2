@@ -102,7 +102,7 @@ typedef struct {
 			rfalNfcbListenDevice nfcb; /* NFC-B Listen Device instance */
 			rfalNfcfListenDevice nfcf; /* NFC-F Listen Device instance */
 			rfalNfcvListenDevice nfcv; /* NFC-V Listen Device instance */
-			rfalSt25tbListenDevice st25tb; /* NFC-V Listen Device instance */
+			rfalSt25tbListenDevice st25tb; /* NFC-B Listen Device instance */
 	}dev; /* Device's instance */
 	union{
 			rfalIsoDepDevice isoDep; /* ISO-DEP instance */
@@ -132,9 +132,9 @@ RfalPollerRfInterfaceDevice_t        *gActiveDev;                       /* Activ
 
 static bool instructionsDisplayed = false;                              /* Keep track of demo instruction display */
 static detectMode_t detectMode = DETECT_MODE_POLL;                      /* Current tag detection method */
+static rfalBitRate rxbr,txbr;                                           /* Detected tag bitrate information */
 
 #if 0
-static rfalBitRate rxbr,txbr;                                           /* Detected tag bitrate information */
 static const uint16_t yBox = 24;                                        /* Detected tag box margin*/
 static const uint16_t boxHeight = 45;                                   /* Detected tag box height */
 static const uint16_t boxSpace = 4;                                     /* Detected tag box spacing */
@@ -313,46 +313,9 @@ void tagDetectionNoTag(t_hydra_console *con, nfc_technology_t nfc_tech)
 #endif
 	instructionsDisplayed = true;
 	nfc_technology_to_str(nfc_tech, &tag);
-	cprintf(con, "Place NFC-%s tag(s) above the antenna...(or press UBTN to exit)\r\n", tag.str);
+	cprintf(con, "Place NFC-%s tag(s) above the antenna...(Press UBTN to exit)\r\n", tag.str);
 }
 
-/* Helper method to retrieve UID from a tag structure */
-/*
-static bool getDevUid(uint8_t** uid, uint8_t* uidLen)
-{
-	switch (gActiveDev->type)
-	{
-		case BSP_NFCTAG_NFCA:
-		*uid = gActiveDev->dev.nfca.nfcId1;
-		*uidLen = gActiveDev->dev.nfca.nfcId1Len;
-		break;
-
-		case BSP_NFCTAG_NFCB:
-		*uid = gActiveDev->dev.nfcb.sensbRes.nfcid0;
-		*uidLen = RFAL_NFCB_NFCID0_LEN;
-		break;
-
-		case BSP_NFCTAG_ST25TB:
-		*uid = gActiveDev->dev.st25tb.UID;
-		*uidLen = RFAL_ST25TB_UID_LEN;
-		break;
-
-		case BSP_NFCTAG_NFCF:
-		*uid = gActiveDev->dev.nfcf.sensfRes.NFCID2;
-		*uidLen = RFAL_NFCF_NFCID2_LEN;
-		break;
-
-		case BSP_NFCTAG_NFCV:
-		*uid = gActiveDev->dev.nfcv.InvRes.UID;
-		*uidLen = RFAL_NFCV_UID_LEN;
-		break;
-
-		default:
-		return false;
-	}
-	return true;
-}
-*/
 #if 0
 /* Helper method to define tag information position */
 uint16_t yLine(uint8_t l)
@@ -413,13 +376,14 @@ static char* getTypeStr(void)
 	}
 	return retPtr;
 }
+#endif
 
 
 /* Helper method to get the current tag bitrate as numerical b/s */
 static uint16_t getSpeedVal(rfalBitRate br)
 {
 	if(br <= RFAL_BR_848)
-		return 106 * (int)pow(2,br);
+		return 106 * (1<<br);
 	else if (br == RFAL_BR_52p97 )
 		return 52;
 	else if (br == RFAL_BR_26p48)
@@ -437,7 +401,6 @@ static void getSpeedStr(char *retPtr)
 		getSpeedVal(rxbr),
 		getSpeedVal(txbr));
 }
-#endif
 
 /* When a tag is slected, dispays the current DPO profile */
 #ifndef FREEZE_DISPLAY
@@ -1154,7 +1117,7 @@ static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 			/*******************************************************************************/
 			case RFAL_POLLER_STATE_DEACTIVATION:
 			{
-				int i, delay;
+				int i;
 				if(!instructionsDisplayed)
 				{
 #ifndef FREEZE_DISPLAY
@@ -1376,8 +1339,16 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCA);
 #endif
-				cprintf(con, "NFC-A UID:");
 				int j;
+				char speedStr[20];
+				getSpeedStr(speedStr);
+				cprintf(con, "NFC-A %s Type=0x%02X ATQA=0x%02X%02X SAK=0x%02X UID:",
+							speedStr,
+							nfcaDevList[i].type,
+							nfcaDevList[i].sensRes.platformInfo,
+							nfcaDevList[i].sensRes.anticollisionInfo,
+							nfcaDevList[i].selRes.sak);
+
 				for(j = 0; j < nfcaDevList[i].nfcId1Len; j++)
 					cprintf(con,"%02X",nfcaDevList[i].nfcId1[j]);
 				cprintf(con, "\r\n");
@@ -1409,8 +1380,11 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCB);
 #endif
-				cprintf(con, "NFC-B UID:");
 				uint j;
+				char speedStr[20];
+				getSpeedStr(speedStr);
+				cprintf(con, "NFC-B %s UID:", speedStr);
+
 				for(j = 0; j < RFAL_NFCB_NFCID0_LEN; j++)
 					cprintf(con,"%02X",nfcbDevList[i].sensbRes.nfcid0[j]);
 				cprintf(con, "\r\n");
@@ -1441,8 +1415,11 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCB);
 #endif
-				cprintf(con, "ST25TB UID:");
 				uint j;
+				char speedStr[20];
+				getSpeedStr(speedStr);
+				cprintf(con, "ST25TB %s UID:", speedStr);
+
 				for(j = 0; j<RFAL_ST25TB_UID_LEN; j++)
 					cprintf(con,"%02X",st25tbDevList[i].UID[j]);
 				cprintf(con, "\r\n");
@@ -1474,8 +1451,11 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCF);
 #endif
-				cprintf(con, "NFC-F UID:");
 				uint j;
+				char speedStr[20];
+				getSpeedStr(speedStr);
+				cprintf(con, "NFC-F %s UID:", speedStr);
+
 				for(j = 0; j<RFAL_NFCF_NFCID2_LEN; j++)
 					cprintf(con,"%02X",nfcfDevList[i].sensfRes.NFCID2[j]);
 				cprintf(con, "\r\n");
@@ -1512,8 +1492,11 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 				for(uid_i = 0; uid_i < RFAL_NFCV_UID_LEN; uid_i ++)
 					uid[uid_i] = nfcvDevList[i].InvRes.UID[RFAL_NFCV_UID_LEN - uid_i -1];
 
-				cprintf(con, "NFC-V UID:");
 				uint j;
+				char speedStr[20];
+				getSpeedStr(speedStr);
+				cprintf(con, "NFC-V %s UID:", speedStr);
+
 				for(j = 0; j<RFAL_NFCV_UID_LEN; j++)
 					cprintf(con,"%02X",uid[j]);
 				cprintf(con, "\r\n");

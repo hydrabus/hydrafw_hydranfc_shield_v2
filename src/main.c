@@ -102,12 +102,15 @@ THD_FUNCTION(console, arg)
 	while (1) {
 		input = get_char(con);
 		switch(input) {
+
 		case 0:
+
 			if (++i == 20) {
 				cmd_bbio(con);
 				i=0;
 			}
 			break;
+
 		/* SUMP identification is 5*\x00 \x02 */
 		/* Allows to enter SUMP mode autmomatically */
 		case 2:
@@ -116,6 +119,7 @@ THD_FUNCTION(console, arg)
 				sump(con);
 			}
 			break;
+
 		default:
 			i=0;
 			tl_input(con->tl, input);
@@ -300,7 +304,7 @@ int main(void)
 			sleep_ms = BLINK_FAST;
 		else
 			sleep_ms = BLINK_SLOW;
-		ULED_ON;
+		ULED_ON();
 
 		chThdSleepMilliseconds(sleep_ms);
 
@@ -319,7 +323,7 @@ int main(void)
 			*/
 		} else
 			sleep_ms = BLINK_SLOW;
-		ULED_OFF;
+		ULED_OFF();
 
 #if defined(HYDRANFC_V2)
 		if(hydranfc_shield_v2_detected == TRUE) {

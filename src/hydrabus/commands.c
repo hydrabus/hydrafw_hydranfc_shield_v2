@@ -2,7 +2,7 @@
  * HydraBus/HydraNFC
  *
  * Copyright (C) 2014 Bert Vermeulen <bert@biot.com>
- * Copyright (C) 2014-2017 Benjamin VERNOUX
+ * Copyright (C) 2014-2020 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,7 @@ t_token_dict tl_dict[] = {
 	{ T_SCAN, "scan" },
 #if defined(HYDRANFC_V2)
 	{ T_NFC, "nfc" },
+	{ T_DNFC, "dnfc" },
 	{ T_NFC_ALL, "nfc-all" },
 	{ T_NFC_A, "nfc-a" },
 	{ T_NFC_B, "nfc-b" },
@@ -104,8 +105,13 @@ t_token_dict tl_dict[] = {
 	{ T_FRAME_TIME, "frame-time" },
 	{ T_PCAP, "pcap" },
 	{ T_BIN, "bin" },
-	{ T_DIRECT_MODE_0, "dm0" },
-	{ T_DIRECT_MODE_1, "dm1" },
+	{ T_SET_NFC_MODE, "set-nfc-mode"},
+	{ T_GET_NFC_MODE, "get-nfc-mode"},
+	{ T_NFC_MODE, "nfc-mode"},
+	{ T_NFC_MODE_TX_BITRATE, "nfc-mode-tx_br"},
+	{ T_NFC_MODE_RX_BITRATE, "nfc-mode-rx_br"},
+	{ T_NFC_TRANSPARENT, "nfc-transp" },
+	{ T_NFC_STREAM, "nfc-stream" },
 	{ T_SET_EMUL_TAG_PROPERTIES, "ce" },
 	{ T_EMUL_TAG_PROPERTY_UID, "uid" },
 	{ T_EMUL_TAG_PROPERTY_SAK, "sak" },
@@ -516,7 +522,154 @@ t_token tokens_nfc[] = {
 	{ }
 };
 
-#endif /* ifdef HYDRANFC or HYDRANFC_V2 */
+t_token tokens_mode_dnfc_show[] = {
+	{
+		T_PINS,
+		.help = "Show pins used in this mode"
+	},
+	{
+		T_REGISTERS,
+		.help = "Show NFC registers"
+	},
+	{ }
+};
+
+t_token tokens_set_nfc_mode[] = {
+	{
+		T_NFC_MODE,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC Mode\r\n\tNONE=0, POLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6\r\n\tPOLL_NFCV=7, POLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11=, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
+	},
+	{
+		T_NFC_MODE_TX_BITRATE,
+		.arg_type = T_ARG_UINT,
+		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237, BR_KEEP=255"
+	},
+	{
+		T_NFC_MODE_RX_BITRATE,
+		.arg_type = T_ARG_UINT,
+		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237, BR_KEEP=255"
+	},
+	{ }
+};
+
+#define DNFC_PARAMETERS \
+	{ T_FREQUENCY, \
+		.arg_type = T_ARG_FLOAT, \
+		.help = "Set SPI Bus frequency" },
+
+t_token tokens_mode_dnfc[] = {
+	{
+		T_SHOW,
+		.subtokens = tokens_mode_dnfc_show,
+		.help = "Show DNFCv2 parameters"
+	},
+	DNFC_PARAMETERS
+	{
+		T_TRIGGER,
+		.subtokens = tokens_mode_trigger,
+		.help = "Setup DNFCv2 SPI2 trigger"
+	},
+	{
+		T_SET_NFC_MODE,
+		.subtokens = tokens_set_nfc_mode,
+		.help = "Set NFC Mode and TX/RX BitRate in kbit/s"
+	},
+	{
+		T_GET_NFC_MODE,
+		.help = "Get NFC Mode"
+	},
+	{
+		T_NFC_TRANSPARENT,
+		.help = "Enter NFC Transparent Mode"
+	},
+	{
+		T_NFC_STREAM,
+		.help = "Enter NFC Stream Mode"
+	},
+
+	/* SPI-specific commands */
+	{
+		T_READ,
+		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
+		.help = "SPI Read byte (repeat with :<num>)"
+	},
+	{
+		T_HD,
+		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
+		.help = "SPI Read byte (repeat with :<num>) and print hexdump"
+	},
+	{
+		T_WRITE,
+		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
+		.help = "SPI Write byte (repeat with :<num>)"
+	},
+	{
+		T_ARG_UINT,
+		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
+		.help = "SPI Write byte (repeat with :<num>)"
+	},
+	{
+		T_ARG_STRING,
+		.help = "SPI Write string"
+	},
+	{
+		T_CS_ON,
+		.help = "SPI Alias for \"chip-select on\""
+	},
+	{
+		T_CS_OFF,
+		.help = "SPI Alias for \"chip-select off\""
+	},
+	/* BP commands */
+	{
+		T_LEFT_SQ,
+		.help = "SPI Alias for \"chip-select on\""
+	},
+	{
+		T_RIGHT_SQ,
+		.help = "SPI Alias for \"chip-select off\""
+	},
+	{
+		T_AMPERSAND,
+		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
+		.help = "Delay 1 usec (repeat with :<num>)"
+	},
+	{
+		T_PERCENT,
+		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
+		.help = "Delay 1 msec (repeat with :<num>)"
+	},
+	{
+		T_TILDE,
+		.flags = T_FLAG_SUFFIX_TOKEN_DELIM_INT,
+		.help = "SPI Write a random byte (repeat with :<num>)"
+	},
+	{
+		T_AUX_ON,
+		.help = "Toggle AUX[0](PC4) high"
+	},
+	{
+		T_AUX_OFF,
+		.help = "Toggle AUX[0](PC4) low"
+	},
+	{
+		T_AUX_READ,
+		.help = "Read AUX[0](PC4)"
+	},
+	{
+		T_EXIT,
+		.help = "Exit DNFCv2 mode"
+	},
+	{ }
+};
+
+t_token tokens_dnfc[] = {
+	DNFC_PARAMETERS
+	{ }
+};
+
+#endif /* ifdef HYDRANFC_V2 */
 
 t_token tokens_parity[] = {
 	{ T_NONE },
@@ -2150,6 +2303,7 @@ t_token tl_tokens[] = {
 		.subtokens = tokens_sd,
 		.help = "SD card management"
 	},
+/*
 	{
 		T_ADC,
 		.subtokens = tokens_adc,
@@ -2213,13 +2367,21 @@ t_token tl_tokens[] = {
 		.help = "UART mode",
 		.help_full = "Configuration: uart [device (1/2)] [speed (value in bauds)] [parity (none/even/odd)] [stop-bits (1/2)]\r\nInteraction: <read/write (value:repeat)>"
 	},
+*/
 #if defined(HYDRANFC_V2)
 	{
 		T_NFC,
 		.subtokens = tokens_nfc,
-		.help = "NFC mode"
+		.help = "NFCv2 mode"
+	},
+	{
+		T_DNFC,
+		.subtokens = tokens_dnfc,
+		.help = "Debug/Developer NFCv2 mode",
+		.help_full = "Configuration: spi2 [frequency (value hz/khz/mhz)]\r\nInteraction: [cs-on/cs-off] <read/write (value:repeat)> [exit]"
 	},
 #endif
+/*
 	{
 		T_CAN,
 		.subtokens = tokens_can,
@@ -2260,6 +2422,7 @@ t_token tl_tokens[] = {
 		.help = "SMARTCARD mode",
 		.help_full = "Configuration: smartcard\r\nInteraction: <read/write (value:repeat)>"
 	},
+*/
 	{
 		T_DEBUG,
 		.subtokens = tokens_debug,

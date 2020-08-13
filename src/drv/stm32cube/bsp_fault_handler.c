@@ -98,6 +98,7 @@ void stackDump(unsigned int* stack)
 __attribute__((naked))
 void hard_fault_handler_c(unsigned int* stack)
 {
+	__ASM volatile("bkpt 1");
 	/* hard_fault_stack_pt contains registers saved before the hard fault */
 	hard_fault_stack_pt = (hard_fault_stack_t*)stack;
 

@@ -42,7 +42,10 @@ extern t_token_dict tl_dict[];
 extern const mode_exec_t mode_spi_exec;
 extern const mode_exec_t mode_i2c_exec;
 extern const mode_exec_t mode_uart_exec;
+#if defined(HYDRANFC_V2)
 extern const mode_exec_t mode_nfc_exec;
+extern const mode_exec_t mode_dnfc_exec;
+#endif
 extern const mode_exec_t mode_jtag_exec;
 extern const mode_exec_t mode_onewire_exec;
 extern const mode_exec_t mode_twowire_exec;
@@ -57,6 +60,7 @@ extern t_token tokens_mode_i2c[];
 extern t_token tokens_mode_uart[];
 #if defined(HYDRANFC_V2)
 extern t_token tokens_mode_nfc[];
+extern t_token tokens_mode_dnfc[];
 #endif
 extern t_token tokens_mode_jtag[];
 extern t_token tokens_mode_onewire[];
@@ -73,12 +77,16 @@ static struct {
 	t_token *tokens;
 	const mode_exec_t *exec;
 } modes[] = {
+/*
 	{ T_SPI, tokens_mode_spi, &mode_spi_exec },
 	{ T_I2C, tokens_mode_i2c, &mode_i2c_exec },
 	{ T_UART, tokens_mode_uart, &mode_uart_exec },
+*/
 #if defined(HYDRANFC_V2)
 	{ T_NFC, tokens_mode_nfc, &mode_nfc_exec },
+	{ T_DNFC, tokens_mode_dnfc, &mode_dnfc_exec },
 #endif
+/*
 	{ T_JTAG, tokens_mode_jtag, &mode_jtag_exec },
 	{ T_ONEWIRE, tokens_mode_onewire, &mode_onewire_exec },
 	{ T_TWOWIRE, tokens_mode_twowire, &mode_twowire_exec },
@@ -88,6 +96,7 @@ static struct {
 	{ T_WIEGAND, tokens_mode_wiegand, &mode_wiegand_exec },
 	{ T_LIN, tokens_mode_lin, &mode_lin_exec },
 	{ T_SMARTCARD, tokens_mode_smartcard, &mode_smartcard_exec },
+*/
 };
 
 const char hydrabus_mode_str_cs_enabled[] =  "/CS ENABLED\r\n";
