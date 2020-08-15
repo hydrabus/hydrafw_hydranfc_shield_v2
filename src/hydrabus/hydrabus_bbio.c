@@ -41,6 +41,10 @@
 #include "hydranfc_bbio_reader.h"
 #endif
 
+#ifdef HYDRANFC_V2
+#include "hydranfc_v2_bbio_reader.h"
+#endif
+
 int cmd_bbio(t_hydra_console *con)
 {
 	mode_config_proto_t* proto = &con->mode->proto;
@@ -97,6 +101,13 @@ int cmd_bbio(t_hydra_console *con)
 				bbio_mode_hydranfc_reader(con);
 				break;
 #endif
+
+//#ifdef HYDRANFC_V2
+			case BBIO_NFC_V2_READER:
+				bbio_mode_hydranfc_v2_reader(con);
+				break;
+//#endif
+
 			case BBIO_RESET_HW:
 				/* Needed for flashrom detection */
 				cprint(con, "Hydrabus\r\n", 10);
