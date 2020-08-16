@@ -196,39 +196,6 @@ static uint16_t getTagBoxY(int index)
 }
 #endif
 
-/* Display a detected tag on the LCD screen (max: 4 tags detected) */
-static void displayTag(int index, char* type, uint8_t *uid)
-{
-	int c;
-#ifndef FREEZE_DISPLAY
-	const uint16_t xBox = 8;
-	const uint16_t boxWidth = 304;
-	const uint16_t boxCornerRadius = 10;
-	const uint16_t yText = 15;
-#endif
-
-	char str[30] = ""; 
-	char uid_str[30] = ""; 
-	if (index > 3)
-		return;
-
-	if(uid != NULL)
-	{
-		strcat(str,type);
-		for(c = strlen(type); c < 7; c++)
-			strcat(str," ");
-		sprintf(uid_str,"%02X:%02X:%02X:%02X",uid[0],uid[1],uid[2],uid[3]);
-		strcat(str,uid_str);
-	} else {
-		strcpy(str, "                  ");
-	}
-
-#ifndef FREEZE_DISPLAY
-	BSP_LCD_DrawRectangleWithRoundCorner(xBox,getTagBoxY(index),boxWidth,boxHeight,boxCornerRadius);
-	Menu_DisplayStringAt(Menu_GetFontWidth(),yText + Menu_GetFontHeight() + index * (boxHeight + boxSpace), str);
-#endif
-}
-
 /* Control Radio Button display */
 static void setRadio(t_hydra_console *con)
 {
@@ -1125,8 +1092,6 @@ static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 					BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
 					BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 #endif
-					for(i = gDevCnt; i < 4; i++) 
-						displayTag(i, "", NULL);
 					if(gDevCnt == 0)
 					{
 						tagDetectionNoTag(con, nfc_tech);
@@ -1354,7 +1319,6 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 					cprintf(con,"%02X",nfcaDevList[i].nfcId1[j]);
 				cprintf(con, "\r\n");
 
-				displayTag(gDevCnt,"NFC-A",nfcaDevList[i].nfcId1);
 				gDevList[gDevCnt].type     = BSP_NFCTAG_NFCA;
 				gDevList[gDevCnt].dev.nfca = nfcaDevList[i];
 				gDevCnt++;
@@ -1390,7 +1354,6 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 					cprintf(con,"%02X",nfcbDevList[i].sensbRes.nfcid0[j]);
 				cprintf(con, "\r\n");
 
-				displayTag(gDevCnt,"NFC-B",nfcbDevList[i].sensbRes.nfcid0);
 				gDevList[gDevCnt].type     = BSP_NFCTAG_NFCB;
 				gDevList[gDevCnt].dev.nfcb = nfcbDevList[i];
 				gDevCnt++;
@@ -1425,7 +1388,6 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 					cprintf(con,"%02X",st25tbDevList[i].UID[j]);
 				cprintf(con, "\r\n");
 
-				displayTag(gDevCnt,"ST25TB",st25tbDevList[i].UID);
 				gDevList[gDevCnt].type     = BSP_NFCTAG_ST25TB;
 				gDevList[gDevCnt].dev.st25tb = st25tbDevList[i];
 				gDevCnt++;
@@ -1461,7 +1423,6 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 					cprintf(con,"%02X",nfcfDevList[i].sensfRes.NFCID2[j]);
 				cprintf(con, "\r\n");
 
-				displayTag(gDevCnt,"NFC-F",nfcfDevList[i].sensfRes.NFCID2);
 				gDevList[gDevCnt].type     = BSP_NFCTAG_NFCF;
 				gDevList[gDevCnt].dev.nfcf = nfcfDevList[i];
 				gDevCnt++;
@@ -1502,7 +1463,6 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 					cprintf(con,"%02X",uid[j]);
 				cprintf(con, "\r\n");
 
-				displayTag(gDevCnt,"NFC-V",uid);
 				gDevList[gDevCnt].type     = BSP_NFCTAG_NFCV;
 				gDevList[gDevCnt].dev.nfcv = nfcvDevList[i];
 				gDevCnt++;
@@ -1512,7 +1472,6 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 
 	return (gDevCnt > 0);
 }
-
 
 /*!
  ******************************************************************************
