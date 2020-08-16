@@ -339,38 +339,58 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 	switch(action) {
 		case T_SET_NFC_MODE:
-			{
-				ReturnCode err;
-				cprintf(con, "T_NFC_MODE = %d\r\n", nfc_mode);
-				cprintf(con, "T_NFC_MODE_TX_BITRATE = %d\r\n", nfc_mode_tx_bitrate);
-				cprintf(con, "T_NFC_MODE_RX_BITRATE = %d\r\n", nfc_mode_rx_bitrate);
-				err = rfalSetMode(nfc_mode, nfc_mode_tx_bitrate, nfc_mode_rx_bitrate);
-				if(err == ERR_NONE)	{
-					cprintf(con, "rfalSetMode OK\r\n");
-				} else {
-					cprintf(con, "rfalSetMode Error %d\r\n", err);
-				}
+		{
+			ReturnCode err;
+			cprintf(con, "nfc-mode = %d\r\n", nfc_mode);
+			cprintf(con, "nfc-mode-tx_br = %d\r\n", nfc_mode_tx_bitrate);
+			cprintf(con, "nfc-mode-rx_br = %d\r\n", nfc_mode_rx_bitrate);
+			err = rfalSetMode(nfc_mode, nfc_mode_tx_bitrate, nfc_mode_rx_bitrate);
+			if(err == ERR_NONE)	{
+				cprintf(con, "rfalSetMode OK\r\n");
+			} else {
+				cprintf(con, "rfalSetMode Error %d\r\n", err);
 			}
-			break;
+		}
+		break;
 
 		case T_GET_NFC_MODE:
-			{
-				rfalMode mode;
-				mode = rfalGetMode();
-				cprintf(con, "nfc-mode = %d\r\n", mode);
-			}
-			break;
+		{
+			rfalMode mode;
+			rfalBitRate txBR, rxBR;
+
+			mode = rfalGetMode();
+			txBR = -1; rxBR = -1;
+			rfalGetBitRate(&txBR, &rxBR);
+			cprintf(con, "nfc-mode = %d\r\n", mode);
+			cprintf(con, "nfc-mode-tx_br = %d\r\n", txBR);
+			cprintf(con, "nfc-mode-rx_br = %d\r\n", rxBR);
+		}
+		break;
 
 		case T_NFC_TRANSPARENT:
+		{
 			cprintf(con, "ST25R3916_CMD_TRANSPARENT_MODE executed\r\n");
 			st25r3916_irq_fn = NULL; /* Disable IRQ */
 			// st25r3916DisableInterrupts(ST25R3916_IRQ_MASK_ALL);
 			st25r3916ExecuteCommand(ST25R3916_CMD_TRANSPARENT_MODE);
-			break;
+		}
+		break;
 
 		case T_NFC_STREAM:
-			cprintf(con, "T_NFC_STREAM not implemented\r\n");
-			break;
+		{
+			ReturnCode err;
+			cprintf(con, "T_NFC_STREAM not implemented (Test special sniffer CSO)\r\n");
+
+			err = rfalSetMode(RFAL_MODE_LISTEN_NFCA, RFAL_BR_106, RFAL_BR_106);
+			if(err != ERR_NONE)	{
+				cprintf(con, "rfalSetMode Error %d\r\n", err);
+			}
+			st25r3916SetRegisterBits(ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_rx_en|ST25R3916_REG_OP_CONTROL_en_fd_auto_efd);
+			st25r3916WriteRegister(ST25R3916_REG_AUX, ST25R3916_REG_AUX_dis_corr);
+			st25r3916WriteRegister(ST25R3916_REG_RX_CONF3, 0xFC); // Receiver configuration register 3 => Boost +5.5 dB AM/PM
+			st25r3916WriteTestRegister(0x01, 0x06); // Pin CSO => Tag demodulator ASK digital out
+		}
+		break;
 	}
 
 	return t - token_pos;
