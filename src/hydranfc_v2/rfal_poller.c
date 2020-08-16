@@ -1102,6 +1102,7 @@ static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 				}
 
 				// add delay to avoid NFC-V Anticol frames back to back
+				HAL_Delay(1); /* Wait 1ms required for some Tags */
 				if( !RfalPollerCollResolution(con) ) /* Resolve any eventual collision */
 				{
 					gState = RFAL_POLLER_STATE_DEACTIVATION;	/* If Collision Resolution was unable to retrieve any device, restart loop */
