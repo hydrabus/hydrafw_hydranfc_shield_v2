@@ -1085,7 +1085,6 @@ static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 			/*******************************************************************************/
 			case RFAL_POLLER_STATE_DEACTIVATION:
 			{
-				int i;
 				if(!instructionsDisplayed)
 				{
 #ifndef FREEZE_DISPLAY
