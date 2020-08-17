@@ -26,3 +26,12 @@ This firmware is fully open source and based on HydraFW and is specific to Hydra
 For more details on key features of HydraNFC Shield v2 hardware & firmware see https://hydrabus.com/hydranfc-shield-v2-specifications
 
 See also Wiki https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/wiki
+
+### Documentation
+* [HydraFW-HydraNFC-v2-guide](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/wiki/HydraFW-HydraNFC-v2-guide)
+
+### How to Help
+  * [HydraFW-HydraNFC-v2-guide](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/wiki/HydraFW-HydraNFC-v2-guide)
+  * [Task List](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/wiki/Task-List)
+  * [Report Issues/Features](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/issues)
+  * For developers see also [Coding style](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/blob/master/CODING_STYLE.md)

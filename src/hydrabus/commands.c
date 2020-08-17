@@ -112,6 +112,11 @@ t_token_dict tl_dict[] = {
 	{ T_NFC_MODE_RX_BITRATE, "nfc-mode-rx_br"},
 	{ T_NFC_TRANSPARENT, "nfc-transp" },
 	{ T_NFC_STREAM, "nfc-stream" },
+	{ T_SET_EMUL_TAG_PROPERTIES, "ce" },
+	{ T_EMUL_TAG_PROPERTY_UID, "uid" },
+	{ T_EMUL_TAG_PROPERTY_SAK, "sak" },
+	{ T_EMUL_TAG_PROPERTY_URI, "uri" },
+	{ T_EMUL_T4T, "emul-t4t" },
 #endif
 	{ T_SNIFF, "sniff" },
 	{ T_GPIO, "gpio" },
@@ -533,17 +538,17 @@ t_token tokens_set_nfc_mode[] = {
 	{
 		T_NFC_MODE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set NFC Mode\r\n\tNONE=0, POLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6\r\n\tPOLL_NFCV=7, POLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11=, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
+		.help = "Set NFC Mode\r\n\tPOLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6, POLL_NFCV=7\r\n\tPOLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11=, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
 	},
 	{
 		T_NFC_MODE_TX_BITRATE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237, BR_KEEP=255"
+		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237"
 	},
 	{
 		T_NFC_MODE_RX_BITRATE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237, BR_KEEP=255"
+		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237"
 	},
 	{ }
 };

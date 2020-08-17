@@ -15,3 +15,6 @@ hydrafwEm.elay
 *.map
 *.hdr
 /src/.settings
+/src/.idea/
+src/hydrafw_hydranfc_shield_v2 Debug.launch
+

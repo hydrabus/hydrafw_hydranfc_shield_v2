@@ -35,11 +35,11 @@
 #include "spi.h"
 #include "led.h"
 
-#include "usbd_custom_hid_if.h"
+//#include "usbd_custom_hid_if.h"
 //#include "ce.h"
+//#include "stream_dispatcher.h"
+//#include "dispatcher.h"
 
-#include "stream_dispatcher.h"
-#include "dispatcher.h"
 #include "rfal_analogConfig.h"
 #include "rfal_rf.h"
 #include "rfal_dpo.h"
@@ -1037,7 +1037,16 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 
 		case T_EMUL_ISO14443A:
+		case T_SET_EMUL_TAG_PROPERTIES:
 			action = p->tokens[t];
+			break;
+
+		case T_EMUL_T4T:
+			action = p->tokens[t];
+			if (p->tokens[t+1] == 0 || p->tokens[t+2] != 0) {
+				cprintf(con, "Invalid parameter(s).\r\n");
+				return t;
+			}
 			break;
 
 		case T_EMUL_TAG_PROPERTY_UID:

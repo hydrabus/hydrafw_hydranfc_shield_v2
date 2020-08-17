@@ -95,10 +95,9 @@ void _Error_Handler(char *, int);
 #define HAL_GetTick() ( HAL_GetTickMs() )
 #define _Error_Handler(__FILE__, __LINE__) // Ignore errors
 
-//#define platformProtectST25RComm()         do{ globalCommProtectCnt++; __DSB();NVIC_DisableIRQ(EXTI0_IRQn);__DSB();__ISB();}while(0) /*!< Protect unique access to ST25R communication channel - IRQ disable on single thread environment (MCU) ; Mutex lock on a multi thread environment      */
-//#define platformUnprotectST25RComm()       do{ if (--globalCommProtectCnt==0) {NVIC_EnableIRQ(EXTI0_IRQn);} }while(0)                /*!< Unprotect unique access to ST25R communication channel - IRQ enable on a single thread environment (MCU) ; Mutex unlock on a multi thread environment */
-#define platformProtectST25RComm()         do{ globalCommProtectCnt++; __DSB();NVIC_DisableIRQ(EXTI15_10_IRQn);__DSB();__ISB();}while(0) /*!< Protect unique access to ST25R391x communication channel - IRQ disable on single thread environment (MCU) ; Mutex lock on a multi thread environment      */
-#define platformUnprotectST25RComm()       do{ if (--globalCommProtectCnt==0) {NVIC_EnableIRQ(EXTI15_10_IRQn);} }while(0)                /*!< Unprotect unique access to ST25R391x communication channel - IRQ enable on a single thread environment (MCU) ; Mutex unlock on a multi thread environment */
+/* Protect ST25RComm from EXTI1_IRQ used with PA1 & ST25R3916 IRQ to avoid ST25R3916 IRQ to preempt spi transfer in user code */
+#define platformProtectST25RComm()         do{ globalCommProtectCnt++; __DSB();NVIC_DisableIRQ(EXTI1_IRQn);__DSB();__ISB();}while(0) /*!< Protect unique access to ST25R391x communication channel - IRQ disable on single thread environment (MCU) ; Mutex lock on a multi thread environment      */
+#define platformUnprotectST25RComm()       do{ if (--globalCommProtectCnt==0) {NVIC_EnableIRQ(EXTI1_IRQn);} }while(0)                /*!< Unprotect unique access to ST25R391x communication channel - IRQ enable on a single thread environment (MCU) ; Mutex unlock on a multi thread environment */
 
 #define platformProtectST25RIrqStatus()    platformProtectST25RComm()                       /*!< Protect unique access to IRQ status var - IRQ disable on single thread environment (MCU) ; Mutex lock on a multi thread environment */
 #define platformUnprotectST25RIrqStatus()  platformUnprotectST25RComm()                     /*!< Unprotect the IRQ status var - IRQ enable on a single thread environment (MCU) ; Mutex unlock on a multi thread environment         */
