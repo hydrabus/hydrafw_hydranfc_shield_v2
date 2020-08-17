@@ -201,11 +201,15 @@ void bbio_mode_hydranfc_v2_reader(t_hydra_console *con) {
 		if (chnRead(con->sdu, &bbio_subcommand, 1) == 1) {
 			switch (bbio_subcommand) {
 				case BBIO_NFC_SET_MODE_ISO_14443A: {
-					rfalNfcaPollerInitialize(); /* Initialize RFAL for NFC-A */
+					rfalNfcaPollerInitialize();
+					break;
+				}
+				case BBIO_NFC_SET_MODE_ISO_14443B: {
+					rfalNfcbPollerInitialize();
 					break;
 				}
 				case BBIO_NFC_SET_MODE_ISO_15693: {
-					// TODO
+					rfalNfcvPollerInitialize();
 					break;
 				}
 				case BBIO_NFC_RF_OFF: {
@@ -217,14 +221,18 @@ void bbio_mode_hydranfc_v2_reader(t_hydra_console *con) {
 					break;
 				}
 
-				case BBIO_NFC_CMD_SEND_BITS: {
-					chnRead(con->sdu, rx_data, 2);
+				case BBIO_NFC_ISO_14443_A_REQA: {
 
 					rfalNfcaPollerCheckPresence(0x26, rx_data );
 
 					rlen = 2;
 					cprint(con, (char *) &rlen, 1);
 					cprint(con, (char *) rx_data, rlen);
+					break;
+				}
+
+				case BBIO_NFC_CMD_SEND_BITS: {
+					// TODO
 					break;
 				}
 				case BBIO_NFC_CMD_SEND_BYTES: {
