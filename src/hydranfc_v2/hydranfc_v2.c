@@ -76,7 +76,7 @@ static rfalDpoEntry dpoSetup[] = {
 };
 #endif
 
-void (* st25r3916_irq_fn)(void) = NULL;
+static void (* st25r3916_irq_fn)(void) = NULL;
 
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
@@ -95,7 +95,7 @@ void rfalPreTransceiveCb(void)
 	rfalDpoAdjust();
 }
 
-ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
+static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
 {
 	ReturnCode err;
 	/* RFAL initalisation */
@@ -1037,20 +1037,6 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 
 		case T_EMUL_ISO14443A:
-		case T_SET_EMUL_TAG_PROPERTIES:
-			action = p->tokens[t];
-			break;
-
-		case T_EMUL_T4T:
-			action = p->tokens[t];
-			if (p->tokens[t+1] == 0 || p->tokens[t+2] != 0) {
-				cprintf(con, "Invalid parameter(s).\r\n");
-				return t;
-			}
-			break;
-
-		case T_DIRECT_MODE_0:
-		case T_DIRECT_MODE_1:
 			action = p->tokens[t];
 			break;
 
@@ -1207,30 +1193,6 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		user_tag_properties.level4_enabled = false;
 		break;
 
-	case T_DIRECT_MODE_0:
-		/*
-		TODO Test Transparent mode
-		TX encoding:
-			In Transparent mode, the framing and FIFO are bypassed, and the MOSI pin directly drives
-			the modulation of the transmitter.
-		RX decoding:
-			In Transparent mode the framing and FIFO are bypassed. The digitized subcarrier signal
-			directly drives the MISO pin
-		*/
-		break;
-
-	case T_DIRECT_MODE_1:
-		/*
-		TODO Test Stream mode
-		TX encoding:
-			In Stream mode the framing is bypassed. The FIFO data directly defines the modulation
-			data sent to the transmitter.
-		RX decoding:
-			In Stream mode the framing is bypassed. The digitized subcarrier signal is directly stored in
-			the FIFO.
-		*/
-		break;
-
 	default:
 		break;
 	}
@@ -1238,7 +1200,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	return t - token_pos;
 }
 
-void show_registers(t_hydra_console *con)
+static void show_registers(t_hydra_console *con)
 {
 	ReturnCode err;
 	unsigned int i;

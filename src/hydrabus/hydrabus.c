@@ -22,9 +22,6 @@
 #include "common.h"
 #include "hydrabus.h"
 
-/* ULED PA4 Configured as Output for Test */
-#define ULED_OFF (palClearPad(GPIOA, 4))
-
 /*
  * Working area for driver.
  */
@@ -46,7 +43,7 @@ void hydrabus_init(void)
 
 	/* Configure PA4 ULED as Output for test purpose blink test */
 	palSetPadMode(GPIOA, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST);
-	ULED_OFF;
+	ULED_OFF();
 
 	/*
 	 * Initializes the SDIO drivers.

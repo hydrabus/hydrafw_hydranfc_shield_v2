@@ -59,8 +59,6 @@ extern unsigned char nfc_tx_rawdata_buf[NFC_TX_RAWDATA_BUF_SIZE+1];
 #define D4_ON  (palSetPad(GPIOB, 5))
 #define D4_OFF (palClearPad(GPIOB, 5))
 
-extern void (*st25r3916_irq_fn)(void);
-
 /* Structure used & filled by hydranfc_scan_iso14443A() */
 typedef struct {
 	uint8_t atqa_buf_nb_rx_data;

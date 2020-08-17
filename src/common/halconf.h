@@ -276,7 +276,7 @@
  * @note    Disabling this option saves both code and data space.
  */
 #if !defined(DAC_USE_WAIT) || defined(__DOXYGEN__)
-#define DAC_USE_WAIT                        TRUE
+#define DAC_USE_WAIT                        FALSE
 #endif
 
 /**
@@ -284,7 +284,7 @@
  * @note    Disabling this option saves both code and data space.
  */
 #if !defined(DAC_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
-#define DAC_USE_MUTUAL_EXCLUSION            TRUE
+#define DAC_USE_MUTUAL_EXCLUSION            FALSE
 #endif
 
 /*===========================================================================*/
@@ -341,7 +341,7 @@
  * @note    Disabling this option saves both code and data space.
  */
 #if !defined(QSPI_USE_WAIT) || defined(__DOXYGEN__)
-#define QSPI_USE_WAIT                       TRUE
+#define QSPI_USE_WAIT                       FALSE
 #endif
 
 /**
@@ -349,7 +349,7 @@
  * @note    Disabling this option saves both code and data space.
  */
 #if !defined(QSPI_USE_MUTUAL_EXCLUSION) || defined(__DOXYGEN__)
-#define QSPI_USE_MUTUAL_EXCLUSION           TRUE
+#define QSPI_USE_MUTUAL_EXCLUSION           FALSE
 #endif
 
 /*===========================================================================*/
