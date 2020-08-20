@@ -1093,7 +1093,18 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 			break;
 
+		case T_CARD_CONNECT:
+			action = p->tokens[t];
+			break;
+
+		case T_CARD_SEND:
+			action = p->tokens[t];
+		break;
+
+
 		}
+
+
 	}
 
 	switch(action) {
@@ -1201,6 +1212,30 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		hydranfc_card_emul_iso14443a(con);
 		user_tag_properties.level4_enabled = false;
 		break;
+
+	case T_CARD_CONNECT:{
+
+		/* Init st25r3916 IRQ function callback */
+		st25r3916_irq_fn = st25r3916Isr;
+		my_connect(con);
+
+		irq_count = 0;
+		st25r3916_irq_fn = NULL;
+
+		break;
+	}
+
+	case T_CARD_SEND:{
+
+	/* Init st25r3916 IRQ function callback */
+	st25r3916_irq_fn = st25r3916Isr;
+	my_card_send(con, p->buf);
+
+	irq_count = 0;
+	st25r3916_irq_fn = NULL;
+
+	break;
+	}
 
 	default:
 		break;

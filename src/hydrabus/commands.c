@@ -117,6 +117,10 @@ t_token_dict tl_dict[] = {
 	{ T_EMUL_TAG_PROPERTY_SAK, "sak" },
 	{ T_EMUL_TAG_PROPERTY_URI, "uri" },
 	{ T_EMUL_T4T, "emul-t4t" },
+	{ T_CARD_CONNECT, "connect"},
+	{ T_CARD_SEND, "send"},
+	{ T_NFC_RF_OFF_ON, "set-field-off-on"},
+	{ T_NFC_ISO_14443_REQA, "reqa"},
 #endif
 	{ T_SNIFF, "sniff" },
 	{ T_GPIO, "gpio" },
@@ -412,6 +416,7 @@ t_token tokens_emul_t4t[] = {
 };
 
 
+
 #define NFC_PARAMETERS \
 	{\
 		T_NFC_ALL,\
@@ -455,6 +460,15 @@ t_token tokens_emul_t4t[] = {
 		T_EMUL_T4T,\
 		.subtokens = tokens_emul_t4t,\
 		.help = "Emulate Type 4 Tag with preset Tag properties"\
+	},\
+	{\
+		T_CARD_CONNECT,\
+		.help = "Connect to a smartcard"\
+	},\
+	{\
+		T_CARD_SEND,         \
+		.arg_type = T_ARG_STRING,              \
+		.help = "Send data to a smartcard"\
 	},\
 /*
 	{\
@@ -656,6 +670,14 @@ t_token tokens_mode_dnfc[] = {
 	{
 		T_AUX_READ,
 		.help = "Read AUX[0](PC4)"
+	},
+	{
+		T_NFC_RF_OFF_ON,
+		.help = "Set NFC Field off/on"
+	},
+	{
+		T_NFC_ISO_14443_REQA,
+		.help = "Send ISO 14443-A REQ A"
 	},
 	{
 		T_EXIT,

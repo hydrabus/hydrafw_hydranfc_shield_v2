@@ -332,6 +332,11 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			action = p->tokens[t];
 			break;
 
+		case T_NFC_RF_OFF_ON:
+		case T_NFC_ISO_14443_REQA:
+			action = p->tokens[t];
+			break;
+
 		default:
 			return t - token_pos;
 		}
@@ -391,6 +396,25 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			st25r3916WriteTestRegister(0x01, 0x06); // Pin CSO => Tag demodulator ASK digital out
 		}
 		break;
+
+		case T_NFC_RF_OFF_ON:
+		{
+			cprintf(con, "Test\r\n");
+			rfalNfcaPollerInitialize();
+
+			rfalFieldOff();
+			rfalFieldOnAndStartGT();
+			break;
+		}
+
+		case T_NFC_ISO_14443_REQA:
+		{
+
+			uint8_t rx[2];
+			rfalNfcaPollerCheckPresence(0x26, rx);
+			cprintf(con, "%02X %02X\r\n", rx[0], rx[1]);
+			break;
+		}
 	}
 
 	return t - token_pos;
