@@ -33,18 +33,18 @@
 #include "hydranfc_v2_reader.h"
 #include <string.h>
 
-uint8_t tx_buffer[260];
-uint8_t rx_buffer[260];
-uint16_t tx_buffer_len, rx_buffer_len;
-uint16_t tpdu_len;
-uint32_t capdu_len;
-uint8_t capdu_buffer[260];
+static uint8_t tx_buffer[260];
+static uint8_t rx_buffer[260];
+static uint16_t tx_buffer_len, rx_buffer_len;
+static uint16_t tpdu_len;
+static uint32_t capdu_len;
+static uint8_t capdu_buffer[260];
 
-uint16_t rapdu_len;
-uint8_t rapdu_buffer[260];
-bool verbose_mode = TRUE;
-uint8_t fsd = 16;
-rfalMode mode = RFAL_MODE_NONE;
+static uint16_t rapdu_len;
+static uint8_t rapdu_buffer[260];
+static bool verbose_mode = TRUE;
+static uint8_t fsd = 16;
+static rfalMode mode = RFAL_MODE_NONE;
 
 void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value){
 	if(opt == T_CARD_CONNECT_AUTO_OPT_VERBOSITY){
