@@ -117,6 +117,17 @@ t_token_dict tl_dict[] = {
 	{ T_EMUL_TAG_PROPERTY_SAK, "sak" },
 	{ T_EMUL_TAG_PROPERTY_URI, "uri" },
 	{ T_EMUL_T4T, "emul-t4t" },
+	{ T_CARD_CONNECT_AUTO, "connect"},
+	{ T_CARD_CONNECT_AUTO_OPT, "connect_opt"},
+	{ T_CARD_CONNECT_AUTO_OPT_VERBOSITY, "verbosity"},
+	{ T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE ,"fsd"},
+	{ T_CARD_SEND, "send"},
+	{ T_NFC_RF_OFF_ON, "rf-off-on"},
+	{ T_NFC_ISO_14443_REQA, "reqa"},
+	{ T_NFC_ISO_14443_WUPA, "wupa"},
+	{ T_NFC_SEND_BYTES, "send"},
+	{ T_NFC_SEND_BYTES_AND_COMPUTE_CRC, "send_auto"},
+
 #endif
 	{ T_SNIFF, "sniff" },
 	{ T_GPIO, "gpio" },
@@ -411,6 +422,20 @@ t_token tokens_emul_t4t[] = {
 	{ }
 };
 
+t_token tokens_connect_auto_opt[] = {
+	{
+			T_CARD_CONNECT_AUTO_OPT_VERBOSITY,
+			.arg_type = T_ARG_UINT,
+			.help = "Set verbosity. 0: print only APDU. 8: print all exchanges"
+	},
+	{
+			T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE,
+			.arg_type = T_ARG_UINT,
+			.help = "Frame size between 1 and 250 (only for ISO 14443 cards)"
+	},
+	{ }
+};
+
 
 #define NFC_PARAMETERS \
 	{\
@@ -455,6 +480,20 @@ t_token tokens_emul_t4t[] = {
 		T_EMUL_T4T,\
 		.subtokens = tokens_emul_t4t,\
 		.help = "Emulate Type 4 Tag with preset Tag properties"\
+	},\
+	{\
+		T_CARD_CONNECT_AUTO,\
+		.help = "Connect to a smartcard (ISO 14443 A & B)"\
+	},\
+	{\
+		T_CARD_CONNECT_AUTO_OPT,               \
+		.subtokens = tokens_connect_auto_opt,\
+		.help = "Set options for connect & send commands"\
+	},\
+	{\
+		T_CARD_SEND,         \
+		.arg_type = T_ARG_STRING,              \
+		.help = "Send data to a card intialiazed with the connect command. If a ISO 14443 A & B card is selected, data must be an APDU"\
 	},\
 /*
 	{\
@@ -656,6 +695,28 @@ t_token tokens_mode_dnfc[] = {
 	{
 		T_AUX_READ,
 		.help = "Read AUX[0](PC4)"
+	},
+	{
+		T_NFC_RF_OFF_ON,
+		.help = "Set RF field off/on"
+	},
+	{
+		T_NFC_ISO_14443_REQA,
+		.help = "Send ISO 14443-A REQA"
+	},
+	{
+		T_NFC_ISO_14443_WUPA,
+		.help = "Send ISO 14443-A WUPA"
+	},
+	{
+		T_NFC_SEND_BYTES,
+		.arg_type = T_ARG_STRING,
+		.help = "Send bytes according to the selected mode"
+	},
+	{
+		T_NFC_SEND_BYTES_AND_COMPUTE_CRC,
+		.arg_type = T_ARG_STRING,
+		.help = "Send bytes according to the selected mode and add the two-bytes CRC"
 	},
 	{
 		T_EXIT,

@@ -43,6 +43,7 @@
 #include "st25r3916_com.h"
 
 #include "rfal_poller.h"
+#include "rfal_nfca.h"
 
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos);
 static int show(t_hydra_console *con, t_tokenline_parsed *p);
@@ -332,6 +333,21 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			action = p->tokens[t];
 			break;
 
+		case T_NFC_RF_OFF_ON:
+		case T_NFC_ISO_14443_REQA:
+		case T_NFC_ISO_14443_WUPA:
+		{
+			action = p->tokens[t];
+			break;
+		}
+		case T_NFC_SEND_BYTES:
+		case T_NFC_SEND_BYTES_AND_COMPUTE_CRC:
+			{
+			action = p->tokens[t];
+			t += 2;
+			break;
+		}
+
 		default:
 			return t - token_pos;
 		}
@@ -391,6 +407,94 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			st25r3916WriteTestRegister(0x01, 0x06); // Pin CSO => Tag demodulator ASK digital out
 		}
 		break;
+
+		case T_NFC_RF_OFF_ON:
+		{
+			rfalBitRate txBR, rxBR;
+			rfalMode mode = rfalGetMode();
+
+			if( mode == RFAL_MODE_POLL_NFCA){
+				rfalSetGT( RFAL_GT_NFCA );
+				rfalSetFDTListen( RFAL_FDT_LISTEN_NFCA_POLLER );
+				rfalSetFDTPoll( RFAL_FDT_POLL_NFCA_POLLER );
+			}
+			else if(mode == RFAL_MODE_POLL_NFCB){
+				rfalSetGT( RFAL_GT_NFCB );
+				rfalSetFDTListen( RFAL_FDT_LISTEN_NFCB_POLLER );
+				rfalSetFDTPoll( RFAL_FDT_POLL_NFCB_POLLER );
+			}
+			else if(mode == RFAL_MODE_POLL_NFCV){
+				rfalSetGT( RFAL_GT_NFCV );
+				rfalSetFDTListen( RFAL_FDT_LISTEN_NFCV_POLLER );
+				rfalSetFDTPoll( RFAL_FDT_POLL_NFCV_POLLER );
+			}
+			else{
+				cprintf(con, "Error. Only RFAL_MODE_POLL_NFCA (1), RFAL_MODE_POLL_NFCB (3), RFAL_MODE_POLL_NFCV (7) supported.\r\n");
+				cprintf(con, "Update parameters with set-nfc-mode nfc-mode XXX command.\r\n");
+				break;
+			}
+
+			rfalGetBitRate(&txBR, &rxBR);
+			if( (txBR != RFAL_BR_106) & (rxBR != RFAL_BR_106)){
+				cprintf(con, "Error. Only RFAL_BR_106 (0) for Rx & Tx (0) supported.\r\n");
+				cprintf(con, "Update parameters with set-nfc-mode nfc-mode-tx_br XXX or set-nfc-mode nfc-mode-rx_br XXX commands.\r\n");
+				break;
+			}
+
+			rfalSetErrorHandling( RFAL_ERRORHANDLING_NFC );
+
+			rfalFieldOff();
+			rfalFieldOnAndStartGT();
+			break;
+		}
+
+		case T_NFC_ISO_14443_REQA:
+		case T_NFC_ISO_14443_WUPA:
+		{
+			ReturnCode err;
+			if( action == T_NFC_ISO_14443_REQA) {
+				err = rfalNfcaPollerCheckPresence(RFAL_14443A_SHORTFRAME_CMD_REQA, (rfalNfcaSensRes *)g_sbuf);
+			} else{
+				err = rfalNfcaPollerCheckPresence(RFAL_14443A_SHORTFRAME_CMD_WUPA, (rfalNfcaSensRes *)g_sbuf);
+			}
+
+			if(err != ERR_NONE) {
+				cprintf(con, "Error %d\r\n", err);
+			} else {
+				cprintf(con, "%02X %02X\r\n", g_sbuf[0], g_sbuf[1]);
+			}
+			break;
+		}
+
+		case T_NFC_SEND_BYTES:
+		case T_NFC_SEND_BYTES_AND_COMPUTE_CRC:
+		{
+			uint32_t len;
+			uint16_t rlen;
+			ReturnCode err;
+			uint32_t flags = ((uint32_t) RFAL_TXRX_FLAGS_CRC_TX_MANUAL | (uint32_t) RFAL_TXRX_FLAGS_CRC_RX_KEEP);
+			if (action == T_NFC_SEND_BYTES_AND_COMPUTE_CRC){
+				flags = RFAL_TXRX_FLAGS_DEFAULT;
+			}
+			buf_ascii2hex((uint8_t *)p->buf, g_sbuf, &len);
+
+			err = rfalTransceiveBlockingTxRx(g_sbuf,
+									   len,
+									   g_sbuf,
+									   0xFF,
+									   &rlen,
+									   flags,
+									   216960U + 71680U);
+
+			// TODO. Understand why in ISO14443-A, 9320 sends the correct answer, but err is set to 21 (ERR_CRC)
+			if( (err != ERR_NONE) & (err != ERR_CRC)) {
+				cprintf(con, "Error %d\r\n", err);
+			} else {
+				pretty_print_hex_buf(con, g_sbuf, rlen);
+			}
+
+			break;
+		}
 	}
 
 	return t - token_pos;

@@ -28,6 +28,9 @@
 #include "st25r3916_com.h"
 #include "rfal_analogConfig.h"
 #include "rfal_rf.h"
+#include "rfal_nfca.h"
+#include "rfal_nfcb.h"
+#include "rfal_nfcv.h"
 
 #include <string.h>
 
@@ -223,7 +226,7 @@ void bbio_mode_hydranfc_v2_reader(t_hydra_console *con) {
 
 				case BBIO_NFC_ISO_14443_A_REQA: {
 
-					rfalNfcaPollerCheckPresence(0x26, rx_data );
+					rfalNfcaPollerCheckPresence(0x26, (rfalNfcaSensRes*)rx_data );
 
 					rlen = 2;
 					cprint(con, (char *) &rlen, 1);
