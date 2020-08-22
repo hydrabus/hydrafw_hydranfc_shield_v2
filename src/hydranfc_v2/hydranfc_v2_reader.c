@@ -19,7 +19,7 @@
 
 #include "common.h"
 #include "tokenline.h"
-#include "hydranfc_v2.h"
+#include "hydranfc_v2_nfc_mode.h"
 #include "rfal_rf.h"
 #include "hydrabus_bbio.h"
 #include "hydranfc_v2_bbio_reader.h"

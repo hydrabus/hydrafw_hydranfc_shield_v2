@@ -16,15 +16,10 @@
  * limitations under the License.
  */
 
-#ifndef _HYDRABUS_MODE_DNFC_H_
-#define _HYDRABUS_MODE_DNFC_H_
+#ifndef _HYDRANFC_V2_DNFC_MODE_H_
+#define _HYDRANFC_V2_DNFC_MODE_H_
 
-#include "hydrabus_mode.h"
+#include "hydrabus_mode_spi.h"
 
-enum {
-	SPI_MSB_FIRST,
-	SPI_LSB_FIRST,
-};
-
-#endif /* _HYDRABUS_MODE_DNFC_H_ */
+#endif /* _HYDRANFC_V2_DNFC_MODE_H_ */
 

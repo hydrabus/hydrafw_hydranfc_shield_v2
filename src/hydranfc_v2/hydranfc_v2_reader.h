@@ -16,9 +16,14 @@
  * limitations under the License.
  */
 
+#ifndef _HYDRANFC_V2_READER_H_
+#define _HYDRANFC_V2_READER_H_
+
 #define HYDRANFC_V2_READER_VERBOSITY_OPT 0
 
 void bbio_mode_hydranfc_v2_reader(t_hydra_console *con);
 void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value);
 void hydranfc_v2_reader_connect(t_hydra_console *con);
 void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t * ascii_data);
+
+#endif /* _HYDRANFC_V2_READER_H_ */

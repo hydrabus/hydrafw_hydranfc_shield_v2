@@ -21,7 +21,7 @@
 #include "common.h"
 #include "tokenline.h"
 #include "hydrabus_mode.h"
-#include "hydranfc_v2.h"
+#include "hydranfc_v2_nfc_mode.h"
 #include "bsp_spi.h"
 #include "ff.h"
 #include "microsd.h"

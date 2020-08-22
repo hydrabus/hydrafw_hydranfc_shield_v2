@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 
-#include "hydrabus_mode_dnfc.h"
-#include "hydranfc_v2.h"
+#include "hydranfc_v2_nfc_mode.h"
+#include "hydranfc_v2_dnfc_mode.h"
+
 #include "bsp_spi.h"
 #include "common.h"
 #include <string.h>
