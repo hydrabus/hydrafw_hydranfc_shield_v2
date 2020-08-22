@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-#define BBIO_HYDRANFC_READER	"NFC2"
+#define HYDRANFC_V2_READER_VERBOSITY_OPT 0
 
 void bbio_mode_hydranfc_v2_reader(t_hydra_console *con);
-void my_connect(t_hydra_console *con);
-void my_card_send(t_hydra_console *con, uint8_t * ascii_data);
+void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value);
+void hydranfc_v2_reader_connect(t_hydra_console *con);
+void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t * ascii_data);

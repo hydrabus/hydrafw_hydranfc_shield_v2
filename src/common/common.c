@@ -569,4 +569,26 @@ int buf_hex2ascii(uint8_t *ascii_buf, uint8_t *hex_buf, uint32_t hex_buflen, cha
 
 	return io;
 }
+void pretty_print_hex_buf(t_hydra_console *con, uint8_t *buffer, uint16_t len) {
+	uint16_t i;
+	int j;
+	uint8_t c;
+	uint8_t nibble;
+
+	for (i = 0; i < len; i++) {
+		for (j = 4; j >= 0; j -= 4) {
+			nibble = (buffer[i] >> j) & 0xF;
+			if (nibble < 10) {
+				c = nibble + 0x30;
+			} else {
+				c = nibble - 10 + 65;
+			}
+
+			cprintf(con, "%c", c);
+		}
+		cprintf(con, " ");
+
+	}
+	cprintf(con, "\r\n");
+}
 

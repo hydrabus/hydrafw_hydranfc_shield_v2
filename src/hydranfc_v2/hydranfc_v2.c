@@ -49,6 +49,7 @@
 
 #include "rfal_poller.h"
 #include "hydranfc_v2_ce.h"
+#include "hydranfc_v2_reader.h"
 
 extern void hydranfc_ce_common(t_hydra_console *con);
 extern uint32_t user_uid_len;
@@ -1093,12 +1094,28 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 			break;
 
-		case T_CARD_CONNECT:
+		case T_CARD_CONNECT_AUTO:
+		case T_CARD_CONNECT_AUTO_OPT:
+		case T_CARD_SEND:{
 			action = p->tokens[t];
 			break;
+		}
 
-		case T_CARD_SEND:
-			action = p->tokens[t];
+		case T_CARD_CONNECT_AUTO_OPT_VERBOSITY:
+		case T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE:
+			{
+			t += 2;
+			if (p->tokens[t-1] == T_ARG_UINT) {
+				int value;
+				memcpy(&value, p->buf + p->tokens[t], sizeof(int));
+				hydranfc_v2_reader_set_opt(con, p->tokens[t-2], value);
+			} else {
+				cprintf(con, "Incorrect value\r\n");
+				return t;
+			}
+			break;
+		}
+
 		break;
 
 
@@ -1213,11 +1230,11 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		user_tag_properties.level4_enabled = false;
 		break;
 
-	case T_CARD_CONNECT:{
+	case T_CARD_CONNECT_AUTO:{
 
 		/* Init st25r3916 IRQ function callback */
 		st25r3916_irq_fn = st25r3916Isr;
-		my_connect(con);
+		hydranfc_v2_reader_connect(con);
 
 		irq_count = 0;
 		st25r3916_irq_fn = NULL;
@@ -1229,7 +1246,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 	/* Init st25r3916 IRQ function callback */
 	st25r3916_irq_fn = st25r3916Isr;
-	my_card_send(con, p->buf);
+	hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
 
 	irq_count = 0;
 	st25r3916_irq_fn = NULL;
