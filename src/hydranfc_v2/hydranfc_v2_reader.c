@@ -46,23 +46,21 @@ static bool verbose_mode = TRUE;
 static uint8_t fsd = 16;
 static rfalMode mode = RFAL_MODE_NONE;
 
-void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value){
-	if(opt == T_CARD_CONNECT_AUTO_OPT_VERBOSITY){
-		if(value != 0){
+void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value)
+{
+	if(opt == T_CARD_CONNECT_AUTO_OPT_VERBOSITY) {
+		if(value != 0) {
 			verbose_mode = TRUE;
-		}
-		else{
+		} else {
 			verbose_mode = FALSE;
 		}
-	} else if (opt == T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE){
-		if( (0 < value) && (value <= 250)){
+	} else if (opt == T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE) {
+		if( (0 < value) && (value <= 250)) {
 			fsd = value;
-		}
-		else{
+		} else {
 			cprintf(con, "Error: value must be between 1 and 250.\r\n");
 		}
-	}
-	else {
+	} else {
 		cprintf(con, "Error: unknown parameter\r\n");
 	}
 }
@@ -77,8 +75,9 @@ void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value){
     }
 
 ReturnCode transceive_tx_rx(t_hydra_console *con,
-							bool add_crc,
-							bool verbose) {
+                            bool add_crc,
+                            bool verbose)
+{
 	uint32_t flags;
 	ReturnCode ret;
 
@@ -95,12 +94,12 @@ ReturnCode transceive_tx_rx(t_hydra_console *con,
 	};
 	// We try to detect a card...
 	ret = rfalTransceiveBlockingTxRx(tx_buffer,
-							   tx_buffer_len,
-							   rx_buffer,
-							   0xFF,
-							   &rx_buffer_len,
-							   flags,
-							   216960U + 71680U + 71680U);
+	                                 tx_buffer_len,
+	                                 rx_buffer,
+	                                 0xFF,
+	                                 &rx_buffer_len,
+	                                 flags,
+	                                 216960U + 71680U + 71680U);
 
 	if (verbose) {
 		cprintf(con, "< ");
@@ -134,13 +133,15 @@ typedef struct {
 } iso_14443_session;
 iso_14443_session session;
 
-uint8_t get_and_update_iblock_pcb_number(void) {
+uint8_t get_and_update_iblock_pcb_number(void)
+{
 	uint8_t pcb_number = session.iblock_pcb_number;
 	session.iblock_pcb_number ^= 1;
 	return pcb_number;
 }
 
-void get_iblock(uint8_t *inf, uint8_t len, bool chaining_block) {
+void get_iblock(uint8_t *inf, uint8_t len, bool chaining_block)
+{
 	tpdu.pcb = get_and_update_iblock_pcb_number() + 0x02;
 
 	if (session.add_cid) {
@@ -161,12 +162,14 @@ void get_iblock(uint8_t *inf, uint8_t len, bool chaining_block) {
 	tpdu.len = len;
 }
 
-void get_wtx_reply(void) {
+void get_wtx_reply(void)
+{
 	tpdu.len = 1;
 	tpdu.inf[0] &= 0x3F;
 }
 
-void get_rblock(void) {
+void get_rblock(void)
+{
 	tpdu.pcb = 0xB2;
 
 	if (session.add_cid) {
@@ -178,7 +181,8 @@ void get_rblock(void) {
 }
 
 
-void parse_r_tpdu(uint8_t *buffer, uint16_t len) {
+void parse_r_tpdu(uint8_t *buffer, uint16_t len)
+{
 	uint16_t index = 0;
 
 	tpdu.pcb = buffer[index++];
@@ -195,7 +199,8 @@ void parse_r_tpdu(uint8_t *buffer, uint16_t len) {
 	tpdu.inf = &(buffer[index]);
 }
 
-void send_tpdu(t_hydra_console *con) {
+void send_tpdu(t_hydra_console *con)
+{
 
 	tx_buffer_len = 0;
 
@@ -219,7 +224,8 @@ void send_tpdu(t_hydra_console *con) {
 	parse_r_tpdu(rx_buffer, rx_buffer_len);
 }
 
-void init_iso_14443_session(void){
+void init_iso_14443_session(void)
+{
 	session.block_size = fsd;
 	session.add_nad = FALSE;
 	session.add_cid = TRUE;
@@ -227,7 +233,8 @@ void init_iso_14443_session(void){
 	session.pcb_block_number = 0;
 }
 
-void send_apdu(t_hydra_console *con, uint8_t *apdu, uint32_t len) {
+void send_apdu(t_hydra_console *con, uint8_t *apdu, uint32_t len)
+{
 	uint8_t i;
 	int r_len;
 
@@ -243,8 +250,8 @@ void send_apdu(t_hydra_console *con, uint8_t *apdu, uint32_t len) {
 		r_len -= tpdu.len;
 
 		get_iblock(&(apdu[i]),
-				   tpdu.len,
-				   (bool) (r_len > 0));
+		           tpdu.len,
+		           (bool) (r_len > 0));
 		len -= session.block_size;
 		i += tpdu.len;
 		send_tpdu(con);
@@ -270,7 +277,8 @@ void send_apdu(t_hydra_console *con, uint8_t *apdu, uint32_t len) {
 
 }
 
-bool connect_iso14443_a(t_hydra_console *con) {
+bool connect_iso14443_a(t_hydra_console *con)
+{
 	ReturnCode ret;
 
 	rfalNfcaPollerInitialize();
@@ -282,7 +290,7 @@ bool connect_iso14443_a(t_hydra_console *con) {
 		cprintf(con, "> 26\r\n");
 	}
 	EXIT_AND_DISPLAY_ON_ERR(con, ret, rfalNfcaPollerCheckPresence(0x26, (rfalNfcaSensRes *)rx_buffer));
-	
+
 	if (verbose_mode) {
 		cprintf(con, "< ");
 		pretty_print_hex_buf(con, rx_buffer, 2);
@@ -323,7 +331,8 @@ bool connect_iso14443_a(t_hydra_console *con) {
 
 }
 
-bool connect_iso14443_b(t_hydra_console *con) {
+bool connect_iso14443_b(t_hydra_console *con)
+{
 	ReturnCode ret;
 
 	// We set set ISO 14443-B configuration
@@ -355,20 +364,21 @@ bool connect_iso14443_b(t_hydra_console *con) {
 	return TRUE;
 }
 
-void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t *ascii_data) {
+void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t *ascii_data)
+{
 
 	buf_ascii2hex(ascii_data, capdu_buffer, &capdu_len);
 
 	if( (mode == RFAL_MODE_POLL_NFCA) | (mode == RFAL_MODE_POLL_NFCB) ) {
 		send_apdu(con, capdu_buffer, capdu_len);
-	}
-	else {
+	} else {
 		cprintf(con, "Error no card detected with connect command.\r\n");
 	}
 
 }
 
-void hydranfc_v2_reader_connect(t_hydra_console *con) {
+void hydranfc_v2_reader_connect(t_hydra_console *con)
+{
 
 	if (connect_iso14443_a(con)) {
 		mode = RFAL_MODE_POLL_NFCA;

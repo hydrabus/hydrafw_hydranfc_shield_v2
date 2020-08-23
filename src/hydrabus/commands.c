@@ -118,7 +118,7 @@ t_token_dict tl_dict[] = {
 	{ T_EMUL_TAG_PROPERTY_URI, "uri" },
 	{ T_EMUL_T4T, "emul-t4t" },
 	{ T_CARD_CONNECT_AUTO, "connect"},
-	{ T_CARD_CONNECT_AUTO_OPT, "connect_opt"},
+	{ T_CARD_CONNECT_AUTO_OPT, "connect-opt"},
 	{ T_CARD_CONNECT_AUTO_OPT_VERBOSITY, "verbosity"},
 	{ T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE ,"fsd"},
 	{ T_CARD_SEND, "send"},
@@ -126,7 +126,7 @@ t_token_dict tl_dict[] = {
 	{ T_NFC_ISO_14443_REQA, "reqa"},
 	{ T_NFC_ISO_14443_WUPA, "wupa"},
 	{ T_NFC_SEND_BYTES, "send"},
-	{ T_NFC_SEND_BYTES_AND_COMPUTE_CRC, "send_auto"},
+	{ T_NFC_SEND_BYTES_AND_COMPUTE_CRC, "send-auto"},
 
 #endif
 	{ T_SNIFF, "sniff" },

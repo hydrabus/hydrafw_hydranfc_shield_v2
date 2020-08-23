@@ -60,8 +60,7 @@ static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
 	/* RFAL initalisation */
 	rfalAnalogConfigInitialize();
 	err = rfalInitialize();
-	if(err != ERR_NONE)
-	{
+	if(err != ERR_NONE) {
 		cprintf(con, "hydranfc_v2_init_RFAL rfalInitialize() error=%d\r\n", err);
 		return err;
 	}
@@ -71,8 +70,7 @@ static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
 	rfalDpoInitialize();
 	rfalDpoSetMeasureCallback( rfalChipMeasureAmplitude );
 	err = rfalDpoTableWrite(dpoSetup,sizeof(dpoSetup)/sizeof(rfalDpoEntry));
-	if(err != ERR_NONE)
-	{
+	if(err != ERR_NONE) {
 		cprintf(con, "hydranfc_v2_init_RFAL rfalDpoTableWrite() error=%d\r\n", err);
 		return err;
 	}
@@ -150,8 +148,7 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	/* Init st25r3916 IRQ function callback */
 	st25r3916_irq_fn = st25r3916Isr;
 	hal_st25r3916_spiInit(ST25R391X_SPI_DEVICE);
-	if (hydranfc_v2_init_RFAL(con) != ERR_NONE)
-	{
+	if (hydranfc_v2_init_RFAL(con) != ERR_NONE) {
 		cprintf(con, "HydraNFC v2 not found.\r\n");
 		return FALSE;
 	}
@@ -185,11 +182,13 @@ static void deinit_gpio_spi_nfc(t_hydra_console *con)
 	st25r3916_irq_fn = NULL;
 }
 
-static void bbio_mode_id(t_hydra_console *con) {
+static void bbio_mode_id(t_hydra_console *con)
+{
 	cprint(con, BBIO_HYDRANFC_READER, 4);
 }
 
-void bbio_mode_hydranfc_v2_reader(t_hydra_console *con) {
+void bbio_mode_hydranfc_v2_reader(t_hydra_console *con)
+{
 	uint8_t bbio_subcommand, rlen, clen, compute_crc;
 	uint16_t rec_len;
 	uint8_t *rx_data = (uint8_t *) g_sbuf + 4096;
@@ -203,69 +202,68 @@ void bbio_mode_hydranfc_v2_reader(t_hydra_console *con) {
 
 		if (chnRead(con->sdu, &bbio_subcommand, 1) == 1) {
 			switch (bbio_subcommand) {
-				case BBIO_NFC_SET_MODE_ISO_14443A: {
-					rfalNfcaPollerInitialize();
-					break;
-				}
-				case BBIO_NFC_SET_MODE_ISO_14443B: {
-					rfalNfcbPollerInitialize();
-					break;
-				}
-				case BBIO_NFC_SET_MODE_ISO_15693: {
-					rfalNfcvPollerInitialize();
-					break;
-				}
-				case BBIO_NFC_RF_OFF: {
-					rfalFieldOff();
-					break;
-				}
-				case BBIO_NFC_RF_ON: {
-					rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
-					break;
-				}
+			case BBIO_NFC_SET_MODE_ISO_14443A: {
+				rfalNfcaPollerInitialize();
+				break;
+			}
+			case BBIO_NFC_SET_MODE_ISO_14443B: {
+				rfalNfcbPollerInitialize();
+				break;
+			}
+			case BBIO_NFC_SET_MODE_ISO_15693: {
+				rfalNfcvPollerInitialize();
+				break;
+			}
+			case BBIO_NFC_RF_OFF: {
+				rfalFieldOff();
+				break;
+			}
+			case BBIO_NFC_RF_ON: {
+				rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
+				break;
+			}
 
-				case BBIO_NFC_ISO_14443_A_REQA: {
+			case BBIO_NFC_ISO_14443_A_REQA: {
 
-					rfalNfcaPollerCheckPresence(0x26, (rfalNfcaSensRes*)rx_data );
+				rfalNfcaPollerCheckPresence(0x26, (rfalNfcaSensRes*)rx_data );
 
-					rlen = 2;
-					cprint(con, (char *) &rlen, 1);
-					cprint(con, (char *) rx_data, rlen);
-					break;
+				rlen = 2;
+				cprint(con, (char *) &rlen, 1);
+				cprint(con, (char *) rx_data, rlen);
+				break;
+			}
+
+			case BBIO_NFC_CMD_SEND_BITS: {
+				// TODO
+				break;
+			}
+			case BBIO_NFC_CMD_SEND_BYTES: {
+
+				chnRead(con->sdu, &compute_crc, 1);
+				chnRead(con->sdu, &clen, 1);
+				chnRead(con->sdu, rx_data, clen);
+
+				if( compute_crc) {
+					flags = RFAL_TXRX_FLAGS_DEFAULT;
+				} else {
+					flags = ( (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL | (uint32_t)RFAL_TXRX_FLAGS_CRC_RX_KEEP );
 				}
-
-				case BBIO_NFC_CMD_SEND_BITS: {
-					// TODO
-					break;
-				}
-				case BBIO_NFC_CMD_SEND_BYTES: {
-
-					chnRead(con->sdu, &compute_crc, 1);
-					chnRead(con->sdu, &clen, 1);
-					chnRead(con->sdu, rx_data, clen);
-
-					if( compute_crc){
-						flags = RFAL_TXRX_FLAGS_DEFAULT;
-					}
-					else{
-						flags = ( (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL | (uint32_t)RFAL_TXRX_FLAGS_CRC_RX_KEEP );
-					}
-					rfalTransceiveBlockingTxRx( &rx_data[0],
-												clen,
-												rx_data,
-												0xFF,
-												&rec_len,
-												flags,
-												216960U + 71680U );
-					rlen = (uint8_t) (rec_len & 0xFF);
-					cprint(con, (char *) &rlen, 1);
-					cprint(con, (char *) rx_data, rlen);
-					break;
-				}
-				case BBIO_RESET: {
-					deinit_gpio_spi_nfc(con);
-					return;
-				}
+				rfalTransceiveBlockingTxRx( &rx_data[0],
+				                            clen,
+				                            rx_data,
+				                            0xFF,
+				                            &rec_len,
+				                            flags,
+				                            216960U + 71680U );
+				rlen = (uint8_t) (rec_len & 0xFF);
+				cprint(con, (char *) &rlen, 1);
+				cprint(con, (char *) rx_data, rlen);
+				break;
+			}
+			case BBIO_RESET: {
+				deinit_gpio_spi_nfc(con);
+				return;
+			}
 			}
 		}
 	}
