@@ -493,7 +493,7 @@ t_token tokens_connect_auto_opt[] = {
 	{\
 		T_CARD_SEND,         \
 		.arg_type = T_ARG_STRING,              \
-		.help = "Send APDU data to a card intialiazed with the connect command (only for ISO 14443 A & B tags)"\
+		.help = "Send APDU data to a card initialized with the connect command (only ISO 14443 A & B tags)"\
 	},\
 /*
 	{\
