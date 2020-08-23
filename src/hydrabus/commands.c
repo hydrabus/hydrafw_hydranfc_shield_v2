@@ -619,6 +619,28 @@ t_token tokens_mode_dnfc[] = {
 		.help = "Get NFC Mode"
 	},
 	{
+		T_NFC_RF_OFF_ON,
+		.help = "Set RF field off/on"
+	},
+	{
+		T_NFC_ISO_14443_REQA,
+		.help = "Send ISO 14443-A REQA"
+	},
+	{
+		T_NFC_ISO_14443_WUPA,
+		.help = "Send ISO 14443-A WUPA"
+	},
+	{
+		T_NFC_SEND_BYTES,
+		.arg_type = T_ARG_STRING,
+		.help = "Send bytes according to the selected mode"
+	},
+	{
+		T_NFC_SEND_BYTES_AND_COMPUTE_CRC,
+		.arg_type = T_ARG_STRING,
+		.help = "Send bytes according to the selected mode and add the two-bytes CRC"
+	},
+	{
 		T_NFC_TRANSPARENT,
 		.help = "Enter NFC Transparent Mode"
 	},
@@ -695,28 +717,6 @@ t_token tokens_mode_dnfc[] = {
 	{
 		T_AUX_READ,
 		.help = "Read AUX[0](PC4)"
-	},
-	{
-		T_NFC_RF_OFF_ON,
-		.help = "Set RF field off/on"
-	},
-	{
-		T_NFC_ISO_14443_REQA,
-		.help = "Send ISO 14443-A REQA"
-	},
-	{
-		T_NFC_ISO_14443_WUPA,
-		.help = "Send ISO 14443-A WUPA"
-	},
-	{
-		T_NFC_SEND_BYTES,
-		.arg_type = T_ARG_STRING,
-		.help = "Send bytes according to the selected mode"
-	},
-	{
-		T_NFC_SEND_BYTES_AND_COMPUTE_CRC,
-		.arg_type = T_ARG_STRING,
-		.help = "Send bytes according to the selected mode and add the two-bytes CRC"
 	},
 	{
 		T_EXIT,
