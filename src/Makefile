@@ -14,7 +14,7 @@ export HYDRAFW_HYDRANFC ?= 2
 #Set to 1 for early HydraNFC V2 revisions, which don't have buttons K1 and K2
 export HYDRAFW_NO_BTNS_HYDRANFC ?= 1
 
-export HYDRAFW_DEBUG ?= 1
+export HYDRAFW_DEBUG ?= 0
 export FW_REVISION := $(shell python build-scripts/hydrafw-revision.py)
 
 HYDRAFW_OPTS =
