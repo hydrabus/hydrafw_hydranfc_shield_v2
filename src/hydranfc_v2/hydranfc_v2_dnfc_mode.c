@@ -77,6 +77,10 @@ static volatile int irq_end_rx;
 
 static void (* st25r3916_irq_fn)(void) = NULL;
 
+static int nfc_mode = RFAL_MODE_NONE;
+static int nfc_mode_tx_bitrate = RFAL_BR_106;
+static int nfc_mode_rx_bitrate = RFAL_BR_106;
+
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
 {
@@ -283,9 +287,8 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	int t, i;
 	bsp_status_t bsp_status;
 	int action;
-	int nfc_mode,nfc_mode_tx_bitrate, nfc_mode_rx_bitrate;
 
-	action = nfc_mode =  nfc_mode_tx_bitrate = nfc_mode_rx_bitrate = 0;
+	action = 0;
 	for (t = token_pos; p->tokens[t]; t++) {
 		switch (p->tokens[t]) {
 		case T_SHOW:
@@ -372,15 +375,22 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 		case T_GET_NFC_MODE:
 		{
+			ReturnCode err;
 			rfalMode mode;
 			rfalBitRate txBR, rxBR;
 
 			mode = rfalGetMode();
-			txBR = -1; rxBR = -1;
-			rfalGetBitRate(&txBR, &rxBR);
 			cprintf(con, "nfc-mode = %d\r\n", mode);
-			cprintf(con, "nfc-mode-tx_br = %d\r\n", txBR);
-			cprintf(con, "nfc-mode-rx_br = %d\r\n", rxBR);
+
+			err = rfalGetBitRate(&txBR, &rxBR);
+			if(err == ERR_NONE)
+			{
+				cprintf(con, "nfc-mode-tx_br = %d\r\n", txBR);
+				cprintf(con, "nfc-mode-rx_br = %d\r\n", rxBR);
+			} else
+			{
+				cprintf(con, "rfalGetBitRate Error %d\r\n", err);
+			}
 		}
 		break;
 
