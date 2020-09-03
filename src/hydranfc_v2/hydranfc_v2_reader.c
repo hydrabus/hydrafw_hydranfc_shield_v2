@@ -30,13 +30,13 @@
 #include "rfal_rf.h"
 #include "rfal_nfca.h"
 #include "rfal_nfcb.h"
+#include "rfal_nfcv.h"
 #include "hydranfc_v2_reader.h"
 #include <string.h>
 
 static uint8_t tx_buffer[260];
 static uint8_t rx_buffer[260];
 static uint16_t tx_buffer_len, rx_buffer_len;
-static uint16_t tpdu_len;
 static uint32_t buffer_len;
 static uint8_t buffer[260];
 
@@ -170,21 +170,21 @@ void get_rblock(void) {
 	tpdu.len = 0;
 }
 
-void parse_r_tpdu(uint8_t *buffer, uint16_t len) {
+void parse_r_tpdu(uint8_t *data, uint16_t len) {
 	uint16_t index = 0;
 
-	tpdu.pcb = buffer[index++];
+	tpdu.pcb = data[index++];
 
 	if (session.add_nad) {
-		tpdu.nad = buffer[index++];
+		tpdu.nad = data[index++];
 	}
 
 	if (session.add_cid) {
-		tpdu.cid = buffer[index++];
+		tpdu.cid = data[index++];
 	}
 
 	tpdu.len = (uint8_t)(len - index - 0);
-	tpdu.inf = &(buffer[index]);
+	tpdu.inf = &(data[index]);
 }
 
 void send_tpdu(t_hydra_console *con) {
