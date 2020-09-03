@@ -1306,21 +1306,47 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 #endif
 				int j;
 				char speedStr[20];
+
+				gDevList[gDevCnt].type     = BSP_NFCTAG_NFCA;
+				gDevList[gDevCnt].dev.nfca = nfcaDevList[i];
+				gDevCnt++;
+
 				getSpeedStr(speedStr);
-				cprintf(con, "NFC-A %s Type=0x%02X ATQA=0x%02X%02X SAK=0x%02X UID:",
+				cprintf(con, "NFC-A %s Type=0x%02X ATQA=0x%02X%02X SAK=0x%02X",
 							speedStr,
 							nfcaDevList[i].type,
 							nfcaDevList[i].sensRes.platformInfo,
 							nfcaDevList[i].sensRes.anticollisionInfo,
 							nfcaDevList[i].selRes.sak);
 
+				if (gDevList[i].dev.nfca.type == RFAL_NFCA_T4T)
+				{
+					/*******************************************************************************/
+					rfalIsoDepInitialize();
+					/* Perform ISO-DEP (ISO14443-4) activation: RATS and PPS if supported */
+					err = rfalIsoDepPollAHandleActivation(
+							(rfalIsoDepFSxI)RFAL_ISODEP_FSDI_DEFAULT,
+							RFAL_ISODEP_NO_DID,
+							RFAL_BR_848 /* RFAL_BR_424 RFAL_BR_106 */,
+							&gDevList[i].proto.isoDep);
+					if( (err == ERR_NONE) && (gDevList[i].proto.isoDep.activation.A.Listener.ATSLen > 4) )
+					{
+						cprintf(con, " ATS=0x%02X%02X%02X%02X%02X",
+								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TL,
+								gDevList[i].proto.isoDep.activation.A.Listener.ATS.T0,
+								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TA,
+								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TB,
+								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TC);
+						for(j = 0; j < gDevList[i].proto.isoDep.activation.A.Listener.ATSLen-5; j++)
+							cprintf(con,"%02X",gDevList[i].proto.isoDep.activation.A.Listener.ATS.HB[j]);
+					}
+				}
+
+				cprintf(con, " UID:");
 				for(j = 0; j < nfcaDevList[i].nfcId1Len; j++)
 					cprintf(con,"%02X",nfcaDevList[i].nfcId1[j]);
 				cprintf(con, "\r\n");
 
-				gDevList[gDevCnt].type     = BSP_NFCTAG_NFCA;
-				gDevList[gDevCnt].dev.nfca = nfcaDevList[i];
-				gDevCnt++;
 			}
 		}
 	}
