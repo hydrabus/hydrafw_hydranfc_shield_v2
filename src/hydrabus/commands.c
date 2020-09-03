@@ -483,7 +483,7 @@ t_token tokens_connect_auto_opt[] = {
 	},\
 	{\
 		T_CARD_CONNECT_AUTO,\
-		.help = "Connect to a smartcard (ISO 14443 A & B)"\
+		.help = "Connect to a smartcard (ISO 14443 A & B) or ISO 15693/Vicinity card"\
 	},\
 	{\
 		T_CARD_CONNECT_AUTO_OPT,               \
@@ -493,7 +493,7 @@ t_token tokens_connect_auto_opt[] = {
 	{\
 		T_CARD_SEND,         \
 		.arg_type = T_ARG_STRING,              \
-		.help = "Send APDU data to a card initialized with the connect command (only ISO 14443 A & B tags)"\
+		.help = "Send APDU data to a card initialized with the connect command (only ISO 14443 A & B tags), or data with automatic CRC computation for ISO 15693/Vicinity cards."\
 	},\
 /*
 	{\

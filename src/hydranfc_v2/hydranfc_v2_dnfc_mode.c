@@ -446,10 +446,13 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 
 			rfalGetBitRate(&txBR, &rxBR);
-			if( (txBR != RFAL_BR_106) & (rxBR != RFAL_BR_106)){
-				cprintf(con, "Error. Only RFAL_BR_106 (0) for Rx & Tx (0) supported.\r\n");
-				cprintf(con, "Update parameters with set-nfc-mode nfc-mode-tx_br XXX or set-nfc-mode nfc-mode-rx_br XXX commands.\r\n");
-				break;
+
+			if (mode != RFAL_MODE_POLL_NFCV) {
+				if ((txBR != RFAL_BR_106) & (rxBR != RFAL_BR_106)) {
+						cprintf (con, "Error. Only RFAL_BR_106 (0) for Rx & Tx (0) supported.\r\n");
+						cprintf (con, "Update parameters with set-nfc-mode nfc-mode-tx_br XXX or set-nfc-mode nfc-mode-rx_br XXX commands.\r\n");
+						break;
+					}
 			}
 
 			rfalSetErrorHandling( RFAL_ERRORHANDLING_NFC );
