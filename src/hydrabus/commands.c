@@ -122,9 +122,9 @@ t_token_dict tl_dict[] = {
 	{ T_CARD_CONNECT_AUTO_OPT_VERBOSITY, "verbosity"},
 	{ T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE ,"fsd"},
 	{ T_CARD_SEND, "send"},
-	{ T_NFC_RF_OFF_ON, "rf-off-on"},
-	{ T_NFC_ISO_14443_REQA, "reqa"},
-	{ T_NFC_ISO_14443_WUPA, "wupa"},
+	{ T_NFC_RF_OFF_ON, "nfc-off-on"},
+	{ T_NFC_ISO_14443_REQA, "nfc-reqa"},
+	{ T_NFC_ISO_14443_WUPA, "nfc-wupa"},
 	{ T_NFC_SEND_BYTES, "send"},
 	{ T_NFC_SEND_BYTES_AND_COMPUTE_CRC, "send-auto"},
 
@@ -444,19 +444,19 @@ t_token tokens_connect_auto_opt[] = {
 	},\
 	{\
 		T_NFC_A,\
-		.help = "Select technology NFC-A (ISO14443A includes MIFARE...)"\
+		.help = "Select technology NFC-A(ISO14443A)"\
 	},\
 	{\
 		T_NFC_B,\
-		.help = "Select technology NFC-B (ISO14443B)"\
+		.help = "Select technology NFC-B(ISO14443B)"\
 	},\
 	{\
 		T_NFC_ST25TB,\
-		.help = "Select technology NFC-B (ISO14443B ST25TB)"\
+		.help = "Select technology NFC-B(ISO14443B ST25TB)"\
 	},\
 	{\
 		T_NFC_V,\
-		.help = "Select technology NFC-V Vicinity (ISO/IEC 15693)"\
+		.help = "Select technology NFC-V Vicinity(ISO/IEC 15693)"\
 	},\
 	{\
 		T_NFC_F,\
@@ -483,7 +483,7 @@ t_token tokens_connect_auto_opt[] = {
 	},\
 	{\
 		T_CARD_CONNECT_AUTO,\
-		.help = "Connect to a smartcard (ISO 14443 A & B) or ISO 15693/Vicinity card"\
+		.help = "Connect to a smartcard(NFC-A/B) or NFC-V tag"\
 	},\
 	{\
 		T_CARD_CONNECT_AUTO_OPT,               \
@@ -493,7 +493,7 @@ t_token tokens_connect_auto_opt[] = {
 	{\
 		T_CARD_SEND,         \
 		.arg_type = T_ARG_STRING,              \
-		.help = "Send APDU data to a card initialized with the connect command (only ISO 14443 A & B tags), or data with automatic CRC computation for ISO 15693/Vicinity cards."\
+		.help = "Send APDU(NFC-A/B) or data+crc(NFC-V) to a tag initialized with the connect command"\
 	},\
 /*
 	{\
@@ -577,17 +577,17 @@ t_token tokens_set_nfc_mode[] = {
 	{
 		T_NFC_MODE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set NFC Mode\r\n\tPOLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6, POLL_NFCV=7\r\n\tPOLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
+		.help = "Set NFC Mode\r\n\tPOLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5\r\n\tPOLL_NFCF=6, POLL_NFCV=7, POLL_PICOPASS=8, POLL_ACTIVE_P2P=9\r\n\tLISTEN_NFCA=10, LISTEN_NFCB=11, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
 	},
 	{
 		T_NFC_MODE_TX_BITRATE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237"
+		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3\r\n\tBR_52p97=235, BR_26p48=236, BR_1p66=237"
 	},
 	{
 		T_NFC_MODE_RX_BITRATE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237"
+		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3\r\n\tBR_52p97=235, BR_26p48=236, BR_1p66=237"
 	},
 	{ }
 };
