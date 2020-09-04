@@ -396,7 +396,21 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 		case T_NFC_TRANSPARENT:
 		{
+			ReturnCode err;
 			cprintf(con, "ST25R3916_CMD_TRANSPARENT_MODE executed\r\n");
+
+			err = rfalSetMode(RFAL_MODE_LISTEN_NFCA, RFAL_BR_106, RFAL_BR_106);
+			if(err != ERR_NONE)	{
+				cprintf(con, "rfalSetMode Error %d\r\n", err);
+			}
+			st25r3916SetRegisterBits(ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_rx_en|ST25R3916_REG_OP_CONTROL_en_fd_auto_efd);
+			st25r3916WriteRegister(ST25R3916_REG_AUX, ST25R3916_REG_AUX_dis_corr);
+			st25r3916WriteRegister(ST25R3916_REG_RX_CONF2, 0x48); // Receiver configuration register 2
+			st25r3916WriteRegister(ST25R3916_REG_RX_CONF3, 0xFC); // Receiver configuration register 3 => Boost +5.5 dB AM/PM
+			st25r3916WriteRegister(ST25R3916_REG_IO_CONF1, 0x00); // IO configuration register 1 => Set MCU_CLK/PA5 to 3.39MHz
+			st25r3916WriteTestRegister(0x01, 0x46); // Pin CSO => Tag demodulator ASK digital out
+			//st25r3916WriteTestRegister(0x01, 0x06); // Pin CSO => Tag demodulator ASK digital out MCU_CLK*2
+
 			st25r3916_irq_fn = NULL; /* Disable IRQ */
 			// st25r3916DisableInterrupts(ST25R3916_IRQ_MASK_ALL);
 			st25r3916ExecuteCommand(ST25R3916_CMD_TRANSPARENT_MODE);
@@ -414,8 +428,11 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 			st25r3916SetRegisterBits(ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_rx_en|ST25R3916_REG_OP_CONTROL_en_fd_auto_efd);
 			st25r3916WriteRegister(ST25R3916_REG_AUX, ST25R3916_REG_AUX_dis_corr);
+			st25r3916WriteRegister(ST25R3916_REG_RX_CONF2, 0x48); // Receiver configuration register 2
 			st25r3916WriteRegister(ST25R3916_REG_RX_CONF3, 0xFC); // Receiver configuration register 3 => Boost +5.5 dB AM/PM
-			st25r3916WriteTestRegister(0x01, 0x06); // Pin CSO => Tag demodulator ASK digital out
+			st25r3916WriteRegister(ST25R3916_REG_IO_CONF1, 0x00); // IO configuration register 1 => Set MCU_CLK/PA5 to 3.39MHz
+			st25r3916WriteTestRegister(0x01, 0x46); // Pin CSO => Tag demodulator ASK digital out
+			//st25r3916WriteTestRegister(0x01, 0x06); // Pin CSO => Tag demodulator ASK digital out MCU_CLK*2
 		}
 		break;
 
