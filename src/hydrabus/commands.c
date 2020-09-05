@@ -707,16 +707,12 @@ t_token tokens_mode_dnfc[] = {
 		.help = "SPI Write a random byte (repeat with :<num>)"
 	},
 	{
-		T_AUX_ON,
-		.help = "Toggle AUX[0](PC4) high"
+		T_MINUS,
+		.help = "Toggle PC3 pin high"
 	},
 	{
-		T_AUX_OFF,
-		.help = "Toggle AUX[0](PC4) low"
-	},
-	{
-		T_AUX_READ,
-		.help = "Read AUX[0](PC4)"
+		T_UNDERSCORE,
+		.help = "Toggle PC3 pin low"
 	},
 	{
 		T_EXIT,

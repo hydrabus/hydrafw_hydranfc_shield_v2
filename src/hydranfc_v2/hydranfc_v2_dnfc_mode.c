@@ -21,6 +21,7 @@
 #include "hydranfc_v2_dnfc_mode.h"
 
 #include "bsp_spi.h"
+#include "bsp_gpio.h"
 #include "common.h"
 #include <string.h>
 
@@ -179,15 +180,15 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	 */
 	/* spiStart() is done in sniffer see sniffer.c */
 	/* HydraBus SPI1 Slave CLK input */
-	palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 	/* HydraBus SPI1 Slave MISO. Not used/Not connected */
-	palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 	/* HydraBus SPI1 Slave MOSI. connected to ST25R3916 MOD Pin */
-	palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 	/* Configure K1/2 Buttons as Input */
-	palSetPadMode(GPIOB, 8, PAL_MODE_INPUT); /* K1 Button */
-	palSetPadMode(GPIOB, 9, PAL_MODE_INPUT); /* K2 Button */
+	bsp_gpio_init(BSP_GPIO_PORTB, 8, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K1 Button */
+	bsp_gpio_init(BSP_GPIO_PORTB, 9, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K2 Button */
 
 	/* Configure D1/2/3/4 LEDs as Output */
 	D1_OFF;
@@ -195,15 +196,16 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	D3_OFF;
 	D4_OFF;
 
-	palSetPadMode(GPIOB, 0, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	/* LED_D1 or TST_PÏN */
+	bsp_gpio_init(BSP_GPIO_PORTB, 0, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 #ifndef MAKE_DEBUG
 	// can't use LED on PB3 if using SWO
-	palSetPadMode(GPIOB, 3, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTB, 3, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 #endif
 
-	palSetPadMode(GPIOB, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
-	palSetPadMode(GPIOB, 5, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTB, 4, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTB, 5, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 	palDisablePadEvent(GPIOA, 1);
 	/* ST25R3916 IRQ output / HydraBus PA1 input */
@@ -233,21 +235,10 @@ static void deinit_gpio_spi_nfc(t_hydra_console *con)
 
 	bsp_spi_deinit(BSP_DEV_SPI2);
 
-	palSetPadMode(GPIOA, 5, PAL_MODE_INPUT);
-	palSetPadMode(GPIOA, 6, PAL_MODE_INPUT);
-	palSetPadMode(GPIOA, 7, PAL_MODE_INPUT);
+	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 
-#if 0
-	/* Configure K1/2 Buttons as Input */
-	palSetPadMode(GPIOB, 8, PAL_MODE_INPUT); /* K1 Button */
-	palSetPadMode(GPIOB, 9, PAL_MODE_INPUT); /* K2 Button */
-
-	/* Configure D1/2/3/4 LEDs as Input */
-	palSetPadMode(GPIOB, 0, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 3, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 4, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 5, PAL_MODE_INPUT);
-#endif
 	st25r3916_irq_fn = NULL;
 }
 
@@ -673,6 +664,18 @@ static const char *get_prompt(t_hydra_console *con)
 	return str_prompt_dnfc2;
 }
 
+void pc3_high(t_hydra_console *con)
+{
+	(void) con;
+	bsp_gpio_set(BSP_GPIO_PORTC, 3);
+}
+
+void pc3_low(t_hydra_console *con)
+{
+	(void) con;
+	bsp_gpio_clr(BSP_GPIO_PORTC, 3);
+}
+
 const mode_exec_t mode_dnfc_exec = {
 	.init = &init,
 	.exec = &exec,
@@ -682,6 +685,8 @@ const mode_exec_t mode_dnfc_exec = {
 	.read = &read,
 	.dump = &dump,
 	.write_read = &write_read,
+	.dath = &pc3_high,
+	.datl = &pc3_low,
 	.cleanup = &cleanup,
 	.get_prompt = &get_prompt,
 };
