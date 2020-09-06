@@ -67,6 +67,10 @@ volatile int irq;
 volatile int irq_end_rx;
 uint8_t globalCommProtectCnt;
 
+static int nfc_obsv = 0; /* 0 = OFF, 1=ON */
+static int nfc_obsv_tx = 0;
+static int nfc_obsv_rx = 0;
+
 /* Do not Enable DPO to have maximum performances/range */
 //#define DPO_ENABLE true
 
@@ -901,6 +905,45 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			t += show(con, p);
 			break;
 
+		case T_NFC_OBSV:
+		{
+			int tmp_obsv_val = 0;
+			t += 2;
+			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_obsv_val < 0) || (tmp_obsv_val > 1) ) {
+				cprintf(con, "Invalid nfc-obsv value shall be 0(OFF) or 1(ON)\r\n");
+				return t;
+			}
+			nfc_obsv = tmp_obsv_val;
+			break;
+		}
+
+		case T_NFC_OBSV_TX:
+		{
+			int tmp_obsv_val = 0;
+			t += 2;
+			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_obsv_val < 0) || (tmp_obsv_val > 255) ) {
+				cprintf(con, "Invalid nfc-obsv-tx value (shall be between 0 and 255)\r\n");
+				return t;
+			}
+			nfc_obsv_tx = tmp_obsv_val;
+			break;
+		}
+
+		case T_NFC_OBSV_RX:
+		{
+			int tmp_obsv_val = 0;
+			t += 2;
+			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_obsv_val < 0) || (tmp_obsv_val > 255) ) {
+				cprintf(con, "Invalid nfc-obsv-rx value (shall be between 0 and 255)\r\n");
+				return t;
+			}
+			nfc_obsv_rx = tmp_obsv_val;
+			break;
+		}
+
 		case T_NFC_ALL:
 			proto->config.hydranfc.nfc_technology = NFC_ALL;
 			break;
@@ -1001,7 +1044,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 
 		case T_EMUL_TAG_PROPERTY_UID:
-//			printf_dbg("token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
+	//			printf_dbg("token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
 			t += 2;
 			if (p->tokens[t-1] == T_ARG_STRING) {
 				memcpy(&str_offset, &p->tokens[t], sizeof(int));
@@ -1034,7 +1077,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 			break;
 		case T_EMUL_TAG_PROPERTY_URI:
-//			printf_dbg("uri: token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
+	//			printf_dbg("uri: token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
 			if (p->tokens[t+1] == T_ARG_STRING) {
 				memcpy(&str_offset, &p->tokens[t+2], sizeof(int));
 				user_tag_properties.uri = (uint8_t *)(p->buf + str_offset);
@@ -1046,14 +1089,17 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 		case T_CARD_CONNECT_AUTO:
 		case T_CARD_CONNECT_AUTO_OPT:
-		case T_CARD_SEND:{
+		case T_CARD_SEND:
+		case T_SET_NFC_OBSV:
+		case T_GET_NFC_OBSV:
+		{
 			action = p->tokens[t];
 			break;
 		}
 
 		case T_CARD_CONNECT_AUTO_OPT_VERBOSITY:
 		case T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE:
-			{
+		{
 			t += 2;
 			if (p->tokens[t-1] == T_ARG_UINT) {
 				int value;
@@ -1067,14 +1113,43 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		}
 
 		break;
-
-
 		}
-
-
 	}
 
 	switch(action) {
+
+	case T_SET_NFC_OBSV:
+	{
+		cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
+		cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
+		cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
+		if(nfc_obsv == 0) {
+			rfalDisableObsvMode();
+			cprintf(con, "NFC Observation mode disabled\r\n");
+		}
+
+		if(nfc_obsv == 1) {
+			rfalSetObsvMode(nfc_obsv_tx, nfc_obsv_rx);
+			cprintf(con, "NFC Observation mode enabled\r\n");
+		}
+	}
+	break;
+
+	case T_GET_NFC_OBSV:
+	{
+		uint8_t rfal_obsv_tx;
+		uint8_t rfal_obsv_rx;
+
+		cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
+		cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
+		cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
+
+		rfalGetObsvMode(&rfal_obsv_tx, &rfal_obsv_rx);
+		cprintf(con, "rfal_obsv_tx = %d / 0x%02X\r\n", rfal_obsv_tx, rfal_obsv_tx);
+		cprintf(con, "rfal_obsv_rx = %d / 0x%02X\r\n", rfal_obsv_rx, rfal_obsv_rx);
+	}
+	break;
+
 	case T_SCAN:
 	{
 		nfc_technology_str_t tag_tech_str;
@@ -1180,8 +1255,8 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		user_tag_properties.level4_enabled = false;
 		break;
 
-	case T_CARD_CONNECT_AUTO:{
-
+	case T_CARD_CONNECT_AUTO:
+	{
 		/* Init st25r3916 IRQ function callback */
 		st25r3916_irq_fn = st25r3916Isr;
 		hydranfc_v2_reader_connect(con);
@@ -1192,16 +1267,16 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		break;
 	}
 
-	case T_CARD_SEND:{
+	case T_CARD_SEND:
+	{
+		/* Init st25r3916 IRQ function callback */
+		st25r3916_irq_fn = st25r3916Isr;
+		hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
 
-	/* Init st25r3916 IRQ function callback */
-	st25r3916_irq_fn = st25r3916Isr;
-	hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
+		irq_count = 0;
+		st25r3916_irq_fn = NULL;
 
-	irq_count = 0;
-	st25r3916_irq_fn = NULL;
-
-	break;
+		break;
 	}
 
 	default:

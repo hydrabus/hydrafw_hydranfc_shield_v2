@@ -110,6 +110,11 @@ t_token_dict tl_dict[] = {
 	{ T_NFC_MODE, "nfc-mode"},
 	{ T_NFC_MODE_TX_BITRATE, "nfc-mode-tx_br"},
 	{ T_NFC_MODE_RX_BITRATE, "nfc-mode-rx_br"},
+	{ T_SET_NFC_OBSV, "set-nfc-obsv"},
+	{ T_GET_NFC_OBSV, "get-nfc-obsv"},
+	{ T_NFC_OBSV, "nfc-obsv"},
+	{ T_NFC_OBSV_TX, "nfc-obsv-tx"},
+	{ T_NFC_OBSV_RX, "nfc-obsv-rx"},
 	{ T_NFC_TRANSPARENT, "nfc-transp" },
 	{ T_NFC_STREAM, "nfc-stream" },
 	{ T_SET_EMUL_TAG_PROPERTIES, "ce" },
@@ -345,6 +350,25 @@ t_token tokens_mode_nfc_show[] = {
 	{ }
 };
 
+t_token tokens_set_nfc_obsv[] = {
+	{
+		T_NFC_OBSV,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC Observer 0=OFF 1=ON"
+	},
+	{
+		T_NFC_OBSV_TX,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC TX Observer value (8bits)"
+	},
+	{
+		T_NFC_OBSV_RX,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC RX Observer value (8bits)"
+	},
+	{ }
+};
+
 t_token tokens_mode_nfc_scan[] = {
 	{
 		T_PERIOD,
@@ -436,8 +460,16 @@ t_token tokens_connect_auto_opt[] = {
 	{ }
 };
 
-
 #define NFC_PARAMETERS \
+	{\
+		T_SET_NFC_OBSV,\
+		.subtokens = tokens_set_nfc_obsv,\
+		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"\
+	},\
+	{\
+		T_GET_NFC_OBSV,\
+		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"\
+	},\
 	{\
 		T_NFC_ALL,\
 		.help = "Select technology NFC-A/B/V/F"\
@@ -537,6 +569,7 @@ t_token tokens_connect_auto_opt[] = {
 */
 
 t_token tokens_sd[];
+
 t_token tokens_mode_nfc[] = {
 	{
 		T_SD,
@@ -619,6 +652,15 @@ t_token tokens_mode_dnfc[] = {
 		.help = "Get NFC Mode"
 	},
 	{
+		T_SET_NFC_OBSV,
+		.subtokens = tokens_set_nfc_obsv,
+		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"
+	},
+	{
+		T_GET_NFC_OBSV,
+		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"
+	},
+	{
 		T_NFC_RF_OFF_ON,
 		.help = "Set RF field off/on"
 	},
@@ -642,11 +684,15 @@ t_token tokens_mode_dnfc[] = {
 	},
 	{
 		T_NFC_TRANSPARENT,
-		.help = "Enter NFC Transparent Mode"
+		.help = "Enter NFC Transparent Test Mode"
 	},
 	{
 		T_NFC_STREAM,
-		.help = "Enter NFC Stream Mode"
+		.help = "Enter NFC Stream Test Mode"
+	},
+	{
+		T_SNIFF,
+		.help = "Enter NFC Sniff Test Mode"
 	},
 
 	/* SPI-specific commands */
