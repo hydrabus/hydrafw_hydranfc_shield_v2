@@ -1,7 +1,7 @@
 /*
  * HydraBus/HydraNFC
  *
- * Copyright (C) 2014-2019 Benjamin VERNOUX
+ * Copyright (C) 2014-2020 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,9 @@ void printUsageErrorMsg(uint32_t CFSR_val)
 
 void stackDump(unsigned int* stack)
 {
+#ifndef MAKE_DEBUG
+	(void)stack;
+#endif
 	printf_dbg("\nStack Dump:\n");
 	printf_dbg("r0  = 0x%08X\n", stack[r0]);
 	printf_dbg("r1  = 0x%08X\n", stack[r1]);
