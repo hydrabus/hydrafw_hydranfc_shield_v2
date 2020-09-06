@@ -48,6 +48,7 @@
 #define BBIO_VOLT	0b00010100
 #define BBIO_VOLT_CONT	0b00010101
 #define BBIO_FREQ	0b00010110
+#define BBIO_NFC_V2_CARD_EMULATOR	0b00010111
 
 /*
  * SPI-specific commands
@@ -184,7 +185,7 @@
 #define BBIO_AUX_MODE_SET	0b11110000
 
 /*
- * Hydra NFC specific comamnds
+ * Hydra NFC specific commands
  */
 #define BBIO_NFC_RF_OFF			0b00000010
 #define BBIO_NFC_RF_ON			0b00000011
@@ -194,5 +195,8 @@
 #define BBIO_NFC_SET_MODE_ISO_15693	0b00000111
 #define BBIO_NFC_ISO_14443_A_REQA 0b00001000
 #define BBIO_NFC_SET_MODE_ISO_14443B	0b00001001
+
+#define BBIO_NFC_CE_START_EMULATION    0b00000001
+#define BBIO_NFC_CE_GET_RX             0b00000011
 
 int cmd_bbio(t_hydra_console *con);

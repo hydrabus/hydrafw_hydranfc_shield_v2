@@ -38,6 +38,9 @@
 
 static uint8_t rxtxFrameBuf[512] __attribute__ ((section(".cmm")));
 
+uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDataLen, uint8_t *rspData);
+uint16_t (*current_processCmdPtr)(uint8_t *, uint16_t, uint8_t *) = processCmd;
+
 void dispatcherInterruptHandler(void);
 
 /* Emulated cards param: max NDEF size */
@@ -220,7 +223,7 @@ static uint16_t update(uint8_t *cmdData, uint8_t *rspData)
 }
 
 /* Main command management function */
-uint16_t processCmd(uint8_t *cmdData, uint8_t *rspData)
+uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDataLen, uint8_t *rspData)
 {
 	rfalLmState state = rfalListenGetState(NULL, NULL);
 
@@ -316,6 +319,12 @@ static void ceRun(t_hydra_console *con)
 //	rxSize = 512;
 	err = ceGetRx(CARDEMULATION_CMD_GET_RX_A, rxtxFrameBuf, &dataSize);
 
+	if(dataSize > 0) {
+		for (i = 0; i < 10; i++)
+			printf_dbg(" %02X", rxtxFrameBuf[i]);
+		printf_dbg("\r\n");
+	}
+
 	if(err == ERR_NONE)
 	{
 		printf_dbg("rx:");
@@ -323,7 +332,7 @@ static void ceRun(t_hydra_console *con)
 			printf_dbg(" %02X", rxtxFrameBuf[i]);
 		printf_dbg("\r\n");
 
-		dataSize = processCmd(rxtxFrameBuf, rxtxFrameBuf);
+		dataSize = (*current_processCmdPtr)(rxtxFrameBuf, dataSize, rxtxFrameBuf);
 		err = ceSetTx(CARDEMULATION_CMD_SET_TX_A,rxtxFrameBuf, dataSize);
 
 		if(err != ERR_NONE)
@@ -353,6 +362,10 @@ static void ceRun(t_hydra_console *con)
 			break;
 		}
 	}
+}
+
+void hydranfc_ce_set_processCmd_ptr(void * ptr){
+	current_processCmdPtr = ptr;
 }
 
 
