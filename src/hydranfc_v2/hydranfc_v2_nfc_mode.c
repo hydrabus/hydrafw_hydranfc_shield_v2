@@ -23,6 +23,7 @@
 #include "hydrabus_mode.h"
 #include "hydranfc_v2_nfc_mode.h"
 #include "bsp_spi.h"
+#include "bsp_gpio.h"
 #include "ff.h"
 #include "microsd.h"
 #include "hydrabus_sd.h"
@@ -155,15 +156,15 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	 */
 	/* spiStart() is done in sniffer see sniffer.c */
 	/* HydraBus SPI1 Slave CLK input */
-	palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 	/* HydraBus SPI1 Slave MISO. Not used/Not connected */
-	palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 	/* HydraBus SPI1 Slave MOSI. connected to ST25R3916 MOD Pin */
-	palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 	/* Configure K1/2 Buttons as Input */
-	palSetPadMode(GPIOB, 8, PAL_MODE_INPUT); /* K1 Button */
-	palSetPadMode(GPIOB, 9, PAL_MODE_INPUT); /* K2 Button */
+	bsp_gpio_init(BSP_GPIO_PORTB, 8, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K1 Button */
+	bsp_gpio_init(BSP_GPIO_PORTB, 9, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K2 Button */
 
 	/* Configure D1/2/3/4 LEDs as Output */
 	D1_OFF;
@@ -171,15 +172,16 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	D3_OFF;
 	D4_OFF;
 
-	palSetPadMode(GPIOB, 0, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	/* LED_D1 or TST_PÏN */
+	bsp_gpio_init(BSP_GPIO_PORTB, 0, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 #ifndef MAKE_DEBUG
 	// can't use LED on PB3 if using SWO
-	palSetPadMode(GPIOB, 3, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTB, 3, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 #endif
 
-	palSetPadMode(GPIOB, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
-	palSetPadMode(GPIOB, 5, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTB, 4, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTB, 5, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 	palDisablePadEvent(GPIOA, 1);
 	/* ST25R3916 IRQ output / HydraBus PA1 input */
@@ -198,47 +200,6 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 		cprintf(con, "HydraNFC v2 not found.\r\n");
 		return FALSE;
 	}
-
-	/* Test platform Ticks/Delay */
-/*
-	{
-		uint32_t ticks_ms;
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n\r\n", ticks_ms);
-
-		cprintf(con, "platformDelay(10) Start\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n", ticks_ms);
-		platformDelay(10);
-		cprintf(con, "platformDelay(10) End\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n\r\n", ticks_ms);
-
-		cprintf(con, "platformDelay(100) Start\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n", ticks_ms);
-		platformDelay(100);
-		cprintf(con, "platformDelay(100) End\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n\r\n", ticks_ms);
-
-		cprintf(con, "platformDelay(500) Start\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n", ticks_ms);
-		platformDelay(500);
-		cprintf(con, "platformDelay(500) End\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n\r\n", ticks_ms);
-
-		cprintf(con, "platformDelay(1000) Start\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n", ticks_ms);
-		platformDelay(1000);
-		cprintf(con, "platformDelay(1000) End\r\n");
-		ticks_ms = platformGetSysTick();
-		cprintf(con, "platformGetSysTick=%ld\r\n\r\n", ticks_ms);
-	}
-*/
 	return TRUE;
 }
 
@@ -251,21 +212,10 @@ static void deinit_gpio_spi_nfc(t_hydra_console *con)
 
 	bsp_spi_deinit(BSP_DEV_SPI2);
 
-	palSetPadMode(GPIOA, 5, PAL_MODE_INPUT);
-	palSetPadMode(GPIOA, 6, PAL_MODE_INPUT);
-	palSetPadMode(GPIOA, 7, PAL_MODE_INPUT);
+	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 
-#if 0
-	/* Configure K1/2 Buttons as Input */
-	palSetPadMode(GPIOB, 8, PAL_MODE_INPUT); /* K1 Button */
-	palSetPadMode(GPIOB, 9, PAL_MODE_INPUT); /* K2 Button */
-
-	/* Configure D1/2/3/4 LEDs as Input */
-	palSetPadMode(GPIOB, 0, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 3, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 4, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 5, PAL_MODE_INPUT);
-#endif
 	st25r3916_irq_fn = NULL;
 }
 
