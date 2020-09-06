@@ -79,8 +79,12 @@ static volatile int irq_end_rx;
 static void (* st25r3916_irq_fn)(void) = NULL;
 
 static int nfc_mode = RFAL_MODE_NONE;
-static int nfc_mode_tx_bitrate = RFAL_BR_106;
-static int nfc_mode_rx_bitrate = RFAL_BR_106;
+static int nfc_mode_tx_br = RFAL_BR_106;
+static int nfc_mode_rx_br = RFAL_BR_106;
+
+static int nfc_obsv = 0; /* 0 = OFF, 1=ON */
+static int nfc_obsv_tx = 0;
+static int nfc_obsv_rx = 0;
 
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
@@ -313,21 +317,60 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 		case T_NFC_MODE_TX_BITRATE:
 			t += 2;
-			memcpy(&nfc_mode_tx_bitrate, p->buf + p->tokens[t], sizeof(int));
+			memcpy(&nfc_mode_tx_br, p->buf + p->tokens[t], sizeof(int));
 			break;
 
 		case T_NFC_MODE_RX_BITRATE:
 			t += 2;
-			memcpy(&nfc_mode_rx_bitrate, p->buf + p->tokens[t], sizeof(int));
+			memcpy(&nfc_mode_rx_br, p->buf + p->tokens[t], sizeof(int));
 			break;
+
+		case T_NFC_OBSV:
+		{
+			int tmp_obsv_val = 0;
+			t += 2;
+			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_obsv_val < 0) || (tmp_obsv_val > 1) ) {
+				cprintf(con, "Invalid nfc-obsv value shall be 0(OFF) or 1(ON)\r\n");
+				return t;
+			}
+			nfc_obsv = tmp_obsv_val;
+			break;
+		}
+
+		case T_NFC_OBSV_TX:
+		{
+			int tmp_obsv_val = 0;
+			t += 2;
+			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_obsv_val < 0) || (tmp_obsv_val > 255) ) {
+				cprintf(con, "Invalid nfc-obsv-tx value (shall be between 0 and 255)\r\n");
+				return t;
+			}
+			nfc_obsv_tx = tmp_obsv_val;
+			break;
+		}
+
+		case T_NFC_OBSV_RX:
+		{
+			int tmp_obsv_val = 0;
+			t += 2;
+			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_obsv_val < 0) || (tmp_obsv_val > 255) ) {
+				cprintf(con, "Invalid nfc-obsv-rx value (shall be between 0 and 255)\r\n");
+				return t;
+			}
+			nfc_obsv_rx = tmp_obsv_val;
+			break;
+		}
 
 		case T_SET_NFC_MODE:
 		case T_GET_NFC_MODE:
+		case T_SET_NFC_OBSV:
+		case T_GET_NFC_OBSV:
 		case T_NFC_TRANSPARENT:
 		case T_NFC_STREAM:
-			action = p->tokens[t];
-			break;
-
+		case T_SNIFF:
 		case T_NFC_RF_OFF_ON:
 		case T_NFC_ISO_14443_REQA:
 		case T_NFC_ISO_14443_WUPA:
@@ -335,6 +378,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			action = p->tokens[t];
 			break;
 		}
+
 		case T_NFC_SEND_BYTES:
 		case T_NFC_SEND_BYTES_AND_COMPUTE_CRC:
 			{
@@ -353,9 +397,9 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		{
 			ReturnCode err;
 			cprintf(con, "nfc-mode = %d\r\n", nfc_mode);
-			cprintf(con, "nfc-mode-tx_br = %d\r\n", nfc_mode_tx_bitrate);
-			cprintf(con, "nfc-mode-rx_br = %d\r\n", nfc_mode_rx_bitrate);
-			err = rfalSetMode(nfc_mode, nfc_mode_tx_bitrate, nfc_mode_rx_bitrate);
+			cprintf(con, "nfc-mode-tx_br = %d\r\n", nfc_mode_tx_br);
+			cprintf(con, "nfc-mode-rx_br = %d\r\n", nfc_mode_rx_br);
+			err = rfalSetMode(nfc_mode, nfc_mode_tx_br, nfc_mode_rx_br);
 			if(err == ERR_NONE)	{
 				cprintf(con, "rfalSetMode OK\r\n");
 			} else {
@@ -385,6 +429,38 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		}
 		break;
 
+		case T_SET_NFC_OBSV:
+		{
+			cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
+			cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
+			cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
+			if(nfc_obsv == 0) {
+				rfalDisableObsvMode();
+				cprintf(con, "NFC Observation mode disabled\r\n");
+			}
+
+			if(nfc_obsv == 1) {
+				rfalSetObsvMode(nfc_obsv_tx, nfc_obsv_rx);
+				cprintf(con, "NFC Observation mode enabled\r\n");
+			}
+		}
+		break;
+
+		case T_GET_NFC_OBSV:
+		{
+			uint8_t rfal_obsv_tx;
+			uint8_t rfal_obsv_rx;
+
+			cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
+			cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
+			cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
+
+			rfalGetObsvMode(&rfal_obsv_tx, &rfal_obsv_rx);
+			cprintf(con, "rfal_obsv_tx = %d / 0x%02X\r\n", rfal_obsv_tx, rfal_obsv_tx);
+			cprintf(con, "rfal_obsv_rx = %d / 0x%02X\r\n", rfal_obsv_rx, rfal_obsv_rx);
+		}
+		break;
+
 		case T_NFC_TRANSPARENT:
 		{
 			ReturnCode err;
@@ -405,19 +481,54 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			st25r3916_irq_fn = NULL; /* Disable IRQ */
 			// st25r3916DisableInterrupts(ST25R3916_IRQ_MASK_ALL);
 			st25r3916ExecuteCommand(ST25R3916_CMD_TRANSPARENT_MODE);
+
+			/* Reconfigure SPI2 PIN as Input PullUp for Transparent mode test */
+			/*
+			 * ST25R3916 IO4_CS SPI mode / HydraBus PC1 - NSS (Do not change it to keep Transparent mode when CS is High)
+			 * ST25R3916 DATA_CLK SPI mode / HydraBus PB10 - SCK
+			 * ST25R3916 IO6_MISO SPI mode / HydraBus PC2 - MISO
+			 * ST25R3916 IO7_MOSI SPI mode / HydraBus PC3 - MOSI
+			 */
+			bsp_gpio_init(BSP_GPIO_PORTB, 10, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_PULLUP); /* SCK must be set to Input with Pull Up for Transparent mode */
+
+			// MISO => RX decoding In Transparent mode the framing and FIFO are bypassed. The digitized subcarrier signal directly drives the MISO pin.
+			bsp_gpio_init(BSP_GPIO_PORTC, 2, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_PULLUP); /* MISO must be set to Input with Pull Up for Transparent mode */
+
+			// MOSI => TX encoding In Transparent mode, the framing and FIFO are bypassed, and the MOSI pin directly drives the modulation of the transmitter
+			bsp_gpio_init(BSP_GPIO_PORTC, 3, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
+
+			/* Reconfigure SPI1 PIN as Input for Transparent mode test */
+			bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+			bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+			bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+			
+			cprintf(con, "SPI2/ST25R3916 communication is disabled\r\n\tIt shall be restored by console command 'frequency 10.5m'\r\n\tor by exiting 'dnfc' mode and entering again 'dnfc' mode\r\n");
 		}
 		break;
 
 		case T_NFC_STREAM:
 		{
+			//ReturnCode err;
+			cprintf(con, "T_NFC_STREAM not implemented\r\n");
+			//st25r3916StreamConfigure();
+		}
+		break;
+
+		case T_SNIFF:
+		{
 			ReturnCode err;
-			cprintf(con, "T_NFC_STREAM not implemented (Test special sniffer CSO)\r\n");
+			cprintf(con, "T_SNIFF (Test special sniffer ST25R3916 MCU_CLK(PA5) and CSI CSO)\r\n");
 
 			err = rfalSetMode(RFAL_MODE_LISTEN_NFCA, RFAL_BR_106, RFAL_BR_106);
 			if(err != ERR_NONE)	{
 				cprintf(con, "rfalSetMode Error %d\r\n", err);
 			}
 			st25r3916SetRegisterBits(ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_rx_en|ST25R3916_REG_OP_CONTROL_en_fd_auto_efd);
+			st25r3916WriteRegister(ST25R3916_REG_PASSIVE_TARGET,
+									(ST25R3916_REG_PASSIVE_TARGET_d_106_ac_a |
+									ST25R3916_REG_PASSIVE_TARGET_rfu |
+									ST25R3916_REG_PASSIVE_TARGET_d_212_424_1r |
+									ST25R3916_REG_PASSIVE_TARGET_d_ac_ap2p)	); /* Disable Automatic Response in Passive Target Mode */
 			st25r3916WriteRegister(ST25R3916_REG_AUX, ST25R3916_REG_AUX_dis_corr);
 			st25r3916WriteRegister(ST25R3916_REG_RX_CONF2, 0x48); // Receiver configuration register 2
 			st25r3916WriteRegister(ST25R3916_REG_RX_CONF3, 0xFC); // Receiver configuration register 3 => Boost +5.5 dB AM/PM
