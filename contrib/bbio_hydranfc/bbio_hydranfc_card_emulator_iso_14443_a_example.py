@@ -25,7 +25,7 @@ def enter_bbio(ser):
             # We enter reader mode
             ser.write(b"\x17")
             if ser.read(4) != b"NCE2":
-                raise Exception("Cannot enter BBIO Reader mode")
+                raise Exception("Cannot enter BBIO Card Emulator mode")
             return
     raise Exception("Cannot enter BBIO mode.")
 
