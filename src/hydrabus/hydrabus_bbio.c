@@ -43,6 +43,7 @@
 
 #ifdef HYDRANFC_V2
 #include "hydranfc_v2_bbio_reader.h"
+#include "hydranfc_v2_bbio_card_emulator.h"
 #endif
 
 int cmd_bbio(t_hydra_console *con)
@@ -102,11 +103,15 @@ int cmd_bbio(t_hydra_console *con)
 				break;
 #endif
 
-//#ifdef HYDRANFC_V2
+#ifdef HYDRANFC_V2
 			case BBIO_NFC_V2_READER:
 				bbio_mode_hydranfc_v2_reader(con);
 				break;
-//#endif
+
+			case BBIO_NFC_V2_CARD_EMULATOR:
+				bbio_mode_hydranfc_v2_card_emulator(con);
+				break;
+#endif
 
 			case BBIO_RESET_HW:
 				/* Needed for flashrom detection */
