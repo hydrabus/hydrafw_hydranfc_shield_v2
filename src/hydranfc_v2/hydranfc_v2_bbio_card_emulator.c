@@ -155,8 +155,7 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	/* Init st25r3916 IRQ function callback */
 	st25r3916_irq_fn = st25r3916Isr;
 	hal_st25r3916_spiInit(ST25R391X_SPI_DEVICE);
-	if (hydranfc_v2_init_RFAL(con) != ERR_NONE)
-	{
+	if (hydranfc_v2_init_RFAL(con) != ERR_NONE) {
 		cprintf(con, "HydraNFC v2 not found.\r\n");
 		return FALSE;
 	}
@@ -210,30 +209,30 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con)
 
 		if (chnRead(con->sdu, &bbio_subcommand, 1) == 1) {
 			switch (bbio_subcommand) {
-				case BBIO_NFC_CE_START_EMULATION:
-					/* Init st25r3916 IRQ function callback */
-					st25r3916_irq_fn = st25r3916Isr;
+			case BBIO_NFC_CE_START_EMULATION:
+				/* Init st25r3916 IRQ function callback */
+				st25r3916_irq_fn = st25r3916Isr;
 
-					memset(&user_tag_properties, 0, sizeof(user_tag_properties));
+				memset(&user_tag_properties, 0, sizeof(user_tag_properties));
 
-					user_tag_properties.uid[0] = 0xAA;
-					user_tag_properties.uid[1] = 0xBB;
-					user_tag_properties.uid[2] = 0xCC;
-					user_tag_properties.uid[3] = 0xDD;
-					user_tag_properties.uid_len = 4;
+				user_tag_properties.uid[0] = 0xAA;
+				user_tag_properties.uid[1] = 0xBB;
+				user_tag_properties.uid[2] = 0xCC;
+				user_tag_properties.uid[3] = 0xDD;
+				user_tag_properties.uid_len = 4;
 
-					user_tag_properties.sak[0] = 0x20;
-					user_tag_properties.sak_len = 1;
+				user_tag_properties.sak[0] = 0x20;
+				user_tag_properties.sak_len = 1;
 
-					user_tag_properties.level4_enabled = true;
+				user_tag_properties.level4_enabled = true;
 
-					hydranfc_ce_set_processCmd_ptr(&processCmd);
-					g_con = con;
-					hydranfc_ce_common(con);
+				hydranfc_ce_set_processCmd_ptr(&processCmd);
+				g_con = con;
+				hydranfc_ce_common(con);
 
-					irq_count = 0;
-					st25r3916_irq_fn = NULL;
-					break;
+				irq_count = 0;
+				st25r3916_irq_fn = NULL;
+				break;
 
 			case BBIO_RESET: {
 				deinit_gpio_spi_nfc(con);

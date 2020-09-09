@@ -80,34 +80,34 @@
 */
 
 /*! Main state                                                                            */
-typedef enum{
-		RFAL_POLLER_STATE_INIT                =  0,  /* Initialize state            */
-		RFAL_POLLER_STATE_TECHDETECT          =  1,  /* Technology Detection state  */
-		RFAL_POLLER_STATE_COLAVOIDANCE        =  2,  /* Collision Avoidance state   */
-		RFAL_POLLER_STATE_DEACTIVATION        =  9   /* Deactivation state          */
-}RfalPollerState;
+typedef enum {
+	RFAL_POLLER_STATE_INIT                =  0,  /* Initialize state            */
+	RFAL_POLLER_STATE_TECHDETECT          =  1,  /* Technology Detection state  */
+	RFAL_POLLER_STATE_COLAVOIDANCE        =  2,  /* Collision Avoidance state   */
+	RFAL_POLLER_STATE_DEACTIVATION        =  9   /* Deactivation state          */
+} RfalPollerState;
 
 /*! Device interface */
-typedef enum{
+typedef enum {
 	RFAL_POLLER_INTERFACE_RF     = 0,            /* RF Frame interface */
 	RFAL_POLLER_INTERFACE_ISODEP = 1,            /* ISO-DEP interface */
 	RFAL_POLLER_INTERFACE_NFCDEP = 2             /* NFC-DEP interface */
-}RfalPollerRfInterfaceEnum_t;
+} RfalPollerRfInterfaceEnum_t;
 
 /*! Device struct containing all its details */
 typedef struct {
 	BSP_NFCTAG_Protocol_Id_t type; /* Device's type */
-	union{
-			rfalNfcaListenDevice nfca; /* NFC-A Listen Device instance */
-			rfalNfcbListenDevice nfcb; /* NFC-B Listen Device instance */
-			rfalNfcfListenDevice nfcf; /* NFC-F Listen Device instance */
-			rfalNfcvListenDevice nfcv; /* NFC-V Listen Device instance */
-			rfalSt25tbListenDevice st25tb; /* NFC-B Listen Device instance */
-	}dev; /* Device's instance */
-	union{
-			rfalIsoDepDevice isoDep; /* ISO-DEP instance */
-			rfalNfcDepDevice nfcDep; /* NFC-DEP instance */
-	}proto;                                             /* Device's protocol */
+	union {
+		rfalNfcaListenDevice nfca; /* NFC-A Listen Device instance */
+		rfalNfcbListenDevice nfcb; /* NFC-B Listen Device instance */
+		rfalNfcfListenDevice nfcf; /* NFC-F Listen Device instance */
+		rfalNfcvListenDevice nfcv; /* NFC-V Listen Device instance */
+		rfalSt25tbListenDevice st25tb; /* NFC-B Listen Device instance */
+	} dev; /* Device's instance */
+	union {
+		rfalIsoDepDevice isoDep; /* ISO-DEP instance */
+		rfalNfcDepDevice nfcDep; /* NFC-DEP instance */
+	} proto;                                            /* Device's protocol */
 	uint8_t NdefSupport;
 	RfalPollerRfInterfaceEnum_t rfInterface;           /* Device's interface */
 } RfalPollerRfInterfaceDevice_t;
@@ -201,8 +201,7 @@ static void setRadio(t_hydra_console *con)
 {
 	(void)(con);
 #ifndef FREEZE_DISPLAY
-	if(detectMode == DETECT_MODE_POLL)
-	{
+	if(detectMode == DETECT_MODE_POLL) {
 		BSP_LCD_SetColors(LCD_COLOR_BLUE2,0xFFFF);
 		BSP_LCD_FillCircle(RADIO_X,RADIO_Y, 5);
 		BSP_LCD_SetColors(0xFFFF,0xFFFF);
@@ -227,29 +226,28 @@ static void setRadio(t_hydra_console *con)
 
 void nfc_technology_to_str(nfc_technology_t nfc_tech, nfc_technology_str_t* str_tag)
 {
-	switch(nfc_tech)
-	{
-		case NFC_ALL:
-			strcpy(str_tag->str, "A/B/V/F");
-			break;
-		case NFC_A:
-			strcpy(str_tag->str, "A");
-			break;
-		case NFC_B:
-			strcpy(str_tag->str, "B");
-			break;
-		case NFC_ST25TB:
-			strcpy(str_tag->str, "ST25TB");
-			break;
-		case NFC_V:
-			strcpy(str_tag->str, "V");
-			break;
-		case NFC_F:
-			strcpy(str_tag->str, "F");
-			break;
-		default:
-			strcpy(str_tag->str, "Unknown");
-			break;
+	switch(nfc_tech) {
+	case NFC_ALL:
+		strcpy(str_tag->str, "A/B/V/F");
+		break;
+	case NFC_A:
+		strcpy(str_tag->str, "A");
+		break;
+	case NFC_B:
+		strcpy(str_tag->str, "B");
+		break;
+	case NFC_ST25TB:
+		strcpy(str_tag->str, "ST25TB");
+		break;
+	case NFC_V:
+		strcpy(str_tag->str, "V");
+		break;
+	case NFC_F:
+		strcpy(str_tag->str, "F");
+		break;
+	default:
+		strcpy(str_tag->str, "Unknown");
+		break;
 	}
 }
 
@@ -296,49 +294,46 @@ static char* getTypeStr(void)
 	char* retPtr = NULL;
 	// only for Felica check
 	uint8_t buffer[16];
-	switch(gActiveDev->type)
-	{
-		case BSP_NFCTAG_NFCA:
-			switch (gActiveDev->dev.nfca.type)
-			{
-				case RFAL_NFCA_T1T:
-					retPtr = type1Str;
-				break;
-				case RFAL_NFCA_T2T:
-					retPtr = type2Str;
-				break;
-				case RFAL_NFCA_T4T:
-					if(gActiveDev->NdefSupport)
-						retPtr = type4aStr;
-					else
-						retPtr = iso14443aStr;
-				case RFAL_NFCA_NFCDEP:
-					/* TODO RFAL_NFCA_NFCDEP */
-				break;
-				case RFAL_NFCA_T4T_NFCDEP:
-					/* TODO RFAL_NFCA_T4T_NFCDEP */
-				break;
-			}
-		break;
-		case BSP_NFCTAG_NFCB:
-			retPtr = type4bStr;
-		break;
-		case BSP_NFCTAG_ST25TB:
-			retPtr = st25tbStr;
-		break;
-		case BSP_NFCTAG_NFCF:
-			if(BSP_NFCTAG_ReadData(buffer,0,1) == ERR_NONE)
-				retPtr = type3Str;
+	switch(gActiveDev->type) {
+	case BSP_NFCTAG_NFCA:
+		switch (gActiveDev->dev.nfca.type) {
+		case RFAL_NFCA_T1T:
+			retPtr = type1Str;
+			break;
+		case RFAL_NFCA_T2T:
+			retPtr = type2Str;
+			break;
+		case RFAL_NFCA_T4T:
+			if(gActiveDev->NdefSupport)
+				retPtr = type4aStr;
 			else
-				retPtr = felicaStr;
+				retPtr = iso14443aStr;
+		case RFAL_NFCA_NFCDEP:
+			/* TODO RFAL_NFCA_NFCDEP */
+			break;
+		case RFAL_NFCA_T4T_NFCDEP:
+			/* TODO RFAL_NFCA_T4T_NFCDEP */
+			break;
+		}
 		break;
-		case BSP_NFCTAG_NFCV:
-			if((!gActiveDev->NdefSupport) || (BSP_NFCTAG_CheckVicinity()))
-			{
-				retPtr = iso15693Str;
-			} else {
-				retPtr = type5Str;
-			}
+	case BSP_NFCTAG_NFCB:
+		retPtr = type4bStr;
+		break;
+	case BSP_NFCTAG_ST25TB:
+		retPtr = st25tbStr;
+		break;
+	case BSP_NFCTAG_NFCF:
+		if(BSP_NFCTAG_ReadData(buffer,0,1) == ERR_NONE)
+			retPtr = type3Str;
+		else
+			retPtr = felicaStr;
+		break;
+	case BSP_NFCTAG_NFCV:
+		if((!gActiveDev->NdefSupport) || (BSP_NFCTAG_CheckVicinity())) {
+			retPtr = iso15693Str;
+		} else {
+			retPtr = type5Str;
+		}
 		break;
 	}
 	return retPtr;
@@ -365,8 +360,8 @@ static void getSpeedStr(char *retPtr)
 	rfalGetBitRate(&txbr,&rxbr);
 
 	sprintf(retPtr, "%d-%d kb/s",
-		getSpeedVal(rxbr),
-		getSpeedVal(txbr));
+	        getSpeedVal(rxbr),
+	        getSpeedVal(txbr));
 }
 
 /* When a tag is slected, dispays the current DPO profile */
@@ -379,17 +374,16 @@ static void displayDpo(rfalDpoEntry *currentDpo)
 	uint16_t rfoWidth = 10*BSP_LCD_GetFont()->Width +20;
 	uint16_t rfoTxtX;
 
-	if(currentDpo != NULL)
-	{
+	if(currentDpo != NULL) {
 		BSP_LCD_SetColors(BSP_LCD_FadeColor(LCD_COLOR_BLUEST,LCD_COLOR_LIGHTBLUE,4,currentDpo->rfoRes),LCD_COLOR_WHITE);
 		txt = dpoProfile[currentDpo->rfoRes];
 		rfoTxtX = rfoX + (rfoWidth - strlen(txt)*BSP_LCD_GetFont()->Width) / 2;
 
 		BSP_LCD_DrawRectangleWithRoundCorner(rfoX,
-																				 yLine(0)-4 - 5,
-																				 rfoWidth,
-																				 BSP_LCD_GetFont()->Height+14,
-																				 10);
+		                                     yLine(0)-4 - 5,
+		                                     rfoWidth,
+		                                     BSP_LCD_GetFont()->Height+14,
+		                                     10);
 		BSP_LCD_DisplayStringAt(rfoTxtX,yLine(0),(uint8_t*)txt,LEFT_MODE);
 
 		BSP_LCD_SetFont(&Font22);
@@ -406,20 +400,18 @@ static uint8_t waitRssi(void)
 	Menu_Position_t touch;
 
 	uint16_t rssiX = xMargin + 5 * BSP_LCD_GetFont()->Width;
-		uint32_t delay = ((int32_t) HAL_GetTick() - (int32_t)timeRssi);
-		if(delay > 1000)
-		{
-			BSP_LCD_DisplayStringAt(rssiX,yLine(rssiLine),(uint8_t*)"Wait...  ",LEFT_MODE);
-			lastRssi = 0;
-		}
-		if(checkTouch++ > 50)
-		{
-			checkTouch = 0;
-			Menu_ReadPosition(&touch);
-			if((touch.Sel) && (touch.Y > 60) )
-				// exit
-				return 0;
-		}
+	uint32_t delay = ((int32_t) HAL_GetTick() - (int32_t)timeRssi);
+	if(delay > 1000) {
+		BSP_LCD_DisplayStringAt(rssiX,yLine(rssiLine),(uint8_t*)"Wait...  ",LEFT_MODE);
+		lastRssi = 0;
+	}
+	if(checkTouch++ > 50) {
+		checkTouch = 0;
+		Menu_ReadPosition(&touch);
+		if((touch.Sel) && (touch.Y > 60) )
+			// exit
+			return 0;
+	}
 	// continue
 	return 1;
 }
@@ -441,15 +433,14 @@ static Menu_Callback_Status_t tabFirstTagReadInfo(void)
 	BSP_NFCTAG_WaitingCb = &waitRssi;
 
 	getDevUid(&devUid,&nbUidDigit);
-	for(int d = 0; d < nbUidDigit; d++)
-	{
+	for(int d = 0; d < nbUidDigit; d++) {
 		if(gActiveDev-> type != BSP_NFCTAG_NFCV)
 			sprintf(line,"%s%02X:",line,devUid[d]);
 		else
 			// for type V invert UID
 			sprintf(line,"%s%02X:",line,devUid[nbUidDigit - d - 1]);
 	}
-	// remove last colon 
+	// remove last colon
 	line[strlen(line)-1] = '\0';
 
 	Menu_SetStyle(PLAIN);
@@ -471,20 +462,19 @@ static Menu_Callback_Status_t tabFirstTagReadInfo(void)
 #ifdef ENABLE_TRUST25_SIGNATURE_VERIFICATION
 	uint16_t trust25Line = 3;
 	TruST25_Status_t TruST25_valid = TruST25_SignatureVerification(gActiveDev->type,gActiveDev->dev.nfca.type,devUid,nbUidDigit);
-	if(TruST25_valid == TRUST25_VALID)
-	{
+	if(TruST25_valid == TRUST25_VALID) {
 		BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 		BSP_LCD_SetTextColor(LCD_COLOR_DARKGREEN);
 		BSP_LCD_DisplayPicture(170,yLine(trust25Line),Success);
-		BSP_LCD_DisplayStringAt(205,yLine(trust25Line),(uint8_t*)"TruST25",LEFT_MODE);   
-		BSP_LCD_DisplayStringAt(205,yLine(trust25Line)+16,(uint8_t*)"Validated",LEFT_MODE);   
+		BSP_LCD_DisplayStringAt(205,yLine(trust25Line),(uint8_t*)"TruST25",LEFT_MODE);
+		BSP_LCD_DisplayStringAt(205,yLine(trust25Line)+16,(uint8_t*)"Validated",LEFT_MODE);
 		Menu_SetStyle(PLAIN);
 	} else if (TruST25_valid == TRUST25_INVALID) {
 		BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
 		BSP_LCD_SetTextColor(LCD_COLOR_RED);
 		BSP_LCD_DisplayPicture(170+10,yLine(trust25Line),Error);
-		BSP_LCD_DisplayStringAt(205+10,yLine(trust25Line),(uint8_t*)"TruST25",LEFT_MODE);   
-		BSP_LCD_DisplayStringAt(205+10,yLine(trust25Line)+16,(uint8_t*)"Error!",LEFT_MODE);   
+		BSP_LCD_DisplayStringAt(205+10,yLine(trust25Line),(uint8_t*)"TruST25",LEFT_MODE);
+		BSP_LCD_DisplayStringAt(205+10,yLine(trust25Line)+16,(uint8_t*)"Error!",LEFT_MODE);
 		Menu_SetStyle(PLAIN);
 	}
 #endif
@@ -507,8 +497,7 @@ static Menu_Callback_Status_t tabTagReadInfo(void)
 	uint8_t status;
 
 
-	if(execCount++ > 100)
-	{
+	if(execCount++ > 100) {
 		execCount = 0;
 		return MENU_CALLBACK_CONTINUE;
 	}
@@ -521,13 +510,11 @@ static Menu_Callback_Status_t tabTagReadInfo(void)
 	status = BSP_NFCTAG_ReadData(buffer,0,1);
 	rfalGetTransceiveRSSI( &rssi );
 	// with short frames, at High Bit Rate, rssi computation may not be relevant
-	if((status == NFCTAG_OK) && (rssi == 0))
-	{
+	if((status == NFCTAG_OK) && (rssi == 0)) {
 		status = BSP_NFCTAG_ReadData(buffer,0,8);
 		rfalGetTransceiveRSSI( &rssi );
 	}
-	if((status != NFCTAG_OK) && (status != NFCTAG_RESPONSE_ERROR))
-	{
+	if((status != NFCTAG_OK) && (status != NFCTAG_RESPONSE_ERROR)) {
 		// try to re-activate
 		rfalFieldOff();
 		HAL_Delay(5);
@@ -541,13 +528,12 @@ static Menu_Callback_Status_t tabTagReadInfo(void)
 
 	// don't update rssi display if rssi has not been measured
 	if ((status == NFCTAG_OK) && (rssi == 0)) {
-	 rssiLen = lastRssi;
+		rssiLen = lastRssi;
 	}
 
 
 	Menu_SetStyle(PLAIN);
-	if((rssiLen == 0) && (lastRssi != 0))
-	{
+	if((rssiLen == 0) && (lastRssi != 0)) {
 		BSP_LCD_GetColors(&front,&back);
 		BSP_LCD_SetColors(back,front);
 		BSP_LCD_FillRect(rssiX + 6,yLine(rssiBarLine) + 6,rssi_max,2);
@@ -572,7 +558,7 @@ static Menu_Callback_Status_t tabTagReadInfo(void)
 
 	/* DPO */
 	displayDpo(rfalDpoGetCurrentTableEntry());
- 
+
 	BSP_LCD_SetFont(&Font22);
 
 	return MENU_CALLBACK_CONTINUE;
@@ -598,11 +584,9 @@ static Menu_Callback_Status_t tabFirstTagReadNdef(void)
 
 	// reset start of NDEF buffer
 	NDEF_getNDEFSize(&ndefLen);
-	if(ndefLen > sizeof(NDEF_Buffer))
-	{
+	if(ndefLen > sizeof(NDEF_Buffer)) {
 		ndefBuffer = (uint8_t *)malloc(ndefLen+2);
-		if(ndefBuffer == NULL)
-		{
+		if(ndefBuffer == NULL) {
 			sprintf(txt, "NDEF is too big!");
 			BSP_LCD_DisplayStringAt(0,102,(uint8_t*)txt,CENTER_MODE);
 			status = NDEF_ERROR;
@@ -612,24 +596,20 @@ static Menu_Callback_Status_t tabFirstTagReadNdef(void)
 	}
 	memset(ndefBuffer,0,100);
 	status = NDEF_ReadNDEF(ndefBuffer);
-	if((status == NDEF_OK) && ndefLen)
-	{
-		if(displayNdef(ndefBuffer) != NDEF_OK)
-		{
+	if((status == NDEF_OK) && ndefLen) {
+		if(displayNdef(ndefBuffer) != NDEF_OK) {
 			sprintf(txt, "Cannot identify NDEF record");
 			Menu_SetStyle(PLAIN);
 			BSP_LCD_SetFont(&Font16);
 			BSP_LCD_DisplayStringAt(0,70,(uint8_t*)txt,CENTER_MODE);
 			char data_str[30] = {0};
 			status = BSP_NFCTAG_ReadData(ndefBuffer,0,16);
-			if(status == NFCTAG_OK)
-			{
-				for(int data_index = 0; data_index < 4 ; data_index++)
-				{
+			if(status == NFCTAG_OK) {
+				for(int data_index = 0; data_index < 4 ; data_index++) {
 					sprintf(data_str,"0x%02X, 0x%02X, 0x%02X, 0x%02X",ndefBuffer[data_index*4],
-																														ndefBuffer[data_index*4+1],
-																														ndefBuffer[data_index*4+2],
-																														ndefBuffer[data_index*4+3]);
+					        ndefBuffer[data_index*4+1],
+					        ndefBuffer[data_index*4+2],
+					        ndefBuffer[data_index*4+3]);
 					BSP_LCD_DisplayStringAt(0,86 + (data_index * 16),(uint8_t*)data_str,CENTER_MODE);
 				}
 			} else {
@@ -639,9 +619,8 @@ static Menu_Callback_Status_t tabFirstTagReadNdef(void)
 		}
 
 	} else {
-		if(status == NDEF_ERROR_MEMORY_INTERNAL)
-		{
-			sprintf(txt, "NDEF is too big");      
+		if(status == NDEF_ERROR_MEMORY_INTERNAL) {
+			sprintf(txt, "NDEF is too big");
 		} else {
 			sprintf(txt, "Cannot read NDEF");
 		}
@@ -653,14 +632,12 @@ static Menu_Callback_Status_t tabFirstTagReadNdef(void)
 		BSP_LCD_SetFont(&Font16);
 		BSP_LCD_DisplayStringAt(0,70,(uint8_t*)txt,CENTER_MODE);
 
-		if(status == NFCTAG_OK)
-		{
-			for(int data_index = 0; data_index < 4 ; data_index++)
-			{
+		if(status == NFCTAG_OK) {
+			for(int data_index = 0; data_index < 4 ; data_index++) {
 				sprintf(data_str,"0x%02X, 0x%02X, 0x%02X, 0x%02X",NDEF_Buffer[data_index*4],
-																													NDEF_Buffer[data_index*4+1],
-																													NDEF_Buffer[data_index*4+2],
-																													NDEF_Buffer[data_index*4+3]);
+				        NDEF_Buffer[data_index*4+1],
+				        NDEF_Buffer[data_index*4+2],
+				        NDEF_Buffer[data_index*4+3]);
 				BSP_LCD_DisplayStringAt(0,86 + (data_index * 16),(uint8_t*)data_str,CENTER_MODE);
 			}
 		} else {
@@ -675,8 +652,7 @@ static Menu_Callback_Status_t tabFirstTagReadNdef(void)
 	if(gActiveDev->NdefSupport)
 		BSP_LCD_DisplayPicture(260,160, send_icon);
 
-	if((ndefBuffer != NDEF_Buffer) && (ndefBuffer != NULL))
-	{
+	if((ndefBuffer != NDEF_Buffer) && (ndefBuffer != NULL)) {
 		free(ndefBuffer);
 		ndefBuffer = NULL;
 	}
@@ -694,15 +670,12 @@ static Menu_Callback_Status_t tabTagReadNdef(void)
 	if(!gActiveDev->NdefSupport)
 		return MENU_CALLBACK_CONTINUE;
 
-	if(Menu_ReadPosition(&touch))
-	{
-		if((touch.X > 250) && (touch.Y > 150))
-		{
+	if(Menu_ReadPosition(&touch)) {
+		if((touch.X > 250) && (touch.Y > 150)) {
 			uint16_t length = 0;
-			sURI_Info w_uri = {URI_ID_0x01_STRING, "st.com/st25r3916-demo" ,""};
+			sURI_Info w_uri = {URI_ID_0x01_STRING, "st.com/st25r3916-demo",""};
 			NDEF_PrepareURIMessage(&w_uri,NDEF_Buffer,&length);
-			if(NfcTag_WriteNDEF(length,NDEF_Buffer) == NFCTAG_OK)
-			{
+			if(NfcTag_WriteNDEF(length,NDEF_Buffer) == NFCTAG_OK) {
 				clearTab();
 				Menu_SetStyle(PLAIN);
 				BSP_LCD_SetFont(&Font16);
@@ -713,13 +686,13 @@ static Menu_Callback_Status_t tabTagReadNdef(void)
 				clearTab();
 				Menu_SetStyle(PLAIN);
 				BSP_LCD_SetFont(&Font16);
-				 BSP_LCD_DisplayStringAt(0,120, (uint8_t*)"NDEF write error!", CENTER_MODE);
-				HAL_Delay(500);        
+				BSP_LCD_DisplayStringAt(0,120, (uint8_t*)"NDEF write error!", CENTER_MODE);
+				HAL_Delay(500);
 			}
 			BSP_LCD_SetFont(&Font22);
 		} // else {
-			// return MENU_CALLBACK_CONTINUE;
-			//}
+		// return MENU_CALLBACK_CONTINUE;
+		//}
 
 	}
 	return MENU_CALLBACK_CONTINUE;
@@ -727,43 +700,41 @@ static Menu_Callback_Status_t tabTagReadNdef(void)
 
 /* Helper function to setup BSP with correct NFC protocol */
 static void SelectNDEFProtocol(uint8_t devId)
-{  
-	switch (gDevList[devId].type)
-	{
-		case BSP_NFCTAG_NFCA:
-			switch (gDevList[devId].dev.nfca.type)
-			{
-				case RFAL_NFCA_T1T:
-					NfcTag_SelectProtocol(NFCTAG_TYPE1);
-				break;
-				case RFAL_NFCA_T2T:
-					NfcTag_SelectProtocol(NFCTAG_TYPE2);
-				break;
-				case RFAL_NFCA_T4T:
-					NfcTag_SelectProtocol(NFCTAG_TYPE4);
-				break;
-				case RFAL_NFCA_NFCDEP:
-					/* TODO RFAL_NFCA_NFCDEP */
-				break;
-				case RFAL_NFCA_T4T_NFCDEP:
-					/* TODO RFAL_NFCA_T4T_NFCDEP */
-				break;
-			}
-		break;
-		case BSP_NFCTAG_NFCB:
+{
+	switch (gDevList[devId].type) {
+	case BSP_NFCTAG_NFCA:
+		switch (gDevList[devId].dev.nfca.type) {
+		case RFAL_NFCA_T1T:
+			NfcTag_SelectProtocol(NFCTAG_TYPE1);
+			break;
+		case RFAL_NFCA_T2T:
+			NfcTag_SelectProtocol(NFCTAG_TYPE2);
+			break;
+		case RFAL_NFCA_T4T:
 			NfcTag_SelectProtocol(NFCTAG_TYPE4);
+			break;
+		case RFAL_NFCA_NFCDEP:
+			/* TODO RFAL_NFCA_NFCDEP */
+			break;
+		case RFAL_NFCA_T4T_NFCDEP:
+			/* TODO RFAL_NFCA_T4T_NFCDEP */
+			break;
+		}
 		break;
-		case BSP_NFCTAG_ST25TB:
-			NfcTag_SelectProtocol(NFCTAG_TYPE4);
+	case BSP_NFCTAG_NFCB:
+		NfcTag_SelectProtocol(NFCTAG_TYPE4);
 		break;
-		case BSP_NFCTAG_NFCF:
-			NfcTag_SelectProtocol(NFCTAG_TYPE3);
+	case BSP_NFCTAG_ST25TB:
+		NfcTag_SelectProtocol(NFCTAG_TYPE4);
 		break;
-		case BSP_NFCTAG_NFCV:
-			NfcTag_SelectProtocol(NFCTAG_TYPE5);
+	case BSP_NFCTAG_NFCF:
+		NfcTag_SelectProtocol(NFCTAG_TYPE3);
 		break;
-		default:
-			return;
+	case BSP_NFCTAG_NFCV:
+		NfcTag_SelectProtocol(NFCTAG_TYPE5);
+		break;
+	default:
+		return;
 	}
 }
 #endif
@@ -771,8 +742,8 @@ static void SelectNDEFProtocol(uint8_t devId)
 /* Tag Tab setup */
 #ifndef FREEZE_DISPLAY
 static Menu_Tab_Setup_t tabSetup[] = {
-{"Tag Info", &tabFirstTagReadInfo, &tabTagReadInfo},  /* Tag information Tab */
-{"NDEF", &tabFirstTagReadNdef, &tabTagReadNdef},      /* Tag content Tab */
+	{"Tag Info", &tabFirstTagReadInfo, &tabTagReadInfo},  /* Tag information Tab */
+	{"NDEF", &tabFirstTagReadNdef, &tabTagReadNdef},      /* Tag content Tab */
 };
 #endif
 
@@ -781,27 +752,22 @@ static uint8_t manageInput(t_hydra_console *con)
 {
 #ifndef FREEZE_DISPLAY
 	Menu_Position_t touch;
-	if(Menu_ReadPosition(&touch))
-	{
-		if(touch.Y > 200)
-		{
+	if(Menu_ReadPosition(&touch)) {
+		if(touch.Y > 200) {
 			// make sure the Wakeup mode is deactivated
 			rfalWakeUpModeStop();
 			// switch the field off before leaving the demo
 			rfalFieldOff();
 			return 1;
 		} else if (instructionsDisplayed) {
-			if(touch.Y < 60)
-			{
-				if(detectMode != DETECT_MODE_POLL)
-				{
+			if(touch.Y < 60) {
+				if(detectMode != DETECT_MODE_POLL) {
 					detectMode = DETECT_MODE_POLL;
 					rfalWakeUpModeStop();
 					setRadio();
 				}
 			} else {
-				if(detectMode != DETECT_MODE_WAKEUP)
-				{
+				if(detectMode != DETECT_MODE_WAKEUP) {
 					detectMode = DETECT_MODE_WAKEUP;
 					rfalFieldOff(); /* Turns the Field On and starts GT timer */
 					HAL_Delay(100);
@@ -809,51 +775,42 @@ static uint8_t manageInput(t_hydra_console *con)
 					setRadio();
 				}
 			}
-		} else 
-		{
+		} else {
 			uint8_t devId = 0xFF;
 			// tags are in the field
-			if((touch.Y < getTagBoxY(1)) && (gDevCnt >= 1))
-			{
+			if((touch.Y < getTagBoxY(1)) && (gDevCnt >= 1)) {
 				devId = 0;
-			} else if ((touch.Y < getTagBoxY(2)) && (gDevCnt >= 2))
-			{
+			} else if ((touch.Y < getTagBoxY(2)) && (gDevCnt >= 2)) {
 				devId = 1;
-			} else if ((touch.Y < getTagBoxY(3)) && (gDevCnt >= 3))
-			{
+			} else if ((touch.Y < getTagBoxY(3)) && (gDevCnt >= 3)) {
 				devId = 2;
-			} else if (gDevCnt >= 4){
+			} else if (gDevCnt >= 4) {
 				devId = 3;
 			}
-			if (devId != 0xFF)
-			{  
+			if (devId != 0xFF) {
 				SelectNDEFProtocol(devId);
 				gActiveDev = &gDevList[devId];
 
 				/* Specific implementation for Random UIDs, as the selected UID has probably changed since last inventory */
 				/* So re-run inventory and select the another random UID  */
 				if((gActiveDev->type == BSP_NFCTAG_NFCA) &&
-						(gActiveDev->dev.nfca.type == RFAL_NFCA_T4T) &&
-						(gActiveDev->dev.nfca.nfcId1Len == 4) &&
-						(gActiveDev->dev.nfca.nfcId1[0] == 0x08))
-				{
+				   (gActiveDev->dev.nfca.type == RFAL_NFCA_T4T) &&
+				   (gActiveDev->dev.nfca.nfcId1Len == 4) &&
+				   (gActiveDev->dev.nfca.nfcId1[0] == 0x08)) {
 					int err;
 					uint8_t devCnt;
 					// this is a random UID, need to refresh it
 					rfalNfcaListenDevice nfcaDevList[RFAL_POLLER_DEVICES];
-					
-					rfalNfcaPollerInitialize();        
+
+					rfalNfcaPollerInitialize();
 					rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
 					err = rfalNfcaPollerFullCollisionResolution( RFAL_COMPLIANCE_MODE_NFC, RFAL_POLLER_DEVICES, nfcaDevList, &devCnt );
-					if( (err == ERR_NONE) && (devCnt != 0) )
-					{
+					if( (err == ERR_NONE) && (devCnt != 0) ) {
 						int searchIndex;
-						for(searchIndex = 0; searchIndex < RFAL_POLLER_DEVICES ; searchIndex++ )
-						{
+						for(searchIndex = 0; searchIndex < RFAL_POLLER_DEVICES ; searchIndex++ ) {
 							if( (nfcaDevList[searchIndex].type == RFAL_NFCA_T4T) &&
-									(nfcaDevList[searchIndex].nfcId1Len == 4) &&
-									(nfcaDevList[searchIndex].nfcId1[0] == 0x08))
-							{
+							    (nfcaDevList[searchIndex].nfcId1Len == 4) &&
+							    (nfcaDevList[searchIndex].nfcId1[0] == 0x08)) {
 								// this is a random UID, select this one
 								devId = 0;
 								gDevList[devId].type     = BSP_NFCTAG_NFCA;
@@ -883,8 +840,7 @@ static uint8_t manageInput(t_hydra_console *con)
 		}
 	}
 #else
-	if(hydrabus_ubtn())
-	{
+	if(hydrabus_ubtn()) {
 		cprintf(con, "UBTN pressed exit\r\n");
 		// make sure the Wakeup mode is deactivated
 		rfalWakeUpModeStop();
@@ -893,64 +849,52 @@ static uint8_t manageInput(t_hydra_console *con)
 		return 1;
 	}
 
-	if (instructionsDisplayed) 
-	{
-		if(detectMode != DETECT_MODE_POLL)
-		{
+	if (instructionsDisplayed) {
+		if(detectMode != DETECT_MODE_POLL) {
 			detectMode = DETECT_MODE_POLL;
 			rfalWakeUpModeStop();
 			setRadio(con);
 		}
-	}else 
-	{
+	} else {
 #if 0
 		uint8_t devId = 0xFF;
 		// tags are in the field
-		if( (gDevCnt >= 1))
-		{
+		if( (gDevCnt >= 1)) {
 			devId = 0;
-		} else if ((gDevCnt >= 2))
-		{
+		} else if ((gDevCnt >= 2)) {
 			devId = 1;
-		} else if ((gDevCnt >= 3))
-		{
+		} else if ((gDevCnt >= 3)) {
 			devId = 2;
-		} else if (gDevCnt >= 4){
+		} else if (gDevCnt >= 4) {
 			devId = 3;
 		}
-		if (devId != 0xFF)
-		{
+		if (devId != 0xFF) {
 			SelectNDEFProtocol(devId);
 			gActiveDev = &gDevList[devId];
 
 			/* Specific implementation for Random UIDs, as the selected UID has probably changed since last inventory */
 			/* So re-run inventory and select the another random UID  */
 			if((gActiveDev->type == BSP_NFCTAG_NFCA) &&
-					(gActiveDev->dev.nfca.type == RFAL_NFCA_T4T) &&
-					(gActiveDev->dev.nfca.nfcId1Len == 4) &&
-					(gActiveDev->dev.nfca.nfcId1[0] == 0x08))
-			{
+			   (gActiveDev->dev.nfca.type == RFAL_NFCA_T4T) &&
+			   (gActiveDev->dev.nfca.nfcId1Len == 4) &&
+			   (gActiveDev->dev.nfca.nfcId1[0] == 0x08)) {
 				int err;
 				uint8_t devCnt;
 				// this is a random UID, need to refresh it
 				rfalNfcaListenDevice nfcaDevList[RFAL_POLLER_DEVICES];
-				
+
 				err = rfalNfcaPollerInitialize();
-				if( err != ERR_NONE )
-				{
+				if( err != ERR_NONE ) {
 					cprintf(con, "manageInput rfalNfcaPollerInitialize err=%d\r\n", err);
 				}
 				rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
 				err = rfalNfcaPollerFullCollisionResolution( RFAL_COMPLIANCE_MODE_NFC, RFAL_POLLER_DEVICES, nfcaDevList, &devCnt );
-				if( (err == ERR_NONE) && (devCnt != 0) )
-				{
+				if( (err == ERR_NONE) && (devCnt != 0) ) {
 					int searchIndex;
-					for(searchIndex = 0; searchIndex < RFAL_POLLER_DEVICES ; searchIndex++ )
-					{
+					for(searchIndex = 0; searchIndex < RFAL_POLLER_DEVICES ; searchIndex++ ) {
 						if( (nfcaDevList[searchIndex].type == RFAL_NFCA_T4T) &&
-								(nfcaDevList[searchIndex].nfcId1Len == 4) &&
-								(nfcaDevList[searchIndex].nfcId1[0] == 0x08))
-						{
+						    (nfcaDevList[searchIndex].nfcId1Len == 4) &&
+						    (nfcaDevList[searchIndex].nfcId1[0] == 0x08)) {
 							// this is a random UID, select this one
 							devId = 0;
 							gDevList[devId].type     = BSP_NFCTAG_NFCA;
@@ -996,11 +940,11 @@ void ScanTags(t_hydra_console *con, nfc_technology_t nfc_tech)
 /*!
  ******************************************************************************
  * \brief Passive Poller Run
- * 
- * This method implements the main state machine going thought all the 
+ *
+ * This method implements the main state machine going thought all the
  * different activities that a Reader/Poller device (PCD) needs to perform.
- * 
- * 
+ *
+ *
  ******************************************************************************
  */
 static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
@@ -1009,16 +953,12 @@ static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 	platformLog("\n\r RFAL Poller started \r\n");
 	//cprintf(con, "\n\r RFAL Poller started \r\n");
 	gState = RFAL_POLLER_STATE_INIT;
-	
-	do
-	{
+
+	do {
 		rfalWorker();	/* Execute RFAL process */
-		if (detectMode == DETECT_MODE_WAKEUP)
-		{
-			if(!rfalWakeUpModeHasWoke())
-			{
-				if(manageInput(con))
-				{
+		if (detectMode == DETECT_MODE_WAKEUP) {
+			if(!rfalWakeUpModeHasWoke()) {
+				if(manageInput(con)) {
 					return;
 				}
 				// still sleeping, don't do nothing...
@@ -1030,105 +970,93 @@ static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 		}
 
 		//cprintf(con, "gState=%d\r\n", gState);
-		switch( gState )
-		{
-			/*******************************************************************************/
-			case RFAL_POLLER_STATE_INIT:
-			{
-				gTechsFound = RFAL_POLLER_FOUND_NONE; 
-				gActiveDev  = NULL;
-				gDevCnt     = 0;
-				
-				gState = RFAL_POLLER_STATE_TECHDETECT;
-				break;
-			}
-			/*******************************************************************************/
-			case RFAL_POLLER_STATE_TECHDETECT:
-			{
-				if( !RfalPollerTechDetection(con, nfc_tech) ) /* Poll for nearby devices in different technologies */
-				{
-					gState = RFAL_POLLER_STATE_DEACTIVATION; /* If no device was found, restart loop */
-					break;
-				}
-				
-				gState = RFAL_POLLER_STATE_COLAVOIDANCE; /* One or more devices found, go to Collision Avoidance */
-				break;
-			}
-			/*******************************************************************************/
-			case RFAL_POLLER_STATE_COLAVOIDANCE:
-			{
+		switch( gState ) {
+		/*******************************************************************************/
+		case RFAL_POLLER_STATE_INIT: {
+			gTechsFound = RFAL_POLLER_FOUND_NONE;
+			gActiveDev  = NULL;
+			gDevCnt     = 0;
 
-				if(instructionsDisplayed)
-				{
-#ifndef FREEZE_DISPLAY
-					int clearline;
-					for(clearline = 1;clearline<9;clearline++)
-						BSP_LCD_ClearStringLine(clearline);
-#endif
-					instructionsDisplayed = false;
-				}
-
-				// add delay to avoid NFC-V Anticol frames back to back
-				HAL_Delay(1); /* Wait 1ms required for some Tags */
-				if( !RfalPollerCollResolution(con) ) /* Resolve any eventual collision */
-				{
-					gState = RFAL_POLLER_STATE_DEACTIVATION;	/* If Collision Resolution was unable to retrieve any device, restart loop */
-					break;
-				}
-
-				platformLog("Device(s) found: %d \r\n", gDevCnt);
-				//cprintf(con, "Device(s) found: %d\r\n", gDevCnt);
-
-				gState = RFAL_POLLER_STATE_DEACTIVATION;
-				break;
-			}
-			/*******************************************************************************/
-			case RFAL_POLLER_STATE_DEACTIVATION:
-			{
-				if(!instructionsDisplayed)
-				{
-#ifndef FREEZE_DISPLAY
-					BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-					BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
-#endif
-					if(gDevCnt == 0)
-					{
-						tagDetectionNoTag(con, nfc_tech);
-						instructionsDisplayed = true;
-					}
-				}
-				RfalPollerDeactivate();	/* If a card has been activated, properly deactivate the device */
-				rfalFieldOff();	/* Turn the Field Off powering down any device nearby */
-				/*
-				for(delay = 0; delay < 100; delay++)
-				{
-					if(manageInput(con))
-					{
-						return;
-					}
-					platformDelay(1); // Remain a certain period with field off
-				}
-				*/
-				if( (detectMode == DETECT_MODE_AWAKEN) && (gDevCnt == 0) )
-				{
-					// no more tags, restart wakeup mode
-					detectMode = DETECT_MODE_WAKEUP;
-					rfalFieldOff();	/* Turns the Field On and starts GT timer */
-					HAL_Delay(100);
-					rfalWakeUpModeStart(NULL);
-					setRadio(con);
-				}
-
-				gState = RFAL_POLLER_STATE_INIT;	/* Restart the loop */
-				return; /* We exit */
-				break;
-			}
-			/*******************************************************************************/
-			default:
-				return;
+			gState = RFAL_POLLER_STATE_TECHDETECT;
+			break;
 		}
-		if(manageInput(con))
-		{
+		/*******************************************************************************/
+		case RFAL_POLLER_STATE_TECHDETECT: {
+			if( !RfalPollerTechDetection(con, nfc_tech) ) { /* Poll for nearby devices in different technologies */
+				gState = RFAL_POLLER_STATE_DEACTIVATION; /* If no device was found, restart loop */
+				break;
+			}
+
+			gState = RFAL_POLLER_STATE_COLAVOIDANCE; /* One or more devices found, go to Collision Avoidance */
+			break;
+		}
+		/*******************************************************************************/
+		case RFAL_POLLER_STATE_COLAVOIDANCE: {
+
+			if(instructionsDisplayed) {
+#ifndef FREEZE_DISPLAY
+				int clearline;
+				for(clearline = 1; clearline<9; clearline++)
+					BSP_LCD_ClearStringLine(clearline);
+#endif
+				instructionsDisplayed = false;
+			}
+
+			// add delay to avoid NFC-V Anticol frames back to back
+			HAL_Delay(1); /* Wait 1ms required for some Tags */
+			if( !RfalPollerCollResolution(con) ) { /* Resolve any eventual collision */
+				gState = RFAL_POLLER_STATE_DEACTIVATION;	/* If Collision Resolution was unable to retrieve any device, restart loop */
+				break;
+			}
+
+			platformLog("Device(s) found: %d \r\n", gDevCnt);
+			//cprintf(con, "Device(s) found: %d\r\n", gDevCnt);
+
+			gState = RFAL_POLLER_STATE_DEACTIVATION;
+			break;
+		}
+		/*******************************************************************************/
+		case RFAL_POLLER_STATE_DEACTIVATION: {
+			if(!instructionsDisplayed) {
+#ifndef FREEZE_DISPLAY
+				BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+				BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+#endif
+				if(gDevCnt == 0) {
+					tagDetectionNoTag(con, nfc_tech);
+					instructionsDisplayed = true;
+				}
+			}
+			RfalPollerDeactivate();	/* If a card has been activated, properly deactivate the device */
+			rfalFieldOff();	/* Turn the Field Off powering down any device nearby */
+			/*
+			for(delay = 0; delay < 100; delay++)
+			{
+				if(manageInput(con))
+				{
+					return;
+				}
+				platformDelay(1); // Remain a certain period with field off
+			}
+			*/
+			if( (detectMode == DETECT_MODE_AWAKEN) && (gDevCnt == 0) ) {
+				// no more tags, restart wakeup mode
+				detectMode = DETECT_MODE_WAKEUP;
+				rfalFieldOff();	/* Turns the Field On and starts GT timer */
+				HAL_Delay(100);
+				rfalWakeUpModeStart(NULL);
+				setRadio(con);
+			}
+
+			gState = RFAL_POLLER_STATE_INIT;	/* Restart the loop */
+			return; /* We exit */
+			break;
+		}
+		/*******************************************************************************/
+		default:
+			return;
+		}
+		if(manageInput(con)) {
 			return;
 		}
 	} while(1);
@@ -1137,13 +1065,13 @@ static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech)
 /*!
  ******************************************************************************
  * \brief Poller Technology Detection
- * 
- * This method implements the Technology Detection / Poll for different 
+ *
+ * This method implements the Technology Detection / Poll for different
  * device technologies.
- * 
+ *
  * \return true         : One or more devices have been detected
  * \return false         : No device have been detected
- * 
+ *
  ******************************************************************************
  */
 static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_tech)
@@ -1154,25 +1082,21 @@ static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_t
 	rfalNfcbSensbRes     sensbRes;
 	rfalNfcvInventoryRes invRes;
 	uint8_t              sensbResLen;
-	
+
 	gTechsFound = RFAL_POLLER_FOUND_NONE;
 	/*******************************************************************************/
 	/* NFC-A Technology Detection                                                  */
 	/*******************************************************************************/
-	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_A))
-	{
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_A)) {
 		err = rfalNfcaPollerInitialize(); /* Initialize RFAL for NFC-A */
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcaPollerInitialize err=%d\r\n", err);
 		}
 		rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
 		err = rfalNfcaPollerTechnologyDetection(RFAL_COMPLIANCE_MODE_NFC, &sensRes ); /* Poll for NFC-A devices */
-		if( err == ERR_NONE )
-		{
+		if( err == ERR_NONE ) {
 			gTechsFound |= RFAL_POLLER_FOUND_A;
-		} else
-		{
+		} else {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcaPollerTechnologyDetection err=%d\r\n", err);
 		}
 	}
@@ -1180,20 +1104,16 @@ static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_t
 	/*******************************************************************************/
 	/* NFC-B Technology Detection                                                  */
 	/*******************************************************************************/
-	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_B))
-	{
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_B)) {
 		err = rfalNfcbPollerInitialize(); /* Initialize RFAL for NFC-B */
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcbPollerInitialize err=%d\r\n", err);
 		}
 		rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
 		err = rfalNfcbPollerTechnologyDetection(RFAL_COMPLIANCE_MODE_NFC, &sensbRes, &sensbResLen ); /* Poll for NFC-B devices */
-		if( err == ERR_NONE )
-		{
+		if( err == ERR_NONE ) {
 			gTechsFound |= RFAL_POLLER_FOUND_B;
-		} else
-		{
+		} else {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcbPollerTechnologyDetection err=%d\r\n", err);
 		}
 	}
@@ -1201,22 +1121,18 @@ static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_t
 	/*******************************************************************************/
 	/* ST25TB Technology Detection                                                 */
 	/*******************************************************************************/
-	if(nfc_tech == NFC_ST25TB)
-	{
+	if(nfc_tech == NFC_ST25TB) {
 		uint8_t          chipId;
 		err = rfalSt25tbPollerInitialize(); /* Initialize RFAL for NFC-B */
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerTechDetection rfalSt25tbPollerInitialize err=%d\r\n", err);
 		}
 		rfalFieldOnAndStartGT();
 		/* As field is already On only starts GT timer */
 		err = rfalSt25tbPollerCheckPresence( &chipId);
-		if( err == ERR_NONE )
-		{
+		if( err == ERR_NONE ) {
 			gTechsFound |= RFAL_POLLER_FOUND_ST25TB;
-		} else
-		{
+		} else {
 			//cprintf(con, "RfalPollerTechDetection rfalSt25tbPollerCheckPresence err=%d\r\n", err);
 		}
 	}
@@ -1224,20 +1140,16 @@ static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_t
 	/*******************************************************************************/
 	/* NFC-F Technology Detection                                                  */
 	/*******************************************************************************/
-	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_F))
-	{
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_F)) {
 		err = rfalNfcfPollerInitialize( RFAL_BR_212 ); /* Initialize RFAL for NFC-F */
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcfPollerInitialize err=%d\r\n", err);
 		}
 		rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
 		err = rfalNfcfPollerCheckPresence(); /* Poll for NFC-F devices */
-		if( err == ERR_NONE )
-		{
+		if( err == ERR_NONE ) {
 			gTechsFound |= RFAL_POLLER_FOUND_F;
-		} else
-		{
+		} else {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcfPollerCheckPresence err=%d\r\n", err);
 		}
 	}
@@ -1245,20 +1157,16 @@ static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_t
 	/*******************************************************************************/
 	/* NFC-V Technology Detection                                                  */
 	/*******************************************************************************/
-	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_V))
-	{
+	if( (nfc_tech == NFC_ALL) || (nfc_tech == NFC_V)) {
 		err = rfalNfcvPollerInitialize(); /* Initialize RFAL for NFC-V */
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcvPollerInitialize err=%d\r\n", err);
 		}
 		rfalFieldOnAndStartGT(); /* As field is already On only starts GT timer */
 		err = rfalNfcvPollerCheckPresence( &invRes ); /* Poll for NFC-V devices */
-		if( err == ERR_NONE )
-		{
+		if( err == ERR_NONE ) {
 			gTechsFound |= RFAL_POLLER_FOUND_V;
-		} else
-		{
+		} else {
 			//cprintf(con, "RfalPollerTechDetection rfalNfcvPollerCheckPresence err=%d\r\n", err);
 		}
 	}
@@ -1268,13 +1176,13 @@ static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_t
 /*!
  ******************************************************************************
  * \brief Poller Collision Resolution
- * 
+ *
  * This method implements the Collision Resolution on all technologies that
  * have been detected before.
- * 
- * \return true         : One or more devices identified 
+ *
+ * \return true         : One or more devices identified
  * \return false        : No device have been identified
- * 
+ *
  ******************************************************************************
  */
 static bool RfalPollerCollResolution(t_hydra_console *con)
@@ -1286,21 +1194,17 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 	/*******************************************************************************/
 	/* NFC-A Collision Resolution                                                  */
 	/*******************************************************************************/
-	if( gTechsFound & RFAL_POLLER_FOUND_A )	/* If a NFC-A device was found/detected, perform Collision Resolution */
-	{
+	if( gTechsFound & RFAL_POLLER_FOUND_A ) {	/* If a NFC-A device was found/detected, perform Collision Resolution */
 		rfalNfcaListenDevice nfcaDevList[RFAL_POLLER_DEVICES];
-		
+
 		err = rfalNfcaPollerInitialize(); /* Initialize RFAL for NFC-A */
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerCollResolution rfalNfcaPollerInitialize err=%d\r\n", err);
 		}
 
 		err = rfalNfcaPollerFullCollisionResolution( RFAL_COMPLIANCE_MODE_NFC, (RFAL_POLLER_DEVICES - gDevCnt), nfcaDevList, &devCnt );
-		if( (err == ERR_NONE) && (devCnt != 0) )
-		{
-			for( i=0; i<devCnt; i++ )	/* Copy devices found form local Nfca list into global device list */
-			{
+		if( (err == ERR_NONE) && (devCnt != 0) ) {
+			for( i=0; i<devCnt; i++ ) {	/* Copy devices found form local Nfca list into global device list */
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCA);
 #endif
@@ -1313,30 +1217,28 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 
 				getSpeedStr(speedStr);
 				cprintf(con, "NFC-A %s Type=0x%02X ATQA=0x%02X%02X SAK=0x%02X",
-							speedStr,
-							nfcaDevList[i].type,
-							nfcaDevList[i].sensRes.platformInfo,
-							nfcaDevList[i].sensRes.anticollisionInfo,
-							nfcaDevList[i].selRes.sak);
+				        speedStr,
+				        nfcaDevList[i].type,
+				        nfcaDevList[i].sensRes.platformInfo,
+				        nfcaDevList[i].sensRes.anticollisionInfo,
+				        nfcaDevList[i].selRes.sak);
 
-				if (gDevList[i].dev.nfca.type == RFAL_NFCA_T4T)
-				{
+				if (gDevList[i].dev.nfca.type == RFAL_NFCA_T4T) {
 					/*******************************************************************************/
 					rfalIsoDepInitialize();
 					/* Perform ISO-DEP (ISO14443-4) activation: RATS and PPS if supported */
 					err = rfalIsoDepPollAHandleActivation(
-							(rfalIsoDepFSxI)RFAL_ISODEP_FSDI_DEFAULT,
-							RFAL_ISODEP_NO_DID,
-							RFAL_BR_848 /* RFAL_BR_424 RFAL_BR_106 */,
-							&gDevList[i].proto.isoDep);
-					if( (err == ERR_NONE) && (gDevList[i].proto.isoDep.activation.A.Listener.ATSLen > 4) )
-					{
+					          (rfalIsoDepFSxI)RFAL_ISODEP_FSDI_DEFAULT,
+					          RFAL_ISODEP_NO_DID,
+					          RFAL_BR_848 /* RFAL_BR_424 RFAL_BR_106 */,
+					          &gDevList[i].proto.isoDep);
+					if( (err == ERR_NONE) && (gDevList[i].proto.isoDep.activation.A.Listener.ATSLen > 4) ) {
 						cprintf(con, " ATS=0x%02X%02X%02X%02X%02X",
-								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TL,
-								gDevList[i].proto.isoDep.activation.A.Listener.ATS.T0,
-								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TA,
-								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TB,
-								gDevList[i].proto.isoDep.activation.A.Listener.ATS.TC);
+						        gDevList[i].proto.isoDep.activation.A.Listener.ATS.TL,
+						        gDevList[i].proto.isoDep.activation.A.Listener.ATS.T0,
+						        gDevList[i].proto.isoDep.activation.A.Listener.ATS.TA,
+						        gDevList[i].proto.isoDep.activation.A.Listener.ATS.TB,
+						        gDevList[i].proto.isoDep.activation.A.Listener.ATS.TC);
 						for(j = 0; j < gDevList[i].proto.isoDep.activation.A.Listener.ATSLen-5; j++)
 							cprintf(con,"%02X",gDevList[i].proto.isoDep.activation.A.Listener.ATS.HB[j]);
 					}
@@ -1353,20 +1255,16 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 	/*******************************************************************************/
 	/* NFC-B Collision Resolution                                                  */
 	/*******************************************************************************/
-	if( gTechsFound & RFAL_POLLER_FOUND_B )	/* If a NFC-A device was found/detected, perform Collision Resolution */
-	{
+	if( gTechsFound & RFAL_POLLER_FOUND_B ) {	/* If a NFC-A device was found/detected, perform Collision Resolution */
 		rfalNfcbListenDevice nfcbDevList[RFAL_POLLER_DEVICES];
-		
+
 		err = rfalNfcbPollerInitialize();
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerCollResolution rfalNfcbPollerInitialize err=%d\r\n", err);
 		}
 		err = rfalNfcbPollerCollisionResolution( RFAL_COMPLIANCE_MODE_NFC, (RFAL_POLLER_DEVICES - gDevCnt), nfcbDevList, &devCnt );
-		if( (err == ERR_NONE) && (devCnt != 0) )
-		{
-			for( i=0; i<devCnt; i++ )	/* Copy devices found form local Nfcb list into global device list */
-			{
+		if( (err == ERR_NONE) && (devCnt != 0) ) {
+			for( i=0; i<devCnt; i++ ) {	/* Copy devices found form local Nfcb list into global device list */
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCB);
 #endif
@@ -1388,19 +1286,15 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 	/*******************************************************************************/
 	/* ST25TB Collision Resolution                                                  */
 	/*******************************************************************************/
-	if( gTechsFound & RFAL_POLLER_FOUND_ST25TB )	/* If a NFC-A device was found/detected, perform Collision Resolution */
-	{
+	if( gTechsFound & RFAL_POLLER_FOUND_ST25TB ) {	/* If a NFC-A device was found/detected, perform Collision Resolution */
 		rfalSt25tbListenDevice st25tbDevList[RFAL_POLLER_DEVICES];
 		err = rfalSt25tbPollerInitialize();
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerCollResolution rfalSt25tbPollerInitialize err=%d\r\n", err);
 		}
 		err = rfalSt25tbPollerCollisionResolution((RFAL_POLLER_DEVICES - gDevCnt), st25tbDevList, &devCnt);
-		if( (err == ERR_NONE) && (devCnt != 0) )
-		{
-			for( i=0; i<devCnt; i++ )	/* Copy devices found form local Nfcb list into global device list */
-			{
+		if( (err == ERR_NONE) && (devCnt != 0) ) {
+			for( i=0; i<devCnt; i++ ) {	/* Copy devices found form local Nfcb list into global device list */
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCB);
 #endif
@@ -1422,20 +1316,16 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 	/*******************************************************************************/
 	/* NFC-F Collision Resolution                                                  */
 	/*******************************************************************************/
-	if( gTechsFound & RFAL_POLLER_FOUND_F )	/* If a NFC-F device was found/detected, perform Collision Resolution */
-	{
+	if( gTechsFound & RFAL_POLLER_FOUND_F ) {	/* If a NFC-F device was found/detected, perform Collision Resolution */
 		rfalNfcfListenDevice nfcfDevList[RFAL_POLLER_DEVICES];
-		
+
 		err = rfalNfcfPollerInitialize( RFAL_BR_212 );
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerCollResolution rfalNfcfPollerInitialize err=%d\r\n", err);
 		}
 		err = rfalNfcfPollerCollisionResolution( RFAL_COMPLIANCE_MODE_NFC, (RFAL_POLLER_DEVICES - gDevCnt), nfcfDevList, &devCnt );
-		if( (err == ERR_NONE) && (devCnt != 0) )
-		{
-			for( i=0; i<devCnt; i++ )	/* Copy devices found form local Nfcf list into global device list */
-			{
+		if( (err == ERR_NONE) && (devCnt != 0) ) {
+			for( i=0; i<devCnt; i++ ) {	/* Copy devices found form local Nfcf list into global device list */
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCF);
 #endif
@@ -1457,20 +1347,16 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 	/*******************************************************************************/
 	/* NFC-V Collision Resolution                                                  */
 	/*******************************************************************************/
-	if( gTechsFound & RFAL_POLLER_FOUND_V )	/* If a NFC-F device was found/detected, perform Collision Resolution */
-	{
+	if( gTechsFound & RFAL_POLLER_FOUND_V ) {	/* If a NFC-F device was found/detected, perform Collision Resolution */
 		rfalNfcvListenDevice nfcvDevList[RFAL_POLLER_DEVICES];
-		
+
 		err = rfalNfcvPollerInitialize();
-		if( err != ERR_NONE )
-		{
+		if( err != ERR_NONE ) {
 			//cprintf(con, "RfalPollerCollResolution rfalNfcvPollerInitialize err=%d\r\n", err);
 		}
 		err = rfalNfcvPollerCollisionResolution( RFAL_COMPLIANCE_MODE_NFC, (RFAL_POLLER_DEVICES - gDevCnt), nfcvDevList, &devCnt);
-		if( (err == ERR_NONE) && (devCnt != 0) )
-		{
-			for( i=0; i<devCnt; i++ )	/* Copy devices found form local Nfcf list into global device list */
-			{
+		if( (err == ERR_NONE) && (devCnt != 0) ) {
+			for( i=0; i<devCnt; i++ ) {	/* Copy devices found form local Nfcf list into global device list */
 #ifndef FREEZE_DISPLAY
 				Menu_SetStyle(NFCV);
 #endif
@@ -1501,36 +1387,34 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 /*!
  ******************************************************************************
  * \brief Poller NFC DEP Deactivate
- * 
- * This method Deactivates the device if a deactivation procedure exists 
- * 
- * \return true         : Deactivation successful 
+ *
+ * This method Deactivates the device if a deactivation procedure exists
+ *
+ * \return true         : Deactivation successful
  * \return false        : Deactivation failed
- * 
+ *
  ******************************************************************************
  */
 static bool RfalPollerDeactivate( void )
 {
-	if( gActiveDev != NULL ) /* Check if a device has been activated */
-	{
-		switch( gActiveDev->rfInterface )
-		{
-			/*******************************************************************************/
-			case RFAL_POLLER_INTERFACE_RF:
-				break; /* No specific deactivation to be performed */
+	if( gActiveDev != NULL ) { /* Check if a device has been activated */
+		switch( gActiveDev->rfInterface ) {
+		/*******************************************************************************/
+		case RFAL_POLLER_INTERFACE_RF:
+			break; /* No specific deactivation to be performed */
 
-			/*******************************************************************************/
-			case RFAL_POLLER_INTERFACE_ISODEP:
-				rfalIsoDepDeselect(); /* Send a Deselect to device */
-				break;
+		/*******************************************************************************/
+		case RFAL_POLLER_INTERFACE_ISODEP:
+			rfalIsoDepDeselect(); /* Send a Deselect to device */
+			break;
 
-			/*******************************************************************************/
-			case RFAL_POLLER_INTERFACE_NFCDEP:
-				rfalNfcDepRLS(); /* Send a Release to device */
-				break;
+		/*******************************************************************************/
+		case RFAL_POLLER_INTERFACE_NFCDEP:
+			rfalNfcDepRLS(); /* Send a Release to device */
+			break;
 
-			default:
-				return false;
+		default:
+			return false;
 		}
 		platformLog("Device deactivated \r\n");
 	}

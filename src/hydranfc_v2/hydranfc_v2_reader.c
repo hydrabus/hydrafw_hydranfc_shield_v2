@@ -46,7 +46,8 @@ static bool verbose_mode = TRUE;
 static uint8_t fsd = 16;
 static rfalMode mode = RFAL_MODE_NONE;
 
-void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value) {
+void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value)
+{
 	if (opt == T_CARD_CONNECT_AUTO_OPT_VERBOSITY) {
 		if (value != 0) {
 			verbose_mode = TRUE;
@@ -74,7 +75,8 @@ void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value) {
 
 ReturnCode transceive_tx_rx(t_hydra_console *con,
                             bool add_crc,
-                            bool verbose) {
+                            bool verbose)
+{
 	uint32_t flags;
 	ReturnCode ret;
 
@@ -106,34 +108,36 @@ ReturnCode transceive_tx_rx(t_hydra_console *con,
 }
 
 typedef struct {
-  uint8_t cid;
-  uint8_t pcb;
-  uint8_t nad;
-  uint8_t len;
-  uint8_t *inf;
+	uint8_t cid;
+	uint8_t pcb;
+	uint8_t nad;
+	uint8_t len;
+	uint8_t *inf;
 } iso_14443_tpdu;
 
 iso_14443_tpdu tpdu;
 
 typedef struct {
-  uint8_t block_size;
-  uint8_t iblock_pcb_number;
-  uint8_t pcb_block_number;
-  uint8_t cid;
-  bool add_cid;
-  uint8_t nad;
-  bool add_nad;
+	uint8_t block_size;
+	uint8_t iblock_pcb_number;
+	uint8_t pcb_block_number;
+	uint8_t cid;
+	bool add_cid;
+	uint8_t nad;
+	bool add_nad;
 
 } iso_14443_session;
 iso_14443_session session;
 
-uint8_t get_and_update_iblock_pcb_number(void) {
+uint8_t get_and_update_iblock_pcb_number(void)
+{
 	uint8_t pcb_number = session.iblock_pcb_number;
 	session.iblock_pcb_number ^= 1;
 	return pcb_number;
 }
 
-void get_iblock(uint8_t *inf, uint8_t len, bool chaining_block) {
+void get_iblock(uint8_t *inf, uint8_t len, bool chaining_block)
+{
 	tpdu.pcb = get_and_update_iblock_pcb_number() + 0x02;
 
 	if (session.add_cid) {
@@ -154,12 +158,14 @@ void get_iblock(uint8_t *inf, uint8_t len, bool chaining_block) {
 	tpdu.len = len;
 }
 
-void get_wtx_reply(void) {
+void get_wtx_reply(void)
+{
 	tpdu.len = 1;
 	tpdu.inf[0] &= 0x3F;
 }
 
-void get_rblock(void) {
+void get_rblock(void)
+{
 	tpdu.pcb = 0xB2;
 
 	if (session.add_cid) {
@@ -170,7 +176,8 @@ void get_rblock(void) {
 	tpdu.len = 0;
 }
 
-void parse_r_tpdu(uint8_t *data, uint16_t len) {
+void parse_r_tpdu(uint8_t *data, uint16_t len)
+{
 	uint16_t index = 0;
 
 	tpdu.pcb = data[index++];
@@ -187,7 +194,8 @@ void parse_r_tpdu(uint8_t *data, uint16_t len) {
 	tpdu.inf = &(data[index]);
 }
 
-void send_tpdu(t_hydra_console *con) {
+void send_tpdu(t_hydra_console *con)
+{
 
 	tx_buffer_len = 0;
 
@@ -210,7 +218,8 @@ void send_tpdu(t_hydra_console *con) {
 	parse_r_tpdu(rx_buffer, rx_buffer_len);
 }
 
-void init_iso_14443_session(void) {
+void init_iso_14443_session(void)
+{
 	session.block_size = fsd;
 	session.add_nad = FALSE;
 	session.add_cid = TRUE;
@@ -218,7 +227,8 @@ void init_iso_14443_session(void) {
 	session.pcb_block_number = 0;
 }
 
-void send_apdu(t_hydra_console *con, uint8_t *apdu, uint32_t len) {
+void send_apdu(t_hydra_console *con, uint8_t *apdu, uint32_t len)
+{
 	uint8_t i;
 	int r_len;
 
@@ -261,7 +271,8 @@ void send_apdu(t_hydra_console *con, uint8_t *apdu, uint32_t len) {
 
 }
 
-bool connect_iso14443_a(t_hydra_console *con) {
+bool connect_iso14443_a(t_hydra_console *con)
+{
 	ReturnCode ret;
 
 	rfalNfcaPollerInitialize();
@@ -314,7 +325,8 @@ bool connect_iso14443_a(t_hydra_console *con) {
 
 }
 
-bool connect_iso14443_b(t_hydra_console *con) {
+bool connect_iso14443_b(t_hydra_console *con)
+{
 	ReturnCode ret;
 
 	// We set set ISO 14443-B configuration
@@ -346,7 +358,8 @@ bool connect_iso14443_b(t_hydra_console *con) {
 	return TRUE;
 }
 
-bool connect_iso15693(t_hydra_console *con) {
+bool connect_iso15693(t_hydra_console *con)
+{
 	ReturnCode ret;
 
 	// We set set ISO 15693 configuration
@@ -367,7 +380,8 @@ bool connect_iso15693(t_hydra_console *con) {
 	return TRUE;
 }
 
-void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t *ascii_data) {
+void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t *ascii_data)
+{
 
 	buf_ascii2hex(ascii_data, buffer, &buffer_len);
 
@@ -382,7 +396,8 @@ void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t *ascii_data) {
 	}
 }
 
-void hydranfc_v2_reader_connect(t_hydra_console *con) {
+void hydranfc_v2_reader_connect(t_hydra_console *con)
+{
 
 	if (connect_iso14443_a(con)) {
 		mode = RFAL_MODE_POLL_NFCA;

@@ -19,15 +19,13 @@
 #ifndef HYDRANFC_V2_CE_H
 #define HYDRANFC_V2_CE_H
 
-typedef enum
-{
-    T4T_MODE_NOT_SET = 0,
-    T4T_MODE_URI,
-    T4T_MODE_EMAIL
+typedef enum {
+	T4T_MODE_NOT_SET = 0,
+	T4T_MODE_URI,
+	T4T_MODE_EMAIL
 } eT4TEmulationMode;
 
-typedef struct
-{
+typedef struct {
 	uint32_t uid_len;
 	uint8_t uid[8];
 	uint32_t sak_len; // 0 or 1

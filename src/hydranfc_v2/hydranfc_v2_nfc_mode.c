@@ -107,8 +107,7 @@ static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
 	/* RFAL initalisation */
 	rfalAnalogConfigInitialize();
 	err = rfalInitialize();
-	if(err != ERR_NONE)
-	{
+	if(err != ERR_NONE) {
 		cprintf(con, "hydranfc_v2_init_RFAL rfalInitialize() error=%d\r\n", err);
 		return err;
 	}
@@ -118,8 +117,7 @@ static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
 	rfalDpoInitialize();
 	rfalDpoSetMeasureCallback( rfalChipMeasureAmplitude );
 	err = rfalDpoTableWrite(dpoSetup,sizeof(dpoSetup)/sizeof(rfalDpoEntry));
-	if(err != ERR_NONE)
-	{
+	if(err != ERR_NONE) {
 		cprintf(con, "hydranfc_v2_init_RFAL rfalDpoTableWrite() error=%d\r\n", err);
 		return err;
 	}
@@ -199,8 +197,7 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	/* Init st25r3916 IRQ function callback */
 	st25r3916_irq_fn = st25r3916Isr;
 	hal_st25r3916_spiInit(ST25R391X_SPI_DEVICE);
-	if (hydranfc_v2_init_RFAL(con) != ERR_NONE)
-	{
+	if (hydranfc_v2_init_RFAL(con) != ERR_NONE) {
 		cprintf(con, "HydraNFC v2 not found.\r\n");
 		return FALSE;
 	}
@@ -231,11 +228,9 @@ THD_FUNCTION(key_sniff, arg)
 
 	chRegSetThreadName("HydraNFC_v2 key-sniff");
 
-	while (TRUE)
-	{
+	while (TRUE) {
 		/* If K1_BUTTON is pressed */
-		if (K1_BUTTON)
-		{
+		if (K1_BUTTON) {
 			/* Wait Until K1_BUTTON is released */
 			while(K1_BUTTON) {
 				D1_ON;
@@ -266,8 +261,7 @@ THD_FUNCTION(key_sniff, arg)
 		}
 
 		/* If K2_BUTTON is pressed */
-		if (K2_BUTTON)
-		{
+		if (K2_BUTTON) {
 			/* Wait Until K2_BUTTON is released */
 			while(K2_BUTTON) {
 				D1_OFF;
@@ -292,8 +286,7 @@ THD_FUNCTION(key_sniff, arg)
 			}
 		}
 
-		if (chThdShouldTerminateX())
-		{
+		if (chThdShouldTerminateX()) {
 			chThdExit((msg_t)1);
 		}
 		chThdSleepMilliseconds(100);
@@ -356,15 +349,15 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 	/* Send REQA (7 bits) and receive ATQA (2 bytes) */
 	data_buf[0] = 0x26; /* REQA (7bits) */
 	data->atqa_buf_nb_rx_data = Trf797x_transceive_bits(data_buf[0], 7, data->atqa_buf, MIFARE_ATQA_MAX,
-				    10, /* 10ms TX/RX Timeout */
-				    0); /* TX CRC disabled */
+	                            10, /* 10ms TX/RX Timeout */
+	                            0); /* TX CRC disabled */
 	/* Re-send REQA */
 	if (data->atqa_buf_nb_rx_data == 0) {
 		/* Send REQA (7 bits) and receive ATQA (2 bytes) */
 		data_buf[0] = 0x26; /* REQA (7 bits) */
 		data->atqa_buf_nb_rx_data = Trf797x_transceive_bits(data_buf[0], 7, data->atqa_buf, MIFARE_ATQA_MAX,
-					    10, /* 10ms TX/RX Timeout */
-					    0); /* TX CRC disabled */
+		                            10, /* 10ms TX/RX Timeout */
+		                            0); /* TX CRC disabled */
 	}
 	if (data->atqa_buf_nb_rx_data > 0) {
 		/* Send AntiColl Cascade Level1 (2 bytes) and receive CT+3 UID bytes+BCC (5 bytes) [tag 7 bytes UID]  or UID+BCC (5 bytes) [tag 4 bytes UID] */
@@ -372,8 +365,8 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 		data_buf[1] = 0x20;
 
 		CL1_buf_size = Trf797x_transceive_bytes(data_buf, 2, CL1_buf, MIFARE_CL1_MAX,
-							10, /* 10ms TX/RX Timeout */
-							0); /* TX CRC disabled */
+		                                        10, /* 10ms TX/RX Timeout */
+		                                        0); /* TX CRC disabled */
 
 		/* Check tag 7 bytes UID */
 		if (CL1_buf[0] == 0x88) {
@@ -391,8 +384,8 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 			}
 
 			data->sak1_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, (2 + CL1_buf_size), data->sak1_buf, MIFARE_SAK_MAX,
-						    20, /* 10ms TX/RX Timeout */
-						    1); /* TX CRC disabled */
+			                            20, /* 10ms TX/RX Timeout */
+			                            1); /* TX CRC disabled */
 			if(data->sak1_buf_nb_rx_data >= 3)
 				data->sak1_buf_nb_rx_data -= 2; /* Remove 2 last bytes (CRC) */
 
@@ -403,8 +396,8 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 				data_buf[1] = 0x20;
 
 				CL2_buf_size = Trf797x_transceive_bytes(data_buf, 2, CL2_buf, MIFARE_CL2_MAX,
-									10, /* 10ms TX/RX Timeout */
-									0); /* TX CRC disabled */
+				                                        10, /* 10ms TX/RX Timeout */
+				                                        0); /* TX CRC disabled */
 
 				if (CL2_buf_size > 0) {
 					for (i = 0; i < 4; i++) {
@@ -437,8 +430,8 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 					}
 
 					data->sak2_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, (2 + CL2_buf_size), data->sak2_buf, MIFARE_SAK_MAX,
-								    20, /* 10ms TX/RX Timeout */
-								    1); /* TX CRC disabled */
+					                            20, /* 10ms TX/RX Timeout */
+					                            1); /* TX CRC disabled */
 
 					if (data->sak2_buf_nb_rx_data > 0) {
 						/* Check if it is a Mifare Ultra Light */
@@ -450,8 +443,8 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 								data_buf[0] = 0x30;
 								data_buf[1] = (uint8_t)i;
 								data->mf_ul_data_nb_rx_data += Trf797x_transceive_bytes(data_buf, 2, &data->mf_ul_data[data->mf_ul_data_nb_rx_data], MIFARE_UL_DATA,
-											       20, /* 20ms TX/RX Timeout */
-											       1); /* TX CRC enabled */
+								                               20, /* 20ms TX/RX Timeout */
+								                               1); /* TX CRC enabled */
 							}
 						}
 					} else {
@@ -459,8 +452,8 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 						data_buf[0] = 0x50;
 						data_buf[1] = 0x00;
 						data->halt_buf_nb_rx_data += Trf797x_transceive_bytes(data_buf, 2, data->halt_buf, MIFARE_HALT_MAX,
-									     20, /* 20ms TX/RX Timeout */
-									     1); /* TX CRC enabled */
+						                             20, /* 20ms TX/RX Timeout */
+						                             1); /* TX CRC enabled */
 					}
 				}
 			}
@@ -469,8 +462,8 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 		/* tag 4 bytes UID */
 		else {
 			data->uid_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, 2, data->uid_buf, MIFARE_UID_MAX,
-						   10, /* 10ms TX/RX Timeout */
-						   0); /* TX CRC disabled */
+			                           10, /* 10ms TX/RX Timeout */
+			                           0); /* TX CRC disabled */
 			if (data->uid_buf_nb_rx_data > 0) {
 				/*
 				data_buf[0] = RSSI_LEVELS;
@@ -496,14 +489,14 @@ void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
 					data_buf[2 + i] = data->uid_buf[i];
 				}
 				data->sak1_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, (2 + data->uid_buf_nb_rx_data),  data->sak1_buf, MIFARE_SAK_MAX,
-							    20, /* 20ms TX/RX Timeout */
-							    1); /* TX CRC enabled */
+				                            20, /* 20ms TX/RX Timeout */
+				                            1); /* TX CRC enabled */
 				/* Send HALT 2Bytes (CRC is added automatically) */
 				data_buf[0] = 0x50;
 				data_buf[1] = 0x00;
 				data->halt_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, 2, data->halt_buf, MIFARE_HALT_MAX,
-							    20, /* 20ms TX/RX Timeout */
-							    1); /* TX CRC enabled */
+				                            20, /* 20ms TX/RX Timeout */
+				                            1); /* TX CRC enabled */
 			}
 		}
 	}
@@ -561,12 +554,12 @@ void hydranfc_v2_scan_mifare(t_hydra_console *con)
 				bcc ^= data->uid_buf[i];
 			}
 			cprintf(con, " (BCC %02X %s)\r\n", data->uid_buf[i],
-				bcc == data->uid_buf[i] ? "ok" : "NOT OK");
+			        bcc == data->uid_buf[i] ? "ok" : "NOT OK");
 		}
 	}
 
 	if (data->mf_ul_data_nb_rx_data > 0) {
-		#define ISO14443A_SEL_L1_CT 0x88 /* TX CT for 1st Byte */
+#define ISO14443A_SEL_L1_CT 0x88 /* TX CT for 1st Byte */
 		uint8_t expected_uid_bcc0;
 		uint8_t obtained_uid_bcc0;
 		uint8_t expected_uid_bcc1;
@@ -592,12 +585,12 @@ void hydranfc_v2_scan_mifare(t_hydra_console *con)
 		expected_uid_bcc0 = (ISO14443A_SEL_L1_CT ^ data->mf_ul_data[0] ^ data->mf_ul_data[1] ^ data->mf_ul_data[2]); // BCC1
 		obtained_uid_bcc0 = data->mf_ul_data[3];
 		cprintf(con, " (DATA BCC0 %02X %s)\r\n", expected_uid_bcc0,
-			expected_uid_bcc0 == obtained_uid_bcc0 ? "ok" : "NOT OK");
+		        expected_uid_bcc0 == obtained_uid_bcc0 ? "ok" : "NOT OK");
 
 		expected_uid_bcc1 = (data->mf_ul_data[4] ^ data->mf_ul_data[5] ^ data->mf_ul_data[6] ^ data->mf_ul_data[7]); // BCC2
 		obtained_uid_bcc1 = data->mf_ul_data[8];
 		cprintf(con, " (DATA BCC1 %02X %s)\r\n", expected_uid_bcc1,
-			expected_uid_bcc1 == obtained_uid_bcc1 ? "ok" : "NOT OK");
+		        expected_uid_bcc1 == obtained_uid_bcc1 ? "ok" : "NOT OK");
 	}
 	/*
 	cprintf(con, "irq_count: 0x%02ld\r\n", (uint32_t)irq_count);
@@ -657,12 +650,12 @@ int hydranfc_v2_read_mifare_ul(t_hydra_console *con, char* filename)
 				bcc ^= data->uid_buf[i];
 			}
 			cprintf(con, " (BCC %02X %s)\r\n", data->uid_buf[i],
-				bcc == data->uid_buf[i] ? "ok" : "NOT OK");
+			        bcc == data->uid_buf[i] ? "ok" : "NOT OK");
 		}
 	}
 
 	if (data->mf_ul_data_nb_rx_data > 0) {
-		#define ISO14443A_SEL_L1_CT 0x88 /* TX CT for 1st Byte */
+#define ISO14443A_SEL_L1_CT 0x88 /* TX CT for 1st Byte */
 		uint8_t expected_uid_bcc0;
 		uint8_t obtained_uid_bcc0;
 		uint8_t expected_uid_bcc1;
@@ -688,15 +681,14 @@ int hydranfc_v2_read_mifare_ul(t_hydra_console *con, char* filename)
 		expected_uid_bcc0 = (ISO14443A_SEL_L1_CT ^ data->mf_ul_data[0] ^ data->mf_ul_data[1] ^ data->mf_ul_data[2]); // BCC1
 		obtained_uid_bcc0 = data->mf_ul_data[3];
 		cprintf(con, " (DATA BCC0 %02X %s)\r\n", expected_uid_bcc0,
-			expected_uid_bcc0 == obtained_uid_bcc0 ? "ok" : "NOT OK");
+		        expected_uid_bcc0 == obtained_uid_bcc0 ? "ok" : "NOT OK");
 
 		expected_uid_bcc1 = (data->mf_ul_data[4] ^ data->mf_ul_data[5] ^ data->mf_ul_data[6] ^ data->mf_ul_data[7]); // BCC2
 		obtained_uid_bcc1 = data->mf_ul_data[8];
 		cprintf(con, " (DATA BCC1 %02X %s)\r\n", expected_uid_bcc1,
-			expected_uid_bcc1 == obtained_uid_bcc1 ? "ok" : "NOT OK");
+		        expected_uid_bcc1 == obtained_uid_bcc1 ? "ok" : "NOT OK");
 
-		if( (expected_uid_bcc0 == obtained_uid_bcc0) && (expected_uid_bcc1 == obtained_uid_bcc1) )
-		{
+		if( (expected_uid_bcc0 == obtained_uid_bcc0) && (expected_uid_bcc1 == obtained_uid_bcc1) ) {
 			if (!is_fs_ready()) {
 				err = mount();
 				if(err) {
@@ -720,15 +712,13 @@ int hydranfc_v2_read_mifare_ul(t_hydra_console *con, char* filename)
 			}
 			cprintf(con, "write file %s with success\r\n", filename);
 			return TRUE;
-		}else
-		{
+		} else {
 			cprintf(con, "Error invalid BCC0/BCC1, file %s not written\r\n", filename);
 			return FALSE;
 		}
-	}else
-	{
-			cprintf(con, "Error no data, file %s not written\r\n", filename);
-			return FALSE;
+	} else {
+		cprintf(con, "Error no data, file %s not written\r\n", filename);
+		return FALSE;
 	}
 	/*
 	cprintf(con, "irq_count: 0x%02ld\r\n", (uint32_t)irq_count);
@@ -788,8 +778,8 @@ void hydranfc_v2_scan_vicinity(t_hydra_console *con)
 	data_buf[2] = 0x00; /* Mask */
 
 	fifo_size = Trf797x_transceive_bytes(data_buf, 3, data_buf, VICINITY_UID_MAX,
-					     10, /* 10ms TX/RX Timeout (shall be less than 10ms (6ms) in High Speed) */
-					     1); /* CRC enabled */
+	                                     10, /* 10ms TX/RX Timeout (shall be less than 10ms (6ms) in High Speed) */
+	                                     1); /* CRC enabled */
 	if (fifo_size > 0) {
 		/* fifo_size should be 10. */
 		cprintf(con, "UID:");
@@ -881,8 +871,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	bool sniff_frame_time;
 	bool sniff_parity;
 
-	if(p->tokens[token_pos] == T_SD)
-	{
+	if(p->tokens[token_pos] == T_SD) {
 		t = cmd_sd(con, p);
 		return t;
 	}
@@ -905,8 +894,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			t += show(con, p);
 			break;
 
-		case T_NFC_OBSV:
-		{
+		case T_NFC_OBSV: {
 			int tmp_obsv_val = 0;
 			t += 2;
 			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
@@ -918,8 +906,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 		}
 
-		case T_NFC_OBSV_TX:
-		{
+		case T_NFC_OBSV_TX: {
 			int tmp_obsv_val = 0;
 			t += 2;
 			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
@@ -931,8 +918,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 		}
 
-		case T_NFC_OBSV_RX:
-		{
+		case T_NFC_OBSV_RX: {
 			int tmp_obsv_val = 0;
 			t += 2;
 			memcpy(&tmp_obsv_val, p->buf + p->tokens[t], sizeof(int));
@@ -978,9 +964,9 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 
 		case T_FILE:
-				/* Filename specified */
-				memcpy(&str_offset, &p->tokens[t+3], sizeof(int));
-				snprintf(sd_file.filename, FILENAME_SIZE, "0:%s", p->buf + str_offset);
+			/* Filename specified */
+			memcpy(&str_offset, &p->tokens[t+3], sizeof(int));
+			snprintf(sd_file.filename, FILENAME_SIZE, "0:%s", p->buf + str_offset);
 			break;
 
 		case T_SCAN:
@@ -1044,7 +1030,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 
 		case T_EMUL_TAG_PROPERTY_UID:
-	//			printf_dbg("token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
+			//			printf_dbg("token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
 			t += 2;
 			if (p->tokens[t-1] == T_ARG_STRING) {
 				memcpy(&str_offset, &p->tokens[t], sizeof(int));
@@ -1077,7 +1063,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 			break;
 		case T_EMUL_TAG_PROPERTY_URI:
-	//			printf_dbg("uri: token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
+			//			printf_dbg("uri: token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
 			if (p->tokens[t+1] == T_ARG_STRING) {
 				memcpy(&str_offset, &p->tokens[t+2], sizeof(int));
 				user_tag_properties.uri = (uint8_t *)(p->buf + str_offset);
@@ -1091,15 +1077,13 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		case T_CARD_CONNECT_AUTO_OPT:
 		case T_CARD_SEND:
 		case T_SET_NFC_OBSV:
-		case T_GET_NFC_OBSV:
-		{
+		case T_GET_NFC_OBSV: {
 			action = p->tokens[t];
 			break;
 		}
 
 		case T_CARD_CONNECT_AUTO_OPT_VERBOSITY:
-		case T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE:
-		{
+		case T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE: {
 			t += 2;
 			if (p->tokens[t-1] == T_ARG_UINT) {
 				int value;
@@ -1118,8 +1102,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 	switch(action) {
 
-	case T_SET_NFC_OBSV:
-	{
+	case T_SET_NFC_OBSV: {
 		cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
 		cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
 		cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
@@ -1135,8 +1118,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	}
 	break;
 
-	case T_GET_NFC_OBSV:
-	{
+	case T_GET_NFC_OBSV: {
 		uint8_t rfal_obsv_tx;
 		uint8_t rfal_obsv_rx;
 
@@ -1150,8 +1132,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	}
 	break;
 
-	case T_SCAN:
-	{
+	case T_SCAN: {
 		nfc_technology_str_t tag_tech_str;
 		nfc_tech = proto->config.hydranfc.nfc_technology;
 
@@ -1202,39 +1183,31 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	case T_SNIFF:
 		// TODO T_SNIFF
 		cprintf(con, "T_SNIFF not implemented.\r\n");
-		#if 0
-		if(sniff_bin)
-		{
-			if(sniff_raw)
-			{
+#if 0
+		if(sniff_bin) {
+			if(sniff_raw) {
 				/* Sniffer Binary RAW UART1 only */
 				hydranfc_sniff_14443AB_bin_raw(con, sniff_frame_time, sniff_frame_time);
-			}else
-			{
+			} else {
 				/* Sniffer Binary UART1 only */
 				hydranfc_sniff_14443A_bin(con, sniff_frame_time, sniff_frame_time, sniff_parity);
 			}
-		}else
-		{
-			if(sniff_raw)
-			{
+		} else {
+			if(sniff_raw) {
 				/* Sniffer Binary RAW UART1 only */
 				hydranfc_sniff_14443AB_bin_raw(con, sniff_frame_time, sniff_frame_time);
-			}else
-			{
+			} else {
 				/* Sniffer ASCII */
-				if(sniff_trace_uart1)
-				{
+				if(sniff_trace_uart1) {
 					if(sniff_frame_time)
 						cprintf(con, "frame-time disabled for trace-uart1 in ASCII\r\n");
 					hydranfc_sniff_14443A(con, FALSE, FALSE, TRUE);
-				}else
-				{
+				} else {
 					hydranfc_sniff_14443A(con, sniff_frame_time, sniff_frame_time, FALSE);
 				}
 			}
 		}
-		#endif
+#endif
 		break;
 
 	case T_EMUL_MIFARE:
@@ -1255,8 +1228,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		user_tag_properties.level4_enabled = false;
 		break;
 
-	case T_CARD_CONNECT_AUTO:
-	{
+	case T_CARD_CONNECT_AUTO: {
 		/* Init st25r3916 IRQ function callback */
 		st25r3916_irq_fn = st25r3916Isr;
 		hydranfc_v2_reader_connect(con);
@@ -1267,8 +1239,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		break;
 	}
 
-	case T_CARD_SEND:
-	{
+	case T_CARD_SEND: {
 		/* Init st25r3916 IRQ function callback */
 		st25r3916_irq_fn = st25r3916Isr;
 		hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
@@ -1293,8 +1264,7 @@ static void show_registers(t_hydra_console *con)
 	t_st25r3916Regs regDump;
 
 	err = st25r3916GetRegsDump(&regDump);
-	if(err != ERR_NONE)
-	{
+	if(err != ERR_NONE) {
 		cprintf(con, "st25r3916GetRegsDump() error=%d\r\n", err);
 	}
 
@@ -1342,8 +1312,7 @@ static int init(t_hydra_console *con, t_tokenline_parsed *p)
 
 	memset(&user_tag_properties, 0, sizeof(user_tag_properties));
 
-	if(con != NULL)
-	{
+	if(con != NULL) {
 		proto = &con->mode->proto;
 		proto->config.hydranfc.nfc_technology = NFC_ALL;
 	}
@@ -1354,20 +1323,19 @@ static int init(t_hydra_console *con, t_tokenline_parsed *p)
 	}
 
 	if(key_sniff_thread == NULL) {
-/*
-		key_sniff_thread = chThdCreateFromHeap(NULL,
-						      8192,
-						      "key_sniff",
-						      NORMALPRIO,
-						      key_sniff,
-						      NULL);
-*/
+		/*
+				key_sniff_thread = chThdCreateFromHeap(NULL,
+								      8192,
+								      "key_sniff",
+								      NORMALPRIO,
+								      key_sniff,
+								      NULL);
+		*/
 	}
 
 	/* Process cmdline arguments, skipping "nfc". */
 	if(p != NULL) {
-		if(con != NULL)
-		{
+		if(con != NULL) {
 			tokens_used = 1 + exec(con, p, 1);
 		}
 	}
@@ -1415,8 +1383,7 @@ bool hydranfc_v2_is_detected(void)
  */
 bool hydranfc_init(t_hydra_console *con)
 {
-	if(con != NULL)
-	{
+	if(con != NULL) {
 		/* Defaults */
 		/*
 		mode_config_proto_t* proto = &con->mode->proto;
