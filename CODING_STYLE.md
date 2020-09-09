@@ -24,3 +24,4 @@ Syntax tested with AStyle Version 3.1
 
 # Configuration of Linux Kernel coding style with Eclipse(Including Atollic TrueSTUDIO for STM32 or STM32CubeIDE)/Qt
 See details here https://github.com/PanderMusubi/linux-kernel-code-style-formatters
+Warning this code formatter is not fully compliant with https://www.kernel.org/doc/html/latest/process/coding-style.html it is recommended to use AStyle Version 3.1
