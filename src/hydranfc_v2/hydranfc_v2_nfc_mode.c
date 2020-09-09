@@ -865,12 +865,18 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	unsigned int mifare_uid = 0;
 	filename_t sd_file;
 	int str_offset;
+/*
 	bool sniff_trace_uart1;
 	bool sniff_raw;
 	bool sniff_bin;
 	bool sniff_frame_time;
 	bool sniff_parity;
-
+	sniff_trace_uart1 = FALSE;
+	sniff_raw = FALSE;
+	sniff_bin = FALSE;
+	sniff_frame_time = FALSE;
+	sniff_parity = FALSE;
+*/
 	if(p->tokens[token_pos] == T_SD) {
 		t = cmd_sd(con, p);
 		return t;
@@ -879,11 +885,6 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	/* Stop & Start External IRQ */
 	st25r3916_irq_fn = NULL;
 
-	sniff_trace_uart1 = FALSE;
-	sniff_raw = FALSE;
-	sniff_bin = FALSE;
-	sniff_frame_time = FALSE;
-	sniff_parity = FALSE;
 	action = 0;
 	period = 1000;
 	continuous = FALSE;
@@ -986,6 +987,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			action = p->tokens[t];
 			break;
 
+/*
 		case T_TRACE_UART1:
 			sniff_trace_uart1 = TRUE;
 			break;
@@ -1005,7 +1007,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		case T_RAW:
 			sniff_raw = TRUE;
 			break;
-
+*/
 		case T_SNIFF:
 			action = p->tokens[t];
 			break;

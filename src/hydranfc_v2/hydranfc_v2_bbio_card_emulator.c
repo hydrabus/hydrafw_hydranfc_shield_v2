@@ -191,7 +191,7 @@ static uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDatalen, uint8_t *rspD
 	cprint(g_con, (char*)&cmdDatalen, 2);
 	cprint(g_con, (char *) cmdData, cmdDatalen);
 
-	chnRead(g_con->sdu, &rspDataLen, 2);
+	chnRead(g_con->sdu, (uint8_t*)&rspDataLen, 2);
 	chnRead(g_con->sdu, rspData, rspDataLen);
 
 	return rspDataLen*8;

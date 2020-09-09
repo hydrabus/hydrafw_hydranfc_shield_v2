@@ -214,6 +214,7 @@ static uint16_t update(uint8_t *cmdData, uint8_t *rspData)
 /* Main command management function */
 uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDataLen, uint8_t *rspData)
 {
+	(void)cmdDataLen;
 	rfalLmState state = rfalListenGetState(NULL, NULL);
 
 	switch (state) {
