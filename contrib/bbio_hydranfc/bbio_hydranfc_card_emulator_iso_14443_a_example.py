@@ -8,7 +8,7 @@
 #
 import serial
 
-port = "/dev/ttyACM2"
+port = "/dev/ttyACM1"
 
 ser = serial.Serial(port, timeout=None)
 
@@ -32,11 +32,25 @@ def enter_bbio(ser):
 
 enter_bbio(ser)
 
-print("Card emulator")
+
+uid = bytes.fromhex("DEADBEEF")
+print(f"Set UID to {uid.hex()}")
+ser.write(b"\04" + b"\04" + uid)
+resp = ser.read(1)
+assert resp[0] == 0x01
+
+sak = b"\x21"
+print(f"Set SAK to {sak.hex()}")
+ser.write(b"\05" + b"\01" + sak)
+resp = ser.read(1)
+assert resp[0] == 0x01
+
+print("Start Card emulation")
 ser.write(b"\x01")
 
-print("Cmd")
+print("Get banner")
 print(ser.read(40).hex())
+
 
 while 1:
     cmd_len = int.from_bytes(ser.read(2), byteorder="little")

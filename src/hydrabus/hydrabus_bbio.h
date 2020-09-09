@@ -198,5 +198,7 @@
 
 #define BBIO_NFC_CE_START_EMULATION    0b00000001
 #define BBIO_NFC_CE_GET_RX             0b00000011
+#define BBIO_NFC_CE_SET_UID            0b00000100
+#define BBIO_NFC_CE_SET_SAK            0b00000101
 
 int cmd_bbio(t_hydra_console *con);
