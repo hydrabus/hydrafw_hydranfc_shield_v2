@@ -464,11 +464,11 @@ t_token tokens_connect_auto_opt[] = {
 	{\
 		T_SET_NFC_OBSV,\
 		.subtokens = tokens_set_nfc_obsv,\
-		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"\
+		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"\
 	},\
 	{\
 		T_GET_NFC_OBSV,\
-		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"\
+		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"\
 	},\
 	{\
 		T_NFC_ALL,\
@@ -488,11 +488,11 @@ t_token tokens_connect_auto_opt[] = {
 	},\
 	{\
 		T_NFC_V,\
-		.help = "Select technology NFC-V Vicinity(ISO/IEC 15693)"\
+		.help = "Select technology NFC-V Vicinity(ISO15693)"\
 	},\
 	{\
 		T_NFC_F,\
-		.help = "Select technology NFC-F Felica"\
+		.help = "Select technology NFC-F FeliCa"\
 	},\
 	{\
 		T_SCAN,\
@@ -506,7 +506,7 @@ t_token tokens_connect_auto_opt[] = {
 	{\
 		T_SET_EMUL_TAG_PROPERTIES,\
 		.subtokens = tokens_set_emul_tag_properties,\
-		.help = "Set Tag properties for Card Emulation (UID, SAK, T4T params...)"\
+		.help = "Set Tag properties for Card Emulation (UID, SAK...)"\
 	},\
 	{\
 		T_EMUL_T4T,\
@@ -525,7 +525,7 @@ t_token tokens_connect_auto_opt[] = {
 	{\
 		T_CARD_SEND,         \
 		.arg_type = T_ARG_STRING,              \
-		.help = "Send APDU(NFC-A/B) or data+crc(NFC-V) to a tag initialized with the connect command"\
+		.help = "Send APDU(NFC-A/B) or data+crc(NFC-V) to a tag"\
 	},\
 /*
 	{\
@@ -654,11 +654,11 @@ t_token tokens_mode_dnfc[] = {
 	{
 		T_SET_NFC_OBSV,
 		.subtokens = tokens_set_nfc_obsv,
-		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"
+		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"
 	},
 	{
 		T_GET_NFC_OBSV,
-		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX or RX"
+		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"
 	},
 	{
 		T_NFC_RF_OFF_ON,
@@ -680,7 +680,7 @@ t_token tokens_mode_dnfc[] = {
 	{
 		T_NFC_SEND_BYTES_AND_COMPUTE_CRC,
 		.arg_type = T_ARG_STRING,
-		.help = "Send bytes according to the selected mode and add the two-bytes CRC"
+		.help = "Send bytes according to the selected mode and add CRC"
 	},
 	{
 		T_NFC_TRANSPARENT,
