@@ -500,13 +500,13 @@ t_token tokens_connect_auto_opt[] = {
 		.help = "Scan selected technology (NFC-A/B/V/F...)"\
 	},\
 	{\
-		T_EMUL_ISO14443A,\
-		.help = "Emul Tag ISO14443A"\
-	},\
-	{\
 		T_SET_EMUL_TAG_PROPERTIES,\
 		.subtokens = tokens_set_emul_tag_properties,\
 		.help = "Set Tag properties for Card Emulation (UID, SAK...)"\
+	},\
+	{\
+		T_EMUL_ISO14443A,\
+		.help = "Emul Tag ISO14443A"\
 	},\
 	{\
 		T_EMUL_T4T,\
