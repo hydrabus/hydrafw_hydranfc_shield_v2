@@ -183,7 +183,8 @@ static void bbio_mode_id(t_hydra_console *con)
 	cprint(con, BBIO_HYDRANFC_CARD_EMULATOR, 4);
 }
 
-static void init(){
+static void init(void)
+{
 	memset(&user_tag_properties, 0, sizeof(user_tag_properties));
 
 	user_tag_properties.uid[0] = 0xAA;
@@ -212,7 +213,7 @@ static uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDatalen, uint8_t *rspD
 
 void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con)
 {
-	uint8_t bbio_subcommand, clen, rlen;
+	uint8_t bbio_subcommand, clen;
 	uint8_t *rx_data = (uint8_t *) g_sbuf + 4096;
 
 	init_gpio_spi_nfc(con);
@@ -238,26 +239,26 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con)
 				st25r3916_irq_fn = NULL;
 				break;
 
-			case BBIO_NFC_CE_SET_UID:{
+			case BBIO_NFC_CE_SET_UID: {
 				chnRead(con->sdu, &clen, 1);
 				chnRead(con->sdu, rx_data, clen);
 
-				switch (clen){
-					case 4:
-					case 7:
-						user_tag_properties.uid_len = clen;
-						memcpy(user_tag_properties.uid, rx_data, clen);
-						rx_data[0] = 0x01;
-						break;
-					default:
-						rx_data[0] = 0x00;
+				switch (clen) {
+				case 4:
+				case 7:
+					user_tag_properties.uid_len = clen;
+					memcpy(user_tag_properties.uid, rx_data, clen);
+					rx_data[0] = 0x01;
+					break;
+				default:
+					rx_data[0] = 0x00;
 				}
 
 				cprint(con, (char *) rx_data, 1);
 				break;
 			}
 
-			case BBIO_NFC_CE_SET_SAK:{
+			case BBIO_NFC_CE_SET_SAK: {
 				chnRead(con->sdu, &clen, 1);
 				chnRead(con->sdu, rx_data, clen);
 
