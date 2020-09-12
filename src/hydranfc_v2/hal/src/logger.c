@@ -9,8 +9,8 @@
   *
   *        http://www.st.com/myliberty
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,14 +19,14 @@
   *
 ******************************************************************************/
 /*
- *      PROJECT:   
+ *      PROJECT:
  *      $Revision: $
  *      LANGUAGE:  ANSI C
  */
 
 /*! \file
  *
- *  \author 
+ *  \author
  *
  *  \brief Debug log output utility implementation.
  *
@@ -48,7 +48,7 @@
 ******************************************************************************
 */
 
-      
+
 #if (USE_LOGGER == LOGGER_ON)
 #define MAX_HEX_STR         4
 #define MAX_HEX_STR_LENGTH  128
@@ -58,7 +58,7 @@ uint8_t hexStrIdx = 0;
 
 
 #if (USE_LOGGER == LOGGER_OFF && !defined(HAL_UART_MODULE_ENABLED))
-  #define UART_HandleTypeDef void
+#define UART_HandleTypeDef void
 #endif
 
 
@@ -74,7 +74,7 @@ uint8_t logUsartTx(uint8_t *data, uint16_t dataLen);
   */
 void logUsartInit(UART_HandleTypeDef *husart)
 {
-    pLogUsart = husart;
+	pLogUsart = husart;
 }
 
 /**
@@ -86,112 +86,120 @@ void logUsartInit(UART_HandleTypeDef *husart)
   */
 uint8_t logUsartTx(uint8_t *data, uint16_t dataLen)
 {
-  if(pLogUsart == 0)
-    return ERR_INVALID_HANDLE;
-  #if (USE_LOGGER == LOGGER_ON)
-  { 
-    return HAL_UART_Transmit(pLogUsart, data, dataLen, USART_TIMEOUT);
-    }
-  #else
-  {
-    return 0;
-  }
-  #endif /* #if USE_LOGGER == LOGGER_ON */
+	if(pLogUsart == 0)
+		return ERR_INVALID_HANDLE;
+#if (USE_LOGGER == LOGGER_ON)
+	{
+		return HAL_UART_Transmit(pLogUsart, data, dataLen, USART_TIMEOUT);
+	}
+#else
+	{
+		(void)data;
+		(void)dataLen;
+		return 0;
+	}
+#endif /* #if USE_LOGGER == LOGGER_ON */
 }
 
 int logUsart(const char* format, ...)
 {
-  #if (USE_LOGGER == LOGGER_ON)
-  {
-    #define LOG_BUFFER_SIZE 256
-    char buf[LOG_BUFFER_SIZE];
-    va_list argptr;
-    va_start(argptr, format);
-    int cnt = vsnprintf(buf, LOG_BUFFER_SIZE, format, argptr);
-    va_end(argptr);  
-      
-    /* */
-    logUsartTx((uint8_t*)buf, strlen(buf));
-    return cnt;
-  }
-  #else
-  {
-    return 0;
-  }
-  #endif /* #if USE_LOGGER == LOGGER_ON */
+#if (USE_LOGGER == LOGGER_ON)
+	{
+#define LOG_BUFFER_SIZE 256
+		char buf[LOG_BUFFER_SIZE];
+		va_list argptr;
+		va_start(argptr, format);
+		int cnt = vsnprintf(buf, LOG_BUFFER_SIZE, format, argptr);
+		va_end(argptr);
+
+		/* */
+		logUsartTx((uint8_t*)buf, strlen(buf));
+		return cnt;
+	}
+#else
+	{
+		(void)format;
+		return 0;
+	}
+#endif /* #if USE_LOGGER == LOGGER_ON */
 }
 
 /* */
 
 char* hex2Str(unsigned char * data, size_t dataLen)
 {
-  #if (USE_LOGGER == LOGGER_ON)
-  {
-    unsigned char * pin = data;
-    const char * hex = "0123456789ABCDEF";
-    char * pout = hexStr[hexStrIdx];
-    uint8_t i = 0;
-    uint8_t idx = hexStrIdx;
-    if(dataLen == 0)
-    {
-      pout[0] = 0;     
-    } 
-    else     
-    {
-      for(; i < dataLen - 1; ++i)
-      {
-          *pout++ = hex[(*pin>>4)&0xF];
-          *pout++ = hex[(*pin++)&0xF];
-      }
-      *pout++ = hex[(*pin>>4)&0xF];
-      *pout++ = hex[(*pin)&0xF];
-      *pout = 0;
-    }    
-    
-    hexStrIdx++;
-    hexStrIdx %= MAX_HEX_STR;
-    
-    return hexStr[idx];
-  }
-  #else
-  {
-    return NULL;
-  }
-  #endif /* #if USE_LOGGER == LOGGER_ON */
+#if (USE_LOGGER == LOGGER_ON)
+	{
+		unsigned char * pin = data;
+		const char * hex = "0123456789ABCDEF";
+		char * pout = hexStr[hexStrIdx];
+		uint8_t i = 0;
+		uint8_t idx = hexStrIdx;
+		if(dataLen == 0)
+		{
+			pout[0] = 0;
+		} else
+		{
+			for(; i < dataLen - 1; ++i) {
+				*pout++ = hex[(*pin>>4)&0xF];
+				*pout++ = hex[(*pin++)&0xF];
+			}
+			*pout++ = hex[(*pin>>4)&0xF];
+			*pout++ = hex[(*pin)&0xF];
+			*pout = 0;
+		}
+
+		hexStrIdx++;
+		hexStrIdx %= MAX_HEX_STR;
+
+		return hexStr[idx];
+	}
+#else
+	{
+		(void)data;
+		(void)dataLen;
+		return NULL;
+	}
+#endif /* #if USE_LOGGER == LOGGER_ON */
 }
 
 void logITMTx(uint8_t *data, uint16_t dataLen)
 {
-    #if (USE_LOGGER == LOGGER_ON)
-    while (dataLen != 0)
-    {
-        ITM_SendChar(*data);
-        data++;
-        dataLen--;
-    }
-    #endif /* #if USE_LOGGER == LOGGER_ON */
-    return;
+#if (USE_LOGGER == LOGGER_ON)
+	while (dataLen != 0) {
+		ITM_SendChar(*data);
+		data++;
+		dataLen--;
+	}
+#else
+	{
+		(void)data;
+		(void)dataLen;
+		return;
+	}
+#endif /* #if USE_LOGGER == LOGGER_ON */
 }
 
 int logITM(const char* format, ...)
 {
-  #if (USE_LOGGER == LOGGER_ON)
-  {
-    #define LOG_BUFFER_SIZE 256
-    char buf[LOG_BUFFER_SIZE];
-    va_list argptr;
-    va_start(argptr, format);
-    int cnt = vsnprintf(buf, LOG_BUFFER_SIZE, format, argptr);
-    va_end(argptr);  
-      
-    /* */
-    logITMTx((uint8_t*)buf, strlen(buf));
-    HAL_Delay((cnt + 9)/10); /* WA to avoid ITM overflow */
-    return cnt;
-  }
-  #else
-  {
-    return 0;
-  }
-  #endif /* #if USE_LOGGER == LOGGER_ON */
+#if (USE_LOGGER == LOGGER_ON)
+	{
+#define LOG_BUFFER_SIZE 256
+		char buf[LOG_BUFFER_SIZE];
+		va_list argptr;
+		va_start(argptr, format);
+		int cnt = vsnprintf(buf, LOG_BUFFER_SIZE, format, argptr);
+		va_end(argptr);
+
+		/* */
+		logITMTx((uint8_t*)buf, strlen(buf));
+		HAL_Delay((cnt + 9)/10); /* WA to avoid ITM overflow */
+		return cnt;
+	}
+#else
+	{
+		(void)format;
+		return 0;
+	}
+#endif /* #if USE_LOGGER == LOGGER_ON */
 }
