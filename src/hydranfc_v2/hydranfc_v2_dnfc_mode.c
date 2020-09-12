@@ -786,9 +786,7 @@ static void show_registers(t_hydra_console *con)
 
 static int show(t_hydra_console *con, t_tokenline_parsed *p)
 {
-	mode_config_proto_t *proto = &con->mode->proto;
 	int tokens_used;
-	nfc_technology_str_t tag_tech_str;
 
 	tokens_used = 0;
 	if (p->tokens[1] == T_PINS) {
@@ -798,10 +796,6 @@ static int show(t_hydra_console *con, t_tokenline_parsed *p)
 		tokens_used++;
 		show_registers(con);
 	} else {
-		nfc_technology_to_str(proto->config.hydranfc.nfc_technology,
-		                      &tag_tech_str);
-		cprintf(con, "Selected technology: NFC-%s\r\n",
-		        tag_tech_str.str);
 		show_params(con);
 	}
 	return tokens_used;
