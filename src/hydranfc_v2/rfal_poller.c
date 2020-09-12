@@ -124,11 +124,11 @@ typedef enum {
  * LOCAL VARIABLES
  ******************************************************************************
  */
-static uint8_t                 gDevCnt;                                 /* Number of devices found                         */
-static RfalPollerRfInterfaceDevice_t gDevList[RFAL_POLLER_DEVICES];     /* Device List                                     */
-static RfalPollerState  gState;                                  /* Main state                                      */
-static uint8_t                 gTechsFound;                             /* Technologies found bitmask                      */
-RfalPollerRfInterfaceDevice_t        *gActiveDev;                       /* Active device pointer                           */
+static uint8_t                 gDevCnt;                                 /* Number of devices found */
+static RfalPollerRfInterfaceDevice_t gDevList[RFAL_POLLER_DEVICES];     /* Device List */
+static RfalPollerState  gState;                                  /* Main state */
+static uint8_t                 gTechsFound;                             /* Technologies found bitmask */
+RfalPollerRfInterfaceDevice_t        *gActiveDev;                       /* Active device pointer */
 
 static bool instructionsDisplayed = false;                              /* Keep track of demo instruction display */
 static detectMode_t detectMode = DETECT_MODE_POLL;                      /* Current tag detection method */
@@ -188,31 +188,10 @@ void cprintf(t_hydra_console *con, const char *fmt, ...)
 }
 */
 
-/* Compute detected tag Y position */
-#ifndef FREEZE_DISPLAY
-static uint16_t getTagBoxY(int index)
-{
-	return yBox + index*(boxHeight + boxSpace);
-}
-#endif
-
 /* Control Radio Button display */
 static void setRadio(t_hydra_console *con)
 {
 	(void)(con);
-#ifndef FREEZE_DISPLAY
-	if(detectMode == DETECT_MODE_POLL) {
-		BSP_LCD_SetColors(LCD_COLOR_BLUE2,0xFFFF);
-		BSP_LCD_FillCircle(RADIO_X,RADIO_Y, 5);
-		BSP_LCD_SetColors(0xFFFF,0xFFFF);
-		BSP_LCD_FillCircle(RADIO_X,RADIO_Y+40, 5);
-	} else {
-		BSP_LCD_SetColors(LCD_COLOR_BLUE2,0xFFFF);
-		BSP_LCD_FillCircle(RADIO_X,RADIO_Y+40, 5);
-		BSP_LCD_SetColors(0xFFFF,0xFFFF);
-		BSP_LCD_FillCircle(RADIO_X,RADIO_Y, 5);
-	}
-#else
 	/*
 	if(detectMode == DETECT_MODE_POLL)
 	{
@@ -221,7 +200,6 @@ static void setRadio(t_hydra_console *con)
 		cprintf(con, "detectMode=%d\r\n", detectMode);
 	}
 	*/
-#endif
 }
 
 void nfc_technology_to_str(nfc_technology_t nfc_tech, nfc_technology_str_t* str_tag)
@@ -255,27 +233,7 @@ void nfc_technology_to_str(nfc_technology_t nfc_tech, nfc_technology_str_t* str_
 void tagDetectionNoTag(t_hydra_console *con, nfc_technology_t nfc_tech)
 {
 	nfc_technology_str_t tag;
-#ifndef FREEZE_DISPLAY
-	BSP_LCD_SetColors(0x0000,0xFFFF);
-
-	BSP_LCD_FillCircle(RADIO_X,RADIO_Y, 10);
-	BSP_LCD_SetColors(0xFFFF,0x0000);
-	BSP_LCD_FillCircle(RADIO_X,RADIO_Y, 7);
-
-
-	BSP_LCD_SetColors(0x0000,0xFFFF);
-	BSP_LCD_FillCircle(RADIO_X,RADIO_Y+40, 10);
-	BSP_LCD_SetColors(0xFFFF,0x0000);
-	BSP_LCD_FillCircle(RADIO_X,RADIO_Y+40, 7);
-#endif
 	setRadio(con);
-#ifndef FREEZE_DISPLAY
-	Menu_SetStyle(PLAIN);
-	BSP_LCD_DisplayStringAt(RADIO_X + 20,RADIO_Y-10,(uint8_t*)"Continuous Poll",LEFT_MODE);
-	BSP_LCD_DisplayStringAt(RADIO_X + 20,RADIO_Y+30,(uint8_t*)"Wake-up",LEFT_MODE);
-	Menu_DisplayCenterString(6,"Place tags above");
-	Menu_DisplayCenterString(7,"the antenna...");
-#endif
 	instructionsDisplayed = true;
 	nfc_technology_to_str(nfc_tech, &tag);
 	cprintf(con, "Place NFC-%s tag(s) above the antenna...(Press UBTN to exit)\r\n", tag.str);
