@@ -798,10 +798,6 @@ static int show(t_hydra_console *con, t_tokenline_parsed *p)
 		tokens_used++;
 		show_registers(con);
 	} else {
-		nfc_technology_to_str(proto->config.hydranfc.nfc_technology,
-		                      &tag_tech_str);
-		cprintf(con, "Selected technology: NFC-%s\r\n",
-		        tag_tech_str.str);
 		show_params(con);
 	}
 	return tokens_used;
