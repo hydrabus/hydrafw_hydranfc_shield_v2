@@ -85,11 +85,13 @@ void st25r3916ledInit( void )
     st25r3916ledFieldOff();
 }
 
-#include "hydranfc_v2.h"
+//#include "hydranfc_v2_nfc_mode.h"
 
 /*******************************************************************************/
 void st25r3916ledEvtIrq( uint32_t irqs )
 {
+	// todo may want to blink LEDs for rx tx etc
+
 //    if( (irqs & (ST25R3916_IRQ_MASK_RXS) ) != 0U )
 //    {
 //    	D1_ON;

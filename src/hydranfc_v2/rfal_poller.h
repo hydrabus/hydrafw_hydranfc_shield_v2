@@ -21,7 +21,7 @@
 
 #include "common.h" /* required for t_hydra_console */
 
-typedef enum{
+typedef enum {
 	NFC_ALL,
 	NFC_A,
 	NFC_B,

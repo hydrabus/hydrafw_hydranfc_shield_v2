@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef _HYDRANFC_V2_H_
-#define _HYDRANFC_V2_H_
+#ifndef _HYDRANFC_V2_NFC_MODE_H_
+#define _HYDRANFC_V2_NFC_MODE_H_
 
 #include "common.h"
 //#include "mcu.h"
@@ -103,5 +103,5 @@ void hydranfc_emul_iso14443a(t_hydra_console *con);
 void hydranfc_emul_mf_ultralight(t_hydra_console *con);
 int hydranfc_emul_mf_ultralight_file(t_hydra_console *con, char* filename);
 
-#endif /* _HYDRANFC_V2_H_ */
+#endif /* _HYDRANFC_V2_NFC_MODE_H_ */
 

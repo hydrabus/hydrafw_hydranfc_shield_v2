@@ -167,4 +167,5 @@ extern int buf_hex2ascii(uint8_t *ascii_buf, uint8_t *hex_buf, uint32_t hex_bufl
 
 uint8_t hydrabus_ubtn(void);
 
+void pretty_print_hex_buf(t_hydra_console *con, uint8_t *buffer, uint16_t len);
 #endif /* _COMMON_H_ */

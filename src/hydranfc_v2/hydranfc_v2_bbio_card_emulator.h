@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _HYDRANFC_V2_BBIO_READER_H_
-#define _HYDRANFC_V2_BBIO_READER_H_
+#ifndef _HYDRANFC_V2_BBIO_CARD_EMULATOR_H_
+#define _HYDRANFC_V2_BBIO_CARD_EMULATOR_H_
 
-#define BBIO_HYDRANFC_READER    "NFC2"
+#define BBIO_HYDRANFC_CARD_EMULATOR    "NCE2"
 
-void bbio_mode_hydranfc_v2_reader (t_hydra_console *con);
+void bbio_mode_hydranfc_v2_card_emulator (t_hydra_console *con);
 
-#endif /* _HYDRANFC_V2_NFC_MODE_H_ */
+#endif /* _HYDRANFC_V2_BBIO_CARD_EMULATOR_H_ */

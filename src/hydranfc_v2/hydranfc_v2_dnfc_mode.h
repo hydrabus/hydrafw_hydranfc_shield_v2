@@ -1,7 +1,7 @@
 /*
- * HydraBus/HydraNFC v2
+ * HydraBus/HydraNFC
  *
- * Copyright (C) 2020 Guillaume VINET
+ * Copyright (C) 2020 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _HYDRANFC_V2_BBIO_READER_H_
-#define _HYDRANFC_V2_BBIO_READER_H_
 
-#define BBIO_HYDRANFC_READER    "NFC2"
+#ifndef _HYDRANFC_V2_DNFC_MODE_H_
+#define _HYDRANFC_V2_DNFC_MODE_H_
 
-void bbio_mode_hydranfc_v2_reader (t_hydra_console *con);
+#include "hydrabus_mode_spi.h"
 
-#endif /* _HYDRANFC_V2_NFC_MODE_H_ */
+#endif /* _HYDRANFC_V2_DNFC_MODE_H_ */
+

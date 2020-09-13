@@ -22,26 +22,24 @@
 #include <stdint.h>
 #include "st_errno.h"
 
-enum cardEmulationMode
-{
-    CARDEMULATION_MODE_NDEF                     = 0x01,
-    CARDEMULATION_MODE_REFLECT                  = 0x02,
-    CARDEMULATION_PROCESS_INTERNAL              = 0x80,
+enum cardEmulationMode {
+	CARDEMULATION_MODE_NDEF                     = 0x01,
+	CARDEMULATION_MODE_REFLECT                  = 0x02,
+	CARDEMULATION_PROCESS_INTERNAL              = 0x80,
 };
 
-enum cardEmulationCommand
-{
-    CARDEMULATION_CMD_START                     = 0x01, /*!< start listen mode. */
-    CARDEMULATION_CMD_STOP                      = 0x02, /*!< stop listen mode. */
+enum cardEmulationCommand {
+	CARDEMULATION_CMD_START                     = 0x01, /*!< start listen mode. */
+	CARDEMULATION_CMD_STOP                      = 0x02, /*!< stop listen mode. */
 
-    CARDEMULATION_CMD_GET_RX_A                  = 0x11,
-    CARDEMULATION_CMD_SET_TX_A                  = 0x12,
-    CARDEMULATION_CMD_GET_RX_B                  = 0x13,
-    CARDEMULATION_CMD_SET_TX_B                  = 0x14,
-    CARDEMULATION_CMD_GET_RX_F                  = 0x15,
-    CARDEMULATION_CMD_SET_TX_F                  = 0x16,
+	CARDEMULATION_CMD_GET_RX_A                  = 0x11,
+	CARDEMULATION_CMD_SET_TX_A                  = 0x12,
+	CARDEMULATION_CMD_GET_RX_B                  = 0x13,
+	CARDEMULATION_CMD_SET_TX_B                  = 0x14,
+	CARDEMULATION_CMD_GET_RX_F                  = 0x15,
+	CARDEMULATION_CMD_SET_TX_F                  = 0x16,
 
-    CARDEMULATION_CMD_GET_LISTEN_STATE          = 0x21,
+	CARDEMULATION_CMD_GET_LISTEN_STATE          = 0x21,
 };
 //
 //enum cardEmulationState

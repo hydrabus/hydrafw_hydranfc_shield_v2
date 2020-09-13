@@ -19,15 +19,13 @@
 #ifndef HYDRANFC_V2_CE_H
 #define HYDRANFC_V2_CE_H
 
-typedef enum
-{
-    T4T_MODE_NOT_SET = 0,
-    T4T_MODE_URI,
-    T4T_MODE_EMAIL
+typedef enum {
+	T4T_MODE_NOT_SET = 0,
+	T4T_MODE_URI,
+	T4T_MODE_EMAIL
 } eT4TEmulationMode;
 
-typedef struct
-{
+typedef struct {
 	uint32_t uid_len;
 	uint8_t uid[8];
 	uint32_t sak_len; // 0 or 1
@@ -39,6 +37,8 @@ typedef struct
 
 extern sUserTagProperties user_tag_properties;
 extern uint8_t ul_cwrite_page_set;
+
+void hydranfc_ce_common(t_hydra_console *con);
 
 #endif
 

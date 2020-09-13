@@ -22,7 +22,9 @@
 #include "hydranfc_v2_nfc_mode.h"
 #include "rfal_rf.h"
 #include "hydrabus_bbio.h"
-#include "hydranfc_v2_bbio_reader.h"
+#include "bsp_gpio.h"
+#include "hydranfc_v2_bbio_card_emulator.h"
+#include "hydranfc_v2_ce.h"
 #include "st25r3916.h"
 #include "st25r3916_irq.h"
 #include "st25r3916_com.h"
@@ -40,6 +42,9 @@ static volatile int irq_end_rx;
 
 static void (* st25r3916_irq_fn)(void) = NULL;
 
+extern sUserTagProperties user_tag_properties;
+extern void hydranfc_ce_set_processCmd_ptr(void * ptr);
+
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
 {
@@ -53,6 +58,7 @@ static void extcb1(void * arg)
 }
 
 extern t_mode_config mode_con1;
+static t_hydra_console * g_con;
 
 static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
 {
@@ -110,15 +116,15 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	 */
 	/* spiStart() is done in sniffer see sniffer.c */
 	/* HydraBus SPI1 Slave CLK input */
-	palSetPadMode(GPIOA, 5, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 	/* HydraBus SPI1 Slave MISO. Not used/Not connected */
-	palSetPadMode(GPIOA, 6, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 	/* HydraBus SPI1 Slave MOSI. connected to ST25R3916 MOD Pin */
-	palSetPadMode(GPIOA, 7, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 	/* Configure K1/2 Buttons as Input */
-	palSetPadMode(GPIOB, 8, PAL_MODE_INPUT); /* K1 Button */
-	palSetPadMode(GPIOB, 9, PAL_MODE_INPUT); /* K2 Button */
+	bsp_gpio_init(BSP_GPIO_PORTB, 8, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K1 Button */
+	bsp_gpio_init(BSP_GPIO_PORTB, 9, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K2 Button */
 
 	/* Configure D1/2/3/4 LEDs as Output */
 	D1_OFF;
@@ -126,15 +132,16 @@ static bool init_gpio_spi_nfc(t_hydra_console *con)
 	D3_OFF;
 	D4_OFF;
 
-	palSetPadMode(GPIOB, 0, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	/* LED_D1 or TST_PÏN */
+	bsp_gpio_init(BSP_GPIO_PORTB, 0, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 #ifndef MAKE_DEBUG
 	// can't use LED on PB3 if using SWO
-	palSetPadMode(GPIOB, 3, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTB, 3, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 #endif
 
-	palSetPadMode(GPIOB, 4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
-	palSetPadMode(GPIOB, 5, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_MID1);
+	bsp_gpio_init(BSP_GPIO_PORTB, 4, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTB, 5, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
 
 	palDisablePadEvent(GPIOA, 1);
 	/* ST25R3916 IRQ output / HydraBus PA1 input */
@@ -164,102 +171,105 @@ static void deinit_gpio_spi_nfc(t_hydra_console *con)
 
 	bsp_spi_deinit(BSP_DEV_SPI2);
 
-	palSetPadMode(GPIOA, 5, PAL_MODE_INPUT);
-	palSetPadMode(GPIOA, 6, PAL_MODE_INPUT);
-	palSetPadMode(GPIOA, 7, PAL_MODE_INPUT);
+	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
+	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
 
-#if 0
-	/* Configure K1/2 Buttons as Input */
-	palSetPadMode(GPIOB, 8, PAL_MODE_INPUT); /* K1 Button */
-	palSetPadMode(GPIOB, 9, PAL_MODE_INPUT); /* K2 Button */
-
-	/* Configure D1/2/3/4 LEDs as Input */
-	palSetPadMode(GPIOB, 0, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 3, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 4, PAL_MODE_INPUT);
-	palSetPadMode(GPIOB, 5, PAL_MODE_INPUT);
-#endif
 	st25r3916_irq_fn = NULL;
 }
 
 static void bbio_mode_id(t_hydra_console *con)
 {
-	cprint(con, BBIO_HYDRANFC_READER, 4);
+	cprint(con, BBIO_HYDRANFC_CARD_EMULATOR, 4);
 }
 
-void bbio_mode_hydranfc_v2_reader(t_hydra_console *con)
+static void init(void)
 {
-	uint8_t bbio_subcommand, rlen, clen, compute_crc;
-	uint16_t rec_len;
+	memset(&user_tag_properties, 0, sizeof(user_tag_properties));
+
+	user_tag_properties.uid[0] = 0xAA;
+	user_tag_properties.uid[1] = 0xBB;
+	user_tag_properties.uid[2] = 0xCC;
+	user_tag_properties.uid[3] = 0xDD;
+	user_tag_properties.uid_len = 4;
+
+	user_tag_properties.sak[0] = 0x20;
+	user_tag_properties.sak_len = 1;
+}
+
+/* Main command management function */
+static uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDatalen, uint8_t *rspData)
+{
+	uint16_t rspDataLen;
+
+	cprint(g_con, (char*)&cmdDatalen, 2);
+	cprint(g_con, (char *) cmdData, cmdDatalen);
+
+	chnRead(g_con->sdu, (uint8_t*)&rspDataLen, 2);
+	chnRead(g_con->sdu, rspData, rspDataLen);
+
+	return rspDataLen*8;
+}
+
+void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con)
+{
+	uint8_t bbio_subcommand, clen;
 	uint8_t *rx_data = (uint8_t *) g_sbuf + 4096;
-	uint32_t flags;
 
 	init_gpio_spi_nfc(con);
 
 	bbio_mode_id(con);
+	init();
 
 	while (!hydrabus_ubtn()) {
 
 		if (chnRead(con->sdu, &bbio_subcommand, 1) == 1) {
 			switch (bbio_subcommand) {
-			case BBIO_NFC_SET_MODE_ISO_14443A: {
-				rfalNfcaPollerInitialize();
-				break;
-			}
-			case BBIO_NFC_SET_MODE_ISO_14443B: {
-				rfalNfcbPollerInitialize();
-				break;
-			}
-			case BBIO_NFC_SET_MODE_ISO_15693: {
-				rfalNfcvPollerInitialize();
-				break;
-			}
-			case BBIO_NFC_RF_OFF: {
-				rfalFieldOff();
-				break;
-			}
-			case BBIO_NFC_RF_ON: {
-				rfalFieldOnAndStartGT(); /* Turns the Field On and starts GT timer */
-				break;
-			}
+			case BBIO_NFC_CE_START_EMULATION:
+				/* Init st25r3916 IRQ function callback */
+				st25r3916_irq_fn = st25r3916Isr;
 
-			case BBIO_NFC_ISO_14443_A_REQA: {
+				user_tag_properties.level4_enabled = true;
 
-				rfalNfcaPollerCheckPresence(0x26, (rfalNfcaSensRes*)rx_data );
+				hydranfc_ce_set_processCmd_ptr(&processCmd);
+				g_con = con;
+				hydranfc_ce_common(con);
 
-				rlen = 2;
-				cprint(con, (char *) &rlen, 1);
-				cprint(con, (char *) rx_data, rlen);
+				irq_count = 0;
+				st25r3916_irq_fn = NULL;
 				break;
-			}
 
-			case BBIO_NFC_CMD_SEND_BITS: {
-				// TODO
-				break;
-			}
-			case BBIO_NFC_CMD_SEND_BYTES: {
-
-				chnRead(con->sdu, &compute_crc, 1);
+			case BBIO_NFC_CE_SET_UID: {
 				chnRead(con->sdu, &clen, 1);
 				chnRead(con->sdu, rx_data, clen);
 
-				if( compute_crc) {
-					flags = RFAL_TXRX_FLAGS_DEFAULT;
-				} else {
-					flags = ( (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL | (uint32_t)RFAL_TXRX_FLAGS_CRC_RX_KEEP );
+				switch (clen) {
+				case 4:
+				case 7:
+					user_tag_properties.uid_len = clen;
+					memcpy(user_tag_properties.uid, rx_data, clen);
+					rx_data[0] = 0x01;
+					break;
+				default:
+					rx_data[0] = 0x00;
 				}
-				rfalTransceiveBlockingTxRx( &rx_data[0],
-				                            clen,
-				                            rx_data,
-				                            0xFF,
-				                            &rec_len,
-				                            flags,
-				                            216960U + 71680U );
-				rlen = (uint8_t) (rec_len & 0xFF);
-				cprint(con, (char *) &rlen, 1);
-				cprint(con, (char *) rx_data, rlen);
+
+				cprint(con, (char *) rx_data, 1);
 				break;
 			}
+
+			case BBIO_NFC_CE_SET_SAK: {
+				chnRead(con->sdu, &clen, 1);
+				chnRead(con->sdu, rx_data, clen);
+
+				user_tag_properties.sak[0] = rx_data[0];
+
+				rx_data[0] = 1;
+
+				cprint(con, (char *) rx_data, 1);
+				break;
+			}
+
 			case BBIO_RESET: {
 				deinit_gpio_spi_nfc(con);
 				return;

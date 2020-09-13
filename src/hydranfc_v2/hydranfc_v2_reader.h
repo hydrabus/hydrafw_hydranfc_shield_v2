@@ -1,7 +1,7 @@
 /*
- * HydraBus/HydraNFC
+ * HydraBus/HydraNFC v2
  *
- * Copyright (C) 2020 Benjamin VERNOUX
+ * Copyright (C) 2020 Guillaume VINET
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,14 @@
  * limitations under the License.
  */
 
-#ifndef _HYDRABUS_MODE_DNFC_H_
-#define _HYDRABUS_MODE_DNFC_H_
+#ifndef _HYDRANFC_V2_READER_H_
+#define _HYDRANFC_V2_READER_H_
 
-#include "hydrabus_mode.h"
+#define HYDRANFC_V2_READER_VERBOSITY_OPT 0
 
-enum {
-	SPI_MSB_FIRST,
-	SPI_LSB_FIRST,
-};
+void bbio_mode_hydranfc_v2_reader(t_hydra_console *con);
+void hydranfc_v2_reader_set_opt(t_hydra_console *con, int opt, int value);
+void hydranfc_v2_reader_connect(t_hydra_console *con);
+void hydranfc_v2_reader_send(t_hydra_console *con, uint8_t * ascii_data);
 
-#endif /* _HYDRABUS_MODE_DNFC_H_ */
-
+#endif /* _HYDRANFC_V2_READER_H_ */

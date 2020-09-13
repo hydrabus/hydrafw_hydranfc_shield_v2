@@ -110,6 +110,11 @@ t_token_dict tl_dict[] = {
 	{ T_NFC_MODE, "nfc-mode"},
 	{ T_NFC_MODE_TX_BITRATE, "nfc-mode-tx_br"},
 	{ T_NFC_MODE_RX_BITRATE, "nfc-mode-rx_br"},
+	{ T_SET_NFC_OBSV, "set-nfc-obsv"},
+	{ T_GET_NFC_OBSV, "get-nfc-obsv"},
+	{ T_NFC_OBSV, "nfc-obsv"},
+	{ T_NFC_OBSV_TX, "nfc-obsv-tx"},
+	{ T_NFC_OBSV_RX, "nfc-obsv-rx"},
 	{ T_NFC_TRANSPARENT, "nfc-transp" },
 	{ T_NFC_STREAM, "nfc-stream" },
 	{ T_SET_EMUL_TAG_PROPERTIES, "ce" },
@@ -117,6 +122,17 @@ t_token_dict tl_dict[] = {
 	{ T_EMUL_TAG_PROPERTY_SAK, "sak" },
 	{ T_EMUL_TAG_PROPERTY_URI, "uri" },
 	{ T_EMUL_T4T, "emul-t4t" },
+	{ T_CARD_CONNECT_AUTO, "connect"},
+	{ T_CARD_CONNECT_AUTO_OPT, "connect-opt"},
+	{ T_CARD_CONNECT_AUTO_OPT_VERBOSITY, "verbosity"},
+	{ T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE ,"fsd"},
+	{ T_CARD_SEND, "send"},
+	{ T_NFC_RF_OFF_ON, "nfc-off-on"},
+	{ T_NFC_ISO_14443_REQA, "nfc-reqa"},
+	{ T_NFC_ISO_14443_WUPA, "nfc-wupa"},
+	{ T_NFC_SEND_BYTES, "send"},
+	{ T_NFC_SEND_BYTES_AND_COMPUTE_CRC, "send-auto"},
+
 #endif
 	{ T_SNIFF, "sniff" },
 	{ T_GPIO, "gpio" },
@@ -334,6 +350,25 @@ t_token tokens_mode_nfc_show[] = {
 	{ }
 };
 
+t_token tokens_set_nfc_obsv[] = {
+	{
+		T_NFC_OBSV,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC Observer 0=OFF 1=ON"
+	},
+	{
+		T_NFC_OBSV_TX,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC TX Observer value (8bits)"
+	},
+	{
+		T_NFC_OBSV_RX,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC RX Observer value (8bits)"
+	},
+	{ }
+};
+
 t_token tokens_mode_nfc_scan[] = {
 	{
 		T_PERIOD,
@@ -411,31 +446,53 @@ t_token tokens_emul_t4t[] = {
 	{ }
 };
 
+t_token tokens_connect_auto_opt[] = {
+	{
+			T_CARD_CONNECT_AUTO_OPT_VERBOSITY,
+			.arg_type = T_ARG_UINT,
+			.help = "Set verbosity. 0: print only APDU. 8: print all exchanges"
+	},
+	{
+			T_CARD_CONNECT_AUTO_OPT_ISO_14443_FRAME_SIZE,
+			.arg_type = T_ARG_UINT,
+			.help = "Frame size between 1 and 250 (only for ISO 14443 cards)"
+	},
+	{ }
+};
 
 #define NFC_PARAMETERS \
+	{\
+		T_SET_NFC_OBSV,\
+		.subtokens = tokens_set_nfc_obsv,\
+		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"\
+	},\
+	{\
+		T_GET_NFC_OBSV,\
+		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"\
+	},\
 	{\
 		T_NFC_ALL,\
 		.help = "Select technology NFC-A/B/V/F"\
 	},\
 	{\
 		T_NFC_A,\
-		.help = "Select technology NFC-A (ISO14443A includes MIFARE...)"\
+		.help = "Select technology NFC-A(ISO14443A)"\
 	},\
 	{\
 		T_NFC_B,\
-		.help = "Select technology NFC-B (ISO14443B)"\
+		.help = "Select technology NFC-B(ISO14443B)"\
 	},\
 	{\
 		T_NFC_ST25TB,\
-		.help = "Select technology NFC-B (ISO14443B ST25TB)"\
+		.help = "Select technology NFC-B(ISO14443B ST25TB)"\
 	},\
 	{\
 		T_NFC_V,\
-		.help = "Select technology NFC-V Vicinity (ISO/IEC 15693)"\
+		.help = "Select technology NFC-V Vicinity(ISO15693)"\
 	},\
 	{\
 		T_NFC_F,\
-		.help = "Select technology NFC-F Felica"\
+		.help = "Select technology NFC-F FeliCa"\
 	},\
 	{\
 		T_SCAN,\
@@ -443,18 +500,32 @@ t_token tokens_emul_t4t[] = {
 		.help = "Scan selected technology (NFC-A/B/V/F...)"\
 	},\
 	{\
-		T_EMUL_ISO14443A,\
-		.help = "Emul Tag ISO14443A"\
-	},\
-	{\
 		T_SET_EMUL_TAG_PROPERTIES,\
 		.subtokens = tokens_set_emul_tag_properties,\
-		.help = "Set Tag properties for Card Emulation (UID, SAK, T4T params...)"\
+		.help = "Set Tag properties for Card Emulation (UID, SAK...)"\
+	},\
+	{\
+		T_EMUL_ISO14443A,\
+		.help = "Emul Tag ISO14443A"\
 	},\
 	{\
 		T_EMUL_T4T,\
 		.subtokens = tokens_emul_t4t,\
 		.help = "Emulate Type 4 Tag with preset Tag properties"\
+	},\
+	{\
+		T_CARD_CONNECT_AUTO,\
+		.help = "Connect to a smartcard(NFC-A/B) or NFC-V tag"\
+	},\
+	{\
+		T_CARD_CONNECT_AUTO_OPT,               \
+		.subtokens = tokens_connect_auto_opt,\
+		.help = "Set options for connect & send commands"\
+	},\
+	{\
+		T_CARD_SEND,         \
+		.arg_type = T_ARG_STRING,              \
+		.help = "Send APDU(NFC-A/B) or data+crc(NFC-V) to a tag"\
 	},\
 /*
 	{\
@@ -498,6 +569,7 @@ t_token tokens_emul_t4t[] = {
 */
 
 t_token tokens_sd[];
+
 t_token tokens_mode_nfc[] = {
 	{
 		T_SD,
@@ -538,17 +610,17 @@ t_token tokens_set_nfc_mode[] = {
 	{
 		T_NFC_MODE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set NFC Mode\r\n\tPOLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6, POLL_NFCV=7\r\n\tPOLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11=, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
+		.help = "Set NFC Mode\r\n\tPOLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5\r\n\tPOLL_NFCF=6, POLL_NFCV=7, POLL_PICOPASS=8, POLL_ACTIVE_P2P=9\r\n\tLISTEN_NFCA=10, LISTEN_NFCB=11, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13"
 	},
 	{
 		T_NFC_MODE_TX_BITRATE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237"
+		.help = "Set TX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3\r\n\tBR_52p97=235, BR_26p48=236, BR_1p66=237"
 	},
 	{
 		T_NFC_MODE_RX_BITRATE,
 		.arg_type = T_ARG_UINT,
-		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237"
+		.help = "Set RX BitRate\r\n\tBR_106=0, BR_212=1, BR_424=2, BR_848=3\r\n\tBR_52p97=235, BR_26p48=236, BR_1p66=237"
 	},
 	{ }
 };
@@ -580,12 +652,47 @@ t_token tokens_mode_dnfc[] = {
 		.help = "Get NFC Mode"
 	},
 	{
+		T_SET_NFC_OBSV,
+		.subtokens = tokens_set_nfc_obsv,
+		.help = "Set NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"
+	},
+	{
+		T_GET_NFC_OBSV,
+		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"
+	},
+	{
+		T_NFC_RF_OFF_ON,
+		.help = "Set RF field off/on"
+	},
+	{
+		T_NFC_ISO_14443_REQA,
+		.help = "Send ISO 14443-A REQA"
+	},
+	{
+		T_NFC_ISO_14443_WUPA,
+		.help = "Send ISO 14443-A WUPA"
+	},
+	{
+		T_NFC_SEND_BYTES,
+		.arg_type = T_ARG_STRING,
+		.help = "Send bytes according to the selected mode"
+	},
+	{
+		T_NFC_SEND_BYTES_AND_COMPUTE_CRC,
+		.arg_type = T_ARG_STRING,
+		.help = "Send bytes according to the selected mode and add CRC"
+	},
+	{
 		T_NFC_TRANSPARENT,
-		.help = "Enter NFC Transparent Mode"
+		.help = "Enter NFC Transparent Test Mode"
 	},
 	{
 		T_NFC_STREAM,
-		.help = "Enter NFC Stream Mode"
+		.help = "Enter NFC Stream Test Mode"
+	},
+	{
+		T_SNIFF,
+		.help = "Enter NFC Sniff Test Mode"
 	},
 
 	/* SPI-specific commands */
@@ -646,16 +753,12 @@ t_token tokens_mode_dnfc[] = {
 		.help = "SPI Write a random byte (repeat with :<num>)"
 	},
 	{
-		T_AUX_ON,
-		.help = "Toggle AUX[0](PC4) high"
+		T_MINUS,
+		.help = "Toggle PC3 pin high"
 	},
 	{
-		T_AUX_OFF,
-		.help = "Toggle AUX[0](PC4) low"
-	},
-	{
-		T_AUX_READ,
-		.help = "Read AUX[0](PC4)"
+		T_UNDERSCORE,
+		.help = "Toggle PC3 pin low"
 	},
 	{
 		T_EXIT,
