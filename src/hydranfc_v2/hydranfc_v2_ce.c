@@ -35,6 +35,7 @@
 
 #include "bsp_print_dbg.h"
 #include "hydranfc_v2_ce.h"
+#include "hydranfc_v2.h"
 
 static uint8_t rxtxFrameBuf[512] __attribute__ ((section(".cmm")));
 
@@ -219,25 +220,162 @@ static uint16_t update(uint8_t *cmdData, uint8_t *rspData)
   return 2;
 }
 
+uint8_t ul_image[] = {
+		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		// roll over bit
+		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00
+};
+
+// page set at compatibility write first part command
+// ul_cwrite_page_set = page set + 1 (0 is page not set)
+// after first part is processed, second part can come after any delay (no time constraints)
+// or HLTA can be sent
+uint8_t ul_cwrite_page_set = 0;
+
+#define CMD_UL_READ 0x30
+#define CMD_UL_WRITE 0xA2
+#define CMD_UL_CWRITE 0xA0
+#define MIF_ACK 0xA
+#define MIF_NAK 0x0
+
 /* Main command management function */
-uint16_t processCmd(uint8_t *cmdData, uint8_t *rspData)
+uint16_t processCmd(uint8_t *cmdData, uint8_t *rspData, uint16_t cmdLen, bool *card_reset)
 {
+	uint8_t ul_cwrite_addr = 0;
+	bool cwrite_phase2 = false;
+
 	rfalLmState state = rfalListenGetState(NULL, NULL);
+	*card_reset = false;
+
+	if (ul_cwrite_page_set) {
+		ul_cwrite_addr = ul_cwrite_page_set - 1;
+		// todo ul_cwrite_page_set must also be reset at power off etc
+		ul_cwrite_page_set = 0;
+		cwrite_phase2 = true;
+	}
 
 	switch (state)
 	{
 	case RFAL_LM_STATE_ACTIVE_A:
 	case RFAL_LM_STATE_ACTIVE_Ax:
-#if 0
-		if (cmdData[0]== 0x60) // respond to classic auth
-		{
-			rspData[0] = cmdData[1] + ((char)0x04);
-			return 4;
-		}
-		else
-#endif
-		{
+		// 'nodelay' response will come in ~60uS, whereas FDT (Frame Delay Time)
+		// from PICC to PCD is at least 87uS
+		// in the meantime ACK/NAK timeout is 5ms and Write timeout is 10ms
+		// the above are upper and lower bounds to play with timing.
+		// add 440 uS
+		DelayUs(100);
+
+		if (cmdLen == 2 && cmdData[0] == 0x50 && cmdData[1] == 0x00) {
+			// normally we shouldn't get here, but RFAL is funny with its state machine, so
+			// I observed several instances of this behaviour
+			// todo - sleep here or at tx stage?
+			printf_dbg("HLTA in processCmd\r\n");
+			*card_reset = true;
+			return 0;
+		} else if (cwrite_phase2) {
+			uint8_t ul_addr = ul_cwrite_addr;
+
+			if (cmdLen != 16) {
+				rspData[0] = MIF_NAK; // NAK for invalid format
+				*card_reset = true;
+				return 4;
+			}
+			if (ul_addr >= 0x4 && ul_addr <= 0xf) {
+				// ordinary write
+				memcpy(&ul_image[ul_addr*4], &cmdData[0], 4);
+				rspData[0] = MIF_ACK;
+				return 4;
+			} else if (ul_addr == 0x3) {
+				// OTP page - bitwise OR
+				ul_image[0x3*4+0] |= cmdData[0];
+				ul_image[0x3*4+1] |= cmdData[1];
+				ul_image[0x3*4+2] |= cmdData[2];
+				ul_image[0x3*4+3] |= cmdData[3];
+				rspData[0] = MIF_ACK;
+				return 4;
+			} else if (ul_addr == 0x2) {
+				// todo lock bytes are not supported, so write to page 2 will yield nothing
+				rspData[0] = MIF_ACK;
+				return 4;
+			}
+			else {
+				rspData[0] = MIF_NAK; // NAK for invalid address
+				*card_reset = true;
+				return 4;
+			}
+		} else if (cmdData[0] == CMD_UL_READ) {
+			// ul read
+			if (cmdLen != 2) {
+				rspData[0] = MIF_NAK; // NAK for invalid format
+				*card_reset = true;
+				return 4;
+			}
+			int ul_addr = cmdData[1];
+			if (ul_addr >= 0 && ul_addr <= 0xf) {
+				memcpy(&rspData[0], &ul_image[ul_addr*4], 16);
+				return 8*16;
+			}
+			else {
+				rspData[0] = MIF_NAK; // NAK for invalid address
+				*card_reset = true;
+				return 4;
+			}
+		} else if (cmdData[0] == CMD_UL_WRITE) {
+			// ul write
+			if (cmdLen != 6) {
+				rspData[0] = MIF_NAK; // NAK for invalid format
+				*card_reset = true;
+				return 4;
+			}
+			uint8_t ul_addr = cmdData[1];
+			if (ul_addr >= 0x4 && ul_addr <= 0xf) {
+				// ordinary write
+				memcpy(&ul_image[ul_addr*4], &cmdData[2], 4);
+				rspData[0] = MIF_ACK;
+				return 4;
+			} else if (ul_addr == 0x3) {
+				// OTP page - bitwise OR
+				ul_image[0x3*4+0] |= cmdData[2];
+				ul_image[0x3*4+1] |= cmdData[3];
+				ul_image[0x3*4+2] |= cmdData[4];
+				ul_image[0x3*4+3] |= cmdData[5];
+				rspData[0] = MIF_ACK;
+				return 4;
+			} else if (ul_addr == 0x2) {
+				// todo lock bytes are not supported, so write to page 2 will yield nothing
+				rspData[0] = MIF_ACK;
+				return 4;
+			}
+			else {
+				rspData[0] = MIF_NAK; // NAK for invalid address
+				*card_reset = true;
+				return 4;
+			}
+		} else if (cmdData[0] == CMD_UL_CWRITE) {
+			// ul compatibility write - part 1
+			if (cmdLen != 2) {
+				rspData[0] = MIF_NAK; // NAK for invalid format
+				*card_reset = true;
+				return 4;
+			}
+			if (cmdData[1] >= 0x2 && cmdData[1] <= 0xf) {
+				// page num is valid - save it
+				ul_cwrite_page_set = cmdData[1] + 1;
+				rspData[0] = MIF_ACK;
+				return 4;
+			} else {
+				rspData[0] = MIF_NAK; // NAK for invalid address
+				*card_reset = true;
+				return 4;
+			}
+
+		} else {
 			printf_dbg("rx %x... ignored \r\n", cmdData[0]);
+			// todo check if it makes sense to stay in active state
+			*card_reset = true;
 			return 0;
 		}
 		break;
@@ -264,6 +402,8 @@ uint16_t processCmd(uint8_t *cmdData, uint8_t *rspData)
 		rspData[0] = ((char)0x68);
 		rspData[1] = ((char)0x00);
 		return 8*2;
+	case RFAL_LM_STATE_SLEEP_A:
+		break;
 	default:
 		printf_dbg("processCmd unhandled LGS %d\r\n", state);
 		break;
@@ -307,11 +447,13 @@ static void ceRun(t_hydra_console *con)
 	ReturnCode err = ERR_NONE;
 	uint16_t dataSize;
 	int i;
+	bool is_card_reset_needed = false;
 
-	dispatcherInterruptHandler();
+	dispatcherInterruptHandler(); // 2.5 uS
 
-	rfalWorker();
-	ceHandler();
+	rfalWorker(); // |
+	ceHandler();  // | 130 uS in idle
+
 	dataSize = sizeof(rxtxFrameBuf);
 //	rxSize = 512;
 	err = ceGetRx(CARDEMULATION_CMD_GET_RX_A, rxtxFrameBuf, &dataSize);
@@ -323,12 +465,12 @@ static void ceRun(t_hydra_console *con)
 			printf_dbg(" %02X", rxtxFrameBuf[i]);
 		printf_dbg("\r\n");
 
-		dataSize = processCmd(rxtxFrameBuf, rxtxFrameBuf);
-		err = ceSetTx(CARDEMULATION_CMD_SET_TX_A,rxtxFrameBuf, dataSize);
+		dataSize = processCmd(rxtxFrameBuf, rxtxFrameBuf, dataSize, &is_card_reset_needed);
+		err = ceSetTx(CARDEMULATION_CMD_SET_TX_A, rxtxFrameBuf, dataSize, is_card_reset_needed);
 
-		if(err != ERR_NONE)
-			cprintf(con, "ceSetTx err %d\r\n", err);
-		printf_dbg("ceSetTx err %d\r\n", err);
+		if(err != ERR_NONE) {
+			printf_dbg("ceSetTx err %d\r\n", err);
+		}
 		// dataSize in bits after processCmd()
 		dataSize = rfalConvBitsToBytes(dataSize);
 
@@ -348,11 +490,13 @@ static void ceRun(t_hydra_console *con)
 		case ERR_LINK_LOSS:
 			break;
 		default:
-			cprintf(con, "ceGetRx err %d\r\n", err);
 			printf_dbg("ceGetRx err %d\r\n", err);
 			break;
 		}
 	}
+	//D1_OFF;
+	//D3_OFF;
+	//D4_OFF;
 }
 
 
@@ -417,7 +561,6 @@ void hydranfc_ce_common(t_hydra_console *con)
 		while (!hydrabus_ubtn()) {
 			ceRun(con);
 			chThdYield();
-			//		  chThdSleepMilliseconds(50);
 		}
 
 		ceStop();

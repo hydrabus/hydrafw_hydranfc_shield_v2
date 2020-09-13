@@ -29,6 +29,7 @@
 
 #include "bsp_print_dbg.h"
 #include "hydranfc_v2_ce.h"
+#include "hydranfc_v2.h"
 
 void ceNfcaCardemu4A(uint8_t mode, rfalIsoDepTxRxParam *isoDepTxRxParam);
 void ceNfcfCardemu3(uint8_t mode, rfalTransceiveContext *ctx);
@@ -97,8 +98,8 @@ void ceInitalize( void )
     isFirstA3_Frame = true;
     rxReady = false;
     txReady = false;
-
     ceEnabled = false;
+	ul_cwrite_page_set = 0;
 }
 
 static rfalLmState state;
@@ -118,14 +119,14 @@ void ceHandler( void )
     if (state != statePrev)
     {
 	    // new state
-    	printf_dbg("rLGS %d\r\n", state);
+//    	printf_dbg("rLGS %d\r\n", state);
 	    statePrev = state;
     }
     tStateCur = rfalGetTransceiveState( );
     if (tStateCur != tStatePrev)
     {
 	    // new state
-    	printf_dbg("rGTS %d\r\n", tStateCur);
+//    	printf_dbg("rGTS %d\r\n", tStateCur);
 	    tStatePrev = tStateCur;
     }
 
@@ -169,10 +170,10 @@ void ceHandler( void )
                     	{
                         	printf_dbg("RATS ignored...\r\n");
 
-                        	rxSize = rfalConvBitsToBytes(rxRcvdLen);
-                        	for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
-                        		printf_dbg(" %02X", rxBuf_ce[i]);
-                        	printf_dbg("\r\n");
+//                        	rxSize = rfalConvBitsToBytes(rxRcvdLen);
+//                        	for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
+//                        		printf_dbg(" %02X", rxBuf_ce[i]);
+//                        	printf_dbg("\r\n");
 
                         	if (state == RFAL_LM_STATE_ACTIVE_Ax)
                         	{
@@ -196,16 +197,22 @@ void ceHandler( void )
                 	int i, rxSize;
                 	if (rxRcvdLen > 0)
                 	{
-                    	printf_dbg("Hndler A3 rx: ");
+//                    	printf_dbg("Hndler A3 rx: ");
+//
+//                    	rxSize = rfalConvBitsToBytes(rxRcvdLen);
+//                    	for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
+//                    		printf_dbg(" %02X", rxBuf_ce[i]);
+//                    	printf_dbg("\r\n");
 
-                    	rxSize = rfalConvBitsToBytes(rxRcvdLen);
-                    	for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
-                    		printf_dbg(" %02X", rxBuf_ce[i]);
-                    	printf_dbg("\r\n");
+                    	rxReady = true;
+                	}
+                	else
+                	{
+//                    	printf_dbg("dflag but rxlen=0!\r\n");
                 	}
 
                 	// not HLTA and not RATS - layer3 comms
-                	rxReady = true;
+//                	rxReady = true;
                 }
             }
             else
@@ -224,6 +231,7 @@ void ceHandler( void )
             				rfalListenStart(configMask, &configA, &configB, &configF, rxBuf_ce, rfalConvBytesToBits(RX_BUF_LENGTH), &rxRcvdLen);
             				rxReady = txReady = false;
             				isFirstA3_Frame = true;
+            				ul_cwrite_page_set = 0;
             				printf_dbg("LLoss1\r\n");
             				break;
 
@@ -256,6 +264,7 @@ void ceHandler( void )
                             rfalListenStart(configMask, &configA, &configB, &configF, rxBuf_ce, rfalConvBytesToBits(RX_BUF_LENGTH), &rxRcvdLen);
                             isActivatedA = false;
                             isFirstA3_Frame = true;
+                        	ul_cwrite_page_set = 0;
                             printf_dbg("LLoss2\r\n");
                             break;
 
@@ -374,6 +383,10 @@ void ceHandler( void )
 
 ReturnCode ceStart(const uint8_t *rxData, const uint16_t rxSize)
 {
+//	D1_OFF;
+//	D3_OFF;
+//	D4_OFF;
+
     //
     // rxData holds the emuMode and 4 TLV data sets (with TAG 4)
     //
@@ -471,6 +484,7 @@ ReturnCode ceGetRx(const uint8_t cmd, uint8_t *txData, uint16_t *txSize)
                         rfalListenStart(configMask, &configA, &configB, &configF, rxBuf_ce, rfalConvBytesToBits(RX_BUF_LENGTH), &rxRcvdLen);
                         rxReady = txReady = isActivatedA = false;
                         isFirstA3_Frame = true;
+                    	ul_cwrite_page_set = 0;
                         printf_dbg("LLoss3 %d\r\n", err);
                         break;
 
@@ -505,11 +519,13 @@ ReturnCode ceGetRx(const uint8_t cmd, uint8_t *txData, uint16_t *txSize)
 
                               rxReady = false;
                               txReady = true;
+                              //printf_dbg("1st frame w rxready\r\n");
                       }
                       else
                       {
                               *txSize = 0;
                               err = ERR_BUSY; // no data available yet
+                              //printf_dbg("1st frame WO rxready\r\n");
                       }
 
                       // NOTE: isFirstA3_Frame is cleared after the first transmit is done.
@@ -528,6 +544,7 @@ ReturnCode ceGetRx(const uint8_t cmd, uint8_t *txData, uint16_t *txSize)
                               rfalListenStart(configMask, &configA, &configB, &configF, rxBuf_ce, rfalConvBytesToBits(RX_BUF_LENGTH), &rxRcvdLen);
                               rxReady = txReady = false;
                               isFirstA3_Frame = true;
+                              ul_cwrite_page_set = 0;
                               printf_dbg("LLoss4 %d\r\n", err);
                               break;
 
@@ -535,11 +552,19 @@ ReturnCode ceGetRx(const uint8_t cmd, uint8_t *txData, uint16_t *txSize)
                                 break;
 
                           case ERR_NONE:
-                              ST_MEMCPY(txData, transceiveCtx.rxBuf, *transceiveCtx.rxRcvdLen);
-                              *txSize = rfalConvBitsToBytes(*transceiveCtx.rxRcvdLen);
+                        	  if (*transceiveCtx.rxRcvdLen > 0)
+                        	  {
+                                  ST_MEMCPY(txData, transceiveCtx.rxBuf, *transceiveCtx.rxRcvdLen);
+                                  *txSize = rfalConvBitsToBytes(*transceiveCtx.rxRcvdLen);
 
-                              rxReady = false;
-                              txReady = true;
+                                  rxReady = false;
+                                  txReady = true;
+                        	  }
+                        	  else
+                        	  {
+                                  //printf_dbg("rx=ERR_NONE but no data\r\n");
+                                  err = ERR_BUSY; // no data available yet
+                        	  }
                               break;
                       }
                     }
@@ -602,7 +627,7 @@ ReturnCode ceGetRx(const uint8_t cmd, uint8_t *txData, uint16_t *txSize)
     return err;
 }
 
-ReturnCode ceSetTx(const uint8_t cmd, const uint8_t * rxData, const uint16_t rxSize)
+ReturnCode ceSetTx(const uint8_t cmd, const uint8_t * rxData, const uint16_t rxSize, bool is_card_reset_needed)
 {
     ReturnCode err = ERR_NOTFOUND;
     uint16_t rxSizeBytes = rfalConvBitsToBytes(rxSize);
@@ -630,27 +655,77 @@ ReturnCode ceSetTx(const uint8_t cmd, const uint8_t * rxData, const uint16_t rxS
                 	// handle layer3 comms here
                         if (txReady)
                         {
-                                ST_MEMCPY(transceiveCtx.txBuf, rxData, rxSizeBytes); // at least 1 byte for 1 bit
-                                transceiveCtx.txBufLen = rxSize; // in bits!
-                                *transceiveCtx.rxRcvdLen = 0;
-                                // options here are tailored for Mifare emulation where 4 bit responses are needed
-                                transceiveCtx.flags = (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL |
-                                		(uint32_t)RFAL_TXRX_FLAGS_CRC_RX_REMV |		// RFAL_TXRX_FLAGS_CRC_RX_KEEP
-										(uint32_t)RFAL_TXRX_FLAGS_NFCIP1_OFF |
-										(uint32_t)RFAL_TXRX_FLAGS_AGC_ON |
-										(uint32_t)RFAL_TXRX_FLAGS_PAR_RX_REMV |		// RFAL_TXRX_FLAGS_PAR_RX_KEEP
-										(uint32_t)RFAL_TXRX_FLAGS_PAR_TX_NONE |
-										(uint32_t)RFAL_TXRX_FLAGS_NFCV_FLAG_AUTO;
+//                        	D3_ON;
+                        	ST_MEMCPY(transceiveCtx.txBuf, rxData, rxSizeBytes); // at least 1 byte for 1 bit
+                        	transceiveCtx.txBufLen = rxSize; // in bits!
+                        	*transceiveCtx.rxRcvdLen = 0;
+                        	if (is_card_reset_needed) {
+                        		// use blocking transmit if rxSize > 0 and then go to sleep
+                        		if (rxSize > 0) {
+                        			// options here are tailored for Mifare emulation where 4 bit responses are needed
+                        			// todo see if there is a use case for several bytes tx and then sleep
+                        			// and check if it works
+                        			transceiveCtx.flags = (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL |
+                        					(uint32_t)RFAL_TXRX_FLAGS_CRC_RX_REMV |		// RFAL_TXRX_FLAGS_CRC_RX_KEEP
+											(uint32_t)RFAL_TXRX_FLAGS_NFCIP1_OFF |
+											(uint32_t)RFAL_TXRX_FLAGS_AGC_ON |
+											(uint32_t)RFAL_TXRX_FLAGS_PAR_RX_REMV |		// RFAL_TXRX_FLAGS_PAR_RX_KEEP
+											(uint32_t)RFAL_TXRX_FLAGS_PAR_TX_NONE |
+											(uint32_t)RFAL_TXRX_FLAGS_NFCV_FLAG_AUTO;
 
-                                err = rfalStartTransceive(&transceiveCtx);
+                        			// ReturnCode rfalTransceiveBlockingTx( uint8_t* txBuf, uint16_t txBufLen, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t* actLen, uint32_t flags, uint32_t fwt )
+                        			rfalStartTransceive( &transceiveCtx );
+                        			do {
+                        				rfalWorker();
+                        				err = rfalGetTransceiveStatus();
+                        			} while (rfalIsTransceiveInTx() && (err == ERR_BUSY));
 
-                                if(err == ERR_NONE)
-                                {
-                                    // clear flag, after the first transmit (any other transceive is also not the first)
-                                    isFirstA3_Frame = false;
-                                    // clear rest of flags
-                                    rxReady = txReady = false;
-                                }
+                        			if( rfalIsTransceiveInRx() )
+                        			{
+                        				err = ERR_NONE;
+                        			}
+                        			else
+                        			{
+                        				printf_dbg("rfalGetTransceiveStatus %d\r\n", err);
+                        			}
+                        		}
+
+                        		// sleep after NAK etc
+                        		// todo distinguish between sleep and idle state here
+                        		rfalListenSleepStart( RFAL_LM_STATE_SLEEP_A , rxBuf_ce, RX_BUF_LENGTH, &rxRcvdLen );
+                        		//                                    rfalListenStop();
+                        		//                                    rfalListenStart(configMask, &configA, &configB, &configF, rxBuf_ce, rfalConvBytesToBits(RX_BUF_LENGTH), &rxRcvdLen);
+                        		rxReady = txReady = isActivatedA = false;
+                        		isFirstA3_Frame = true;
+                        		ul_cwrite_page_set = 0;
+                        	} else {
+                        		// card reset no needed
+
+                        		if (rxSize < 8) {
+                        			// options here are tailored for Mifare emulation where 4 bit responses are needed
+                        			// todo check flags if rxSize == 0, so we don't need to tx but need to rx
+                        			transceiveCtx.flags = (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL |
+                        					(uint32_t)RFAL_TXRX_FLAGS_CRC_RX_REMV |		// RFAL_TXRX_FLAGS_CRC_RX_KEEP
+											(uint32_t)RFAL_TXRX_FLAGS_NFCIP1_OFF |
+											(uint32_t)RFAL_TXRX_FLAGS_AGC_ON |
+											(uint32_t)RFAL_TXRX_FLAGS_PAR_RX_REMV |		// RFAL_TXRX_FLAGS_PAR_RX_KEEP
+											(uint32_t)RFAL_TXRX_FLAGS_PAR_TX_NONE |
+											(uint32_t)RFAL_TXRX_FLAGS_NFCV_FLAG_AUTO;
+                        		} else {
+                        			transceiveCtx.flags = RFAL_TXRX_FLAGS_DEFAULT;
+                        		}
+
+                        		err = rfalStartTransceive(&transceiveCtx);
+
+                        		if(err == ERR_NONE)
+                        		{
+                        			// clear flag, after the first transmit (any other transceive is also not the first)
+                        			isFirstA3_Frame = false;
+                        			// clear rest of flags
+                        			rxReady = txReady = false;
+                        		}
+                        	}
+
                         }
                 }
             break;

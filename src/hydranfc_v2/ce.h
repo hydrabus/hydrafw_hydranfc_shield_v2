@@ -40,7 +40,7 @@ enum cardEmulationCommand
     CARDEMULATION_CMD_SET_TX_B                  = 0x14,
     CARDEMULATION_CMD_GET_RX_F                  = 0x15,
     CARDEMULATION_CMD_SET_TX_F                  = 0x16,
-    
+
     CARDEMULATION_CMD_GET_LISTEN_STATE          = 0x21,
 };
 //
@@ -59,7 +59,7 @@ extern ReturnCode ceStart(const uint8_t *rxData, const uint16_t rxSize);
 extern ReturnCode ceStop( void );
 
 extern ReturnCode ceGetRx(const uint8_t cmd, uint8_t *txData, uint16_t *txSize);
-extern ReturnCode ceSetTx(const uint8_t cmd, const uint8_t* rxData, const uint16_t rxSize);
+extern ReturnCode ceSetTx(const uint8_t cmd, const uint8_t* rxData, const uint16_t rxSize, bool is_card_reset_needed);
 
 extern ReturnCode ceGetListenState(uint8_t *txData, uint16_t *txSize);
 

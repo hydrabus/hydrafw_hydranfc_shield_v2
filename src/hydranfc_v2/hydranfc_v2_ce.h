@@ -38,6 +38,7 @@ typedef struct
 } sUserTagProperties;
 
 extern sUserTagProperties user_tag_properties;
+extern uint8_t ul_cwrite_page_set;
 
 #endif
 
