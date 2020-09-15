@@ -88,6 +88,14 @@ static rfalDpoEntry dpoSetup[] = {
 
 static void (* st25r3916_irq_fn)(void) = NULL;
 
+/*
+ * Works only on positive numbers !!
+ */
+static int round_int(float x)
+{
+	return (int)(x + 0.5f);
+}
+
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
 {
@@ -860,9 +868,19 @@ static void hydranfc_card_emul_iso14443a(t_hydra_console *con)
 	st25r3916_irq_fn = NULL;
 }
 
+static int phase_degree(uint8_t phase_raw)
+{
+	return round_int( 17.0f + (((1.0f - ((float)(phase_raw)) / 255.0f)) * 146.0f) );
+}
+
+static int amplitude_mV(uint8_t amplitude_raw)
+{
+	return round_int(13.02f * (float)(amplitude_raw));
+}
+
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 {
-	#define EXEC_CMD_LIST_MAX (5)
+#define EXEC_CMD_LIST_MAX (5)
 	int nfc_tech;
 	mode_config_proto_t* proto = &con->mode->proto;
 	int period, t;
@@ -874,18 +892,18 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	int exec_cmd_list[EXEC_CMD_LIST_MAX] = { 0 };
 	int exec_cmd_list_nb = 0;
 	int exec_cmd_idx = 0;
-/*
-	bool sniff_trace_uart1;
-	bool sniff_raw;
-	bool sniff_bin;
-	bool sniff_frame_time;
-	bool sniff_parity;
-	sniff_trace_uart1 = FALSE;
-	sniff_raw = FALSE;
-	sniff_bin = FALSE;
-	sniff_frame_time = FALSE;
-	sniff_parity = FALSE;
-*/
+	/*
+		bool sniff_trace_uart1;
+		bool sniff_raw;
+		bool sniff_bin;
+		bool sniff_frame_time;
+		bool sniff_parity;
+		sniff_trace_uart1 = FALSE;
+		sniff_raw = FALSE;
+		sniff_bin = FALSE;
+		sniff_frame_time = FALSE;
+		sniff_parity = FALSE;
+	*/
 	if(p->tokens[token_pos] == T_SD) {
 		t = cmd_sd(con, p);
 		return t;
@@ -1033,27 +1051,27 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 			break;
 
-/*
-		case T_TRACE_UART1:
-			sniff_trace_uart1 = TRUE;
-			break;
+		/*
+				case T_TRACE_UART1:
+					sniff_trace_uart1 = TRUE;
+					break;
 
-		case T_FRAME_TIME:
-			sniff_frame_time = TRUE;
-			break;
+				case T_FRAME_TIME:
+					sniff_frame_time = TRUE;
+					break;
 
-		case T_BIN:
-			sniff_bin = TRUE;
-			break;
+				case T_BIN:
+					sniff_bin = TRUE;
+					break;
 
-		case T_PARITY:
-			sniff_parity = TRUE;
-			break;
+				case T_PARITY:
+					sniff_parity = TRUE;
+					break;
 
-		case T_RAW:
-			sniff_raw = TRUE;
-			break;
-*/
+				case T_RAW:
+					sniff_raw = TRUE;
+					break;
+		*/
 		case T_SNIFF:
 			action = p->tokens[t];
 			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
@@ -1172,10 +1190,9 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	}
 
 	/* Execute commands */
-	for(exec_cmd_idx = 0; exec_cmd_idx < exec_cmd_list_nb; exec_cmd_idx++)
-	{
+	for(exec_cmd_idx = 0; exec_cmd_idx < exec_cmd_list_nb; exec_cmd_idx++) {
 		switch(exec_cmd_list[exec_cmd_idx]) {
-	
+
 		case T_SET_NFC_OBSV: {
 			cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
 			cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
@@ -1184,28 +1201,28 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 				rfalDisableObsvMode();
 				cprintf(con, "NFC Observation mode disabled\r\n");
 			}
-	
+
 			if(1 == nfc_obsv) {
 				rfalSetObsvMode(nfc_obsv_tx, nfc_obsv_rx);
 				cprintf(con, "NFC Observation mode enabled\r\n");
 			}
 		}
 		break;
-	
+
 		case T_GET_NFC_OBSV: {
 			uint8_t rfal_obsv_tx;
 			uint8_t rfal_obsv_rx;
-	
+
 			cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
 			cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
 			cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
-	
+
 			rfalGetObsvMode(&rfal_obsv_tx, &rfal_obsv_rx);
 			cprintf(con, "rfal_obsv_tx = %d / 0x%02X\r\n", rfal_obsv_tx, rfal_obsv_tx);
 			cprintf(con, "rfal_obsv_rx = %d / 0x%02X\r\n", rfal_obsv_rx, rfal_obsv_rx);
 		}
 		break;
-	
+
 		case T_NFC_TUNE_AUTO: {
 			struct st25r3916AatTuneResult tuningStatus;
 			ReturnCode err;
@@ -1215,40 +1232,37 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			uint8_t phase;
 			amplitude = 0;
 			phase = 0;
-	
+
 			err = st25r3916AatTune(NULL, &tuningStatus);
 			if (ERR_NONE == err) {
 				/* Get amplitude and phase */
 				err = rfalChipMeasureAmplitude(&amplitude);
-				if (ERR_NONE == err)
-				{
+				if (ERR_NONE == err) {
 					err = rfalChipMeasurePhase(&phase);
-					if (ERR_NONE == err)
-					{
+					if (ERR_NONE == err) {
 						st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
 						st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
-	
+
 						cprintf(con, "nfc-tune-auto results after tuning:\r\n");
 						cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
 						cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
-						cprintf(con, "phase = %d\r\n", phase);
-						cprintf(con, "amplitude = %d\r\n", amplitude);
+						cprintf(con, "phase = %d° (%d / 0x%02X)\r\n", phase_degree(phase), phase, phase);
+						cprintf(con, "amplitude = %dmV (%d / 0x%02X)\r\n", amplitude_mV(amplitude), amplitude, amplitude);
 						cprintf(con, "measureCnt = %d\r\n", tuningStatus.measureCnt);
-					}else {
+					} else {
 						cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
 					}
-				}else {
+				} else {
 					cprintf(con, "rfalChipMeasureAmplitude Error %d\r\n", err);
 				}
-			}else
-			{
+			} else {
 				cprintf(con, "st25r3916AatTune Error %d\r\n", err);
 			}
 		}
 		break;
-	
+
 		case T_SET_NFC_TUNE: {
-			#define ST25R3916_AAT_CAP_DELAY_MAX 10  /*!< Max Variable Capacitor settle delay */
+#define ST25R3916_AAT_CAP_DELAY_MAX 10  /*!< Max Variable Capacitor settle delay */
 			ReturnCode err;
 			uint8_t aat_a;  /*!< serial cap */
 			uint8_t aat_b;  /*!< parallel cap */
@@ -1256,40 +1270,38 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			uint8_t phase;
 			amplitude = 0;
 			phase = 0;
-	
+
 			st25r3916WriteRegister(ST25R3916_REG_ANT_TUNE_A, nfc_aat_a);
 			st25r3916WriteRegister(ST25R3916_REG_ANT_TUNE_B, nfc_aat_b);
-	
+
 			/* Wait till caps have settled.. */
 			platformDelay(ST25R3916_AAT_CAP_DELAY_MAX);
-	
+
 			/* Get amplitude and phase */
 			err = rfalChipMeasureAmplitude(&amplitude);
-			if (ERR_NONE == err)
-			{
+			if (ERR_NONE == err) {
 				err = rfalChipMeasurePhase(&phase);
-				if (ERR_NONE == err)
-				{
+				if (ERR_NONE == err) {
 					st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
 					st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
-	
+
 					cprintf(con, "set-nfc-tune variables:\r\n");
 					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_a, nfc_aat_a);
 					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_b, nfc_aat_b);
 					cprintf(con, "set-nfc-tune results after tuning:\r\n");
 					cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
 					cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
-					cprintf(con, "phase = %d\r\n", phase);
-					cprintf(con, "amplitude = %d\r\n", amplitude);
-				}else {
+					cprintf(con, "phase = %d° (%d / 0x%02X)\r\n", phase_degree(phase), phase, phase);
+					cprintf(con, "amplitude = %dmV (%d / 0x%02X)\r\n", amplitude_mV(amplitude), amplitude, amplitude);
+				} else {
 					cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
 				}
-			}else {
+			} else {
 				cprintf(con, "rfalChipMeasureAmplitude Error %d\r\n", err);
 			}
 		}
 		break;
-	
+
 		case T_GET_NFC_TUNE: {
 			ReturnCode err;
 			uint8_t aat_a;  /*!< serial cap */
@@ -1298,41 +1310,39 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			uint8_t phase;
 			amplitude = 0;
 			phase = 0;
-	
+
 			st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
 			st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
-	
+
 			/* Get amplitude and phase */
 			err = rfalChipMeasureAmplitude(&amplitude);
-			if (ERR_NONE == err)
-			{
+			if (ERR_NONE == err) {
 				err = rfalChipMeasurePhase(&phase);
-				if (ERR_NONE == err)
-				{
+				if (ERR_NONE == err) {
 					cprintf(con, "get-nfc-tune variables:\r\n");
 					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_a, nfc_aat_a);
 					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_b, nfc_aat_b);
 					cprintf(con, "get-nfc-tune registers:\r\n");
 					cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
 					cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
-					cprintf(con, "phase = %d\r\n", phase);
-					cprintf(con, "amplitude = %d\r\n", amplitude);
-				}else {
+					cprintf(con, "phase = %d° (%d / 0x%02X)\r\n", phase_degree(phase), phase, phase);
+					cprintf(con, "amplitude = %dmV (%d / 0x%02X)\r\n", amplitude_mV(amplitude), amplitude, amplitude);
+				} else {
 					cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
 				}
-			}else {
+			} else {
 				cprintf(con, "rfalChipMeasureAmplitude Error %d\r\n", err);
 			}
 		}
 		break;
-	
+
 		case T_SCAN: {
 			nfc_technology_str_t tag_tech_str;
 			nfc_tech = proto->config.hydranfc.nfc_technology;
-	
+
 			/* Init st25r3916 IRQ function callback */
 			st25r3916_irq_fn = st25r3916Isr;
-	
+
 			nfc_technology_to_str(nfc_tech, &tag_tech_str);
 			if (continuous) {
 				cprintf(con, "Scanning NFC-%s ", tag_tech_str.str);
@@ -1344,18 +1354,18 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			} else {
 				scan(con, nfc_tech);
 			}
-	
+
 			irq_count = 0;
 			st25r3916_irq_fn = NULL;
 			break;
 		}
-	
+
 		case T_READ_MF_ULTRALIGHT:
 			cprintf(con, "T_READ_MF_ULTRALIGHT not implemented.\r\n");
 			// TODO T_READ_MF_ULTRALIGHT
 			//hydranfc_v2_read_mifare_ul(con, sd_file.filename);
 			break;
-	
+
 		case T_EMUL_MF_ULTRALIGHT:
 			cprintf(con, "T_EMUL_MF_ULTRALIGHT not implemented.\r\n");
 			// TODO T_EMUL_MF_ULTRALIGHT
@@ -1369,15 +1379,15 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 			*/
 			break;
-	
+
 		case T_CLONE_MF_ULTRALIGHT:
 			cprintf(con, "T_CLONE_MF_ULTRALIGHT not implemented.\r\n");
 			break;
-	
+
 		case T_SNIFF:
 			// TODO T_SNIFF
 			cprintf(con, "T_SNIFF not implemented.\r\n");
-	#if 0
+#if 0
 			if(sniff_bin) {
 				if(sniff_raw) {
 					/* Sniffer Binary RAW UART1 only */
@@ -1401,49 +1411,49 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 					}
 				}
 			}
-	#endif
+#endif
 			break;
-	
+
 		case T_EMUL_MIFARE:
 			cprintf(con, "T_EMUL_MIFARE not implemented.\r\n");
 			// TODO T_EMUL_MIFARE
 			//hydranfc_emul_mifare(con, mifare_uid);
 			break;
-	
+
 		case T_EMUL_ISO14443A:
 			cprintf(con, "ISO14443A card emulation.\r\n");
 			hydranfc_card_emul_iso14443a(con);
 			break;
-	
+
 		case T_EMUL_T4T:
 			cprintf(con, "Type 4 Tag emulation.\r\n");
 			user_tag_properties.level4_enabled = true;
 			hydranfc_card_emul_iso14443a(con);
 			user_tag_properties.level4_enabled = false;
 			break;
-	
+
 		case T_CARD_CONNECT_AUTO: {
 			/* Init st25r3916 IRQ function callback */
 			st25r3916_irq_fn = st25r3916Isr;
 			hydranfc_v2_reader_connect(con);
-	
+
 			irq_count = 0;
 			st25r3916_irq_fn = NULL;
-	
+
 			break;
 		}
-	
+
 		case T_CARD_SEND: {
 			/* Init st25r3916 IRQ function callback */
 			st25r3916_irq_fn = st25r3916Isr;
 			hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
-	
+
 			irq_count = 0;
 			st25r3916_irq_fn = NULL;
-	
+
 			break;
 		}
-	
+
 		default:
 			break;
 		}
