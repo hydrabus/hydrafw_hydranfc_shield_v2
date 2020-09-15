@@ -47,6 +47,7 @@
 #include "rfal_chip.h"
 #include "st25r3916.h"
 #include "st25r3916_irq.h"
+#include "st25r3916_aat.h"
 
 #include "rfal_poller.h"
 #include "hydranfc_v2_ce.h"
@@ -70,6 +71,9 @@ uint8_t globalCommProtectCnt;
 static int nfc_obsv = 0; /* 0 = OFF, 1=ON */
 static int nfc_obsv_tx = 0;
 static int nfc_obsv_rx = 0;
+
+static int nfc_aat_a = 0;
+static int nfc_aat_b = 0;
 
 /* Do not Enable DPO to have maximum performances/range */
 //#define DPO_ENABLE true
@@ -858,13 +862,18 @@ static void hydranfc_card_emul_iso14443a(t_hydra_console *con)
 
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 {
+	#define EXEC_CMD_LIST_MAX (5)
 	int nfc_tech;
 	mode_config_proto_t* proto = &con->mode->proto;
-	int action, period, t;
+	int period, t;
 	bool continuous;
 	unsigned int mifare_uid = 0;
 	filename_t sd_file;
 	int str_offset;
+	int action;
+	int exec_cmd_list[EXEC_CMD_LIST_MAX] = { 0 };
+	int exec_cmd_list_nb = 0;
+	int exec_cmd_idx = 0;
 /*
 	bool sniff_trace_uart1;
 	bool sniff_raw;
@@ -889,6 +898,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 	period = 1000;
 	continuous = FALSE;
 	sd_file.filename[0] = 0;
+	/* Parse all commands with parameters */
 	for (t = token_pos; p->tokens[t]; t++) {
 		switch (p->tokens[t]) {
 		case T_SHOW:
@@ -928,6 +938,30 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 				return t;
 			}
 			nfc_obsv_rx = tmp_obsv_val;
+			break;
+		}
+
+		case T_NFC_AAT_A: {
+			int tmp_aat_val = 0;
+			t += 2;
+			memcpy(&tmp_aat_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_aat_val < 0) || (tmp_aat_val > 255) ) {
+				cprintf(con, "Invalid nfc-aat-a value (shall be between 0 and 255)\r\n");
+				return t;
+			}
+			nfc_aat_a = tmp_aat_val;
+			break;
+		}
+
+		case T_NFC_AAT_B: {
+			int tmp_aat_val = 0;
+			t += 2;
+			memcpy(&tmp_aat_val, p->buf + p->tokens[t], sizeof(int));
+			if( (tmp_aat_val < 0) || (tmp_aat_val > 255) ) {
+				cprintf(con, "Invalid nfc-aat-b value (shall be between 0 and 255)\r\n");
+				return t;
+			}
+			nfc_aat_b = tmp_aat_val;
 			break;
 		}
 
@@ -972,6 +1006,10 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 
 		case T_SCAN:
 			action = p->tokens[t];
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
+			}
 			break;
 
 		case T_READ_MF_ULTRALIGHT:
@@ -980,11 +1018,19 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 				return FALSE;
 			memcpy(&str_offset, &p->tokens[t+2], sizeof(int));
 			snprintf(sd_file.filename, FILENAME_SIZE, "0:%s", p->buf + str_offset);
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
+			}
 			break;
 
 		case T_EMUL_MF_ULTRALIGHT:
 		case T_CLONE_MF_ULTRALIGHT:
 			action = p->tokens[t];
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
+			}
 			break;
 
 /*
@@ -1010,17 +1056,29 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 */
 		case T_SNIFF:
 			action = p->tokens[t];
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
+			}
 			break;
 
 		case T_EMUL_MIFARE:
 			action = p->tokens[t];
 			t += 2;
 			memcpy(&mifare_uid, p->buf + p->tokens[t], sizeof(int));
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
+			}
 			break;
 
 		case T_EMUL_ISO14443A:
 		case T_SET_EMUL_TAG_PROPERTIES:
 			action = p->tokens[t];
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
+			}
 			break;
 
 		case T_EMUL_T4T:
@@ -1028,6 +1086,10 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			if (p->tokens[t+1] == 0 || p->tokens[t+2] != 0) {
 				cprintf(con, "Invalid parameter(s).\r\n");
 				return t;
+			}
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
 			}
 			break;
 
@@ -1079,8 +1141,15 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		case T_CARD_CONNECT_AUTO_OPT:
 		case T_CARD_SEND:
 		case T_SET_NFC_OBSV:
-		case T_GET_NFC_OBSV: {
+		case T_GET_NFC_OBSV:
+		case T_NFC_TUNE_AUTO:
+		case T_SET_NFC_TUNE:
+		case T_GET_NFC_TUNE: {
 			action = p->tokens[t];
+			if(exec_cmd_list_nb < EXEC_CMD_LIST_MAX) {
+				exec_cmd_list[exec_cmd_list_nb] = action;
+				exec_cmd_list_nb++;
+			}
 			break;
 		}
 
@@ -1102,158 +1171,282 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		}
 	}
 
-	switch(action) {
-
-	case T_SET_NFC_OBSV: {
-		cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
-		cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
-		cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
-		if(nfc_obsv == 0) {
-			rfalDisableObsvMode();
-			cprintf(con, "NFC Observation mode disabled\r\n");
+	/* Execute commands */
+	for(exec_cmd_idx = 0; exec_cmd_idx < exec_cmd_list_nb; exec_cmd_idx++)
+	{
+		switch(exec_cmd_list[exec_cmd_idx]) {
+	
+		case T_SET_NFC_OBSV: {
+			cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
+			cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
+			cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
+			if(0 == nfc_obsv) {
+				rfalDisableObsvMode();
+				cprintf(con, "NFC Observation mode disabled\r\n");
+			}
+	
+			if(1 == nfc_obsv) {
+				rfalSetObsvMode(nfc_obsv_tx, nfc_obsv_rx);
+				cprintf(con, "NFC Observation mode enabled\r\n");
+			}
 		}
-
-		if(nfc_obsv == 1) {
-			rfalSetObsvMode(nfc_obsv_tx, nfc_obsv_rx);
-			cprintf(con, "NFC Observation mode enabled\r\n");
+		break;
+	
+		case T_GET_NFC_OBSV: {
+			uint8_t rfal_obsv_tx;
+			uint8_t rfal_obsv_rx;
+	
+			cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
+			cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
+			cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
+	
+			rfalGetObsvMode(&rfal_obsv_tx, &rfal_obsv_rx);
+			cprintf(con, "rfal_obsv_tx = %d / 0x%02X\r\n", rfal_obsv_tx, rfal_obsv_tx);
+			cprintf(con, "rfal_obsv_rx = %d / 0x%02X\r\n", rfal_obsv_rx, rfal_obsv_rx);
 		}
-	}
-	break;
-
-	case T_GET_NFC_OBSV: {
-		uint8_t rfal_obsv_tx;
-		uint8_t rfal_obsv_rx;
-
-		cprintf(con, "nfc-obsv = %d\r\n", nfc_obsv);
-		cprintf(con, "nfc-obsv-tx = %d / 0x%02X\r\n", nfc_obsv_tx, nfc_obsv_tx);
-		cprintf(con, "nfc-obsv-rx = %d / 0x%02X\r\n", nfc_obsv_rx, nfc_obsv_rx);
-
-		rfalGetObsvMode(&rfal_obsv_tx, &rfal_obsv_rx);
-		cprintf(con, "rfal_obsv_tx = %d / 0x%02X\r\n", rfal_obsv_tx, rfal_obsv_tx);
-		cprintf(con, "rfal_obsv_rx = %d / 0x%02X\r\n", rfal_obsv_rx, rfal_obsv_rx);
-	}
-	break;
-
-	case T_SCAN: {
-		nfc_technology_str_t tag_tech_str;
-		nfc_tech = proto->config.hydranfc.nfc_technology;
-
-		/* Init st25r3916 IRQ function callback */
-		st25r3916_irq_fn = st25r3916Isr;
-
-		nfc_technology_to_str(nfc_tech, &tag_tech_str);
-		if (continuous) {
-			cprintf(con, "Scanning NFC-%s ", tag_tech_str.str);
-			cprintf(con, "with %dms period. Press user button to stop.\r\n", period);
-			while (!hydrabus_ubtn()) {
+		break;
+	
+		case T_NFC_TUNE_AUTO: {
+			struct st25r3916AatTuneResult tuningStatus;
+			ReturnCode err;
+			uint8_t aat_a;  /*!< serial cap */
+			uint8_t aat_b;  /*!< parallel cap */
+			uint8_t amplitude;
+			uint8_t phase;
+			amplitude = 0;
+			phase = 0;
+	
+			err = st25r3916AatTune(NULL, &tuningStatus);
+			if (ERR_NONE == err) {
+				/* Get amplitude and phase */
+				err = rfalChipMeasureAmplitude(&amplitude);
+				if (ERR_NONE == err)
+				{
+					err = rfalChipMeasurePhase(&phase);
+					if (ERR_NONE == err)
+					{
+						st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
+						st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
+	
+						cprintf(con, "nfc-tune-auto results after tuning:\r\n");
+						cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
+						cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
+						cprintf(con, "phase = %d\r\n", phase);
+						cprintf(con, "amplitude = %d\r\n", amplitude);
+						cprintf(con, "measureCnt = %d\r\n", tuningStatus.measureCnt);
+					}else {
+						cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
+					}
+				}else {
+					cprintf(con, "rfalChipMeasureAmplitude Error %d\r\n", err);
+				}
+			}else
+			{
+				cprintf(con, "st25r3916AatTune Error %d\r\n", err);
+			}
+		}
+		break;
+	
+		case T_SET_NFC_TUNE: {
+			#define ST25R3916_AAT_CAP_DELAY_MAX 10  /*!< Max Variable Capacitor settle delay */
+			ReturnCode err;
+			uint8_t aat_a;  /*!< serial cap */
+			uint8_t aat_b;  /*!< parallel cap */
+			uint8_t amplitude;
+			uint8_t phase;
+			amplitude = 0;
+			phase = 0;
+	
+			st25r3916WriteRegister(ST25R3916_REG_ANT_TUNE_A, nfc_aat_a);
+			st25r3916WriteRegister(ST25R3916_REG_ANT_TUNE_B, nfc_aat_b);
+	
+			/* Wait till caps have settled.. */
+			platformDelay(ST25R3916_AAT_CAP_DELAY_MAX);
+	
+			/* Get amplitude and phase */
+			err = rfalChipMeasureAmplitude(&amplitude);
+			if (ERR_NONE == err)
+			{
+				err = rfalChipMeasurePhase(&phase);
+				if (ERR_NONE == err)
+				{
+					st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
+					st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
+	
+					cprintf(con, "set-nfc-tune variables:\r\n");
+					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_a, nfc_aat_a);
+					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_b, nfc_aat_b);
+					cprintf(con, "set-nfc-tune results after tuning:\r\n");
+					cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
+					cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
+					cprintf(con, "phase = %d\r\n", phase);
+					cprintf(con, "amplitude = %d\r\n", amplitude);
+				}else {
+					cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
+				}
+			}else {
+				cprintf(con, "rfalChipMeasureAmplitude Error %d\r\n", err);
+			}
+		}
+		break;
+	
+		case T_GET_NFC_TUNE: {
+			ReturnCode err;
+			uint8_t aat_a;  /*!< serial cap */
+			uint8_t aat_b;  /*!< parallel cap */
+			uint8_t amplitude;
+			uint8_t phase;
+			amplitude = 0;
+			phase = 0;
+	
+			st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
+			st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
+	
+			/* Get amplitude and phase */
+			err = rfalChipMeasureAmplitude(&amplitude);
+			if (ERR_NONE == err)
+			{
+				err = rfalChipMeasurePhase(&phase);
+				if (ERR_NONE == err)
+				{
+					cprintf(con, "get-nfc-tune variables:\r\n");
+					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_a, nfc_aat_a);
+					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_b, nfc_aat_b);
+					cprintf(con, "get-nfc-tune registers:\r\n");
+					cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
+					cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
+					cprintf(con, "phase = %d\r\n", phase);
+					cprintf(con, "amplitude = %d\r\n", amplitude);
+				}else {
+					cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
+				}
+			}else {
+				cprintf(con, "rfalChipMeasureAmplitude Error %d\r\n", err);
+			}
+		}
+		break;
+	
+		case T_SCAN: {
+			nfc_technology_str_t tag_tech_str;
+			nfc_tech = proto->config.hydranfc.nfc_technology;
+	
+			/* Init st25r3916 IRQ function callback */
+			st25r3916_irq_fn = st25r3916Isr;
+	
+			nfc_technology_to_str(nfc_tech, &tag_tech_str);
+			if (continuous) {
+				cprintf(con, "Scanning NFC-%s ", tag_tech_str.str);
+				cprintf(con, "with %dms period. Press user button to stop.\r\n", period);
+				while (!hydrabus_ubtn()) {
+					scan(con, nfc_tech);
+					chThdSleepMilliseconds(period);
+				}
+			} else {
 				scan(con, nfc_tech);
-				chThdSleepMilliseconds(period);
 			}
-		} else {
-			scan(con, nfc_tech);
+	
+			irq_count = 0;
+			st25r3916_irq_fn = NULL;
+			break;
 		}
-
-		irq_count = 0;
-		st25r3916_irq_fn = NULL;
-		break;
-	}
-
-	case T_READ_MF_ULTRALIGHT:
-		cprintf(con, "T_READ_MF_ULTRALIGHT not implemented.\r\n");
-		// TODO T_READ_MF_ULTRALIGHT
-		//hydranfc_v2_read_mifare_ul(con, sd_file.filename);
-		break;
-
-	case T_EMUL_MF_ULTRALIGHT:
-		cprintf(con, "T_EMUL_MF_ULTRALIGHT not implemented.\r\n");
-		// TODO T_EMUL_MF_ULTRALIGHT
-		/*
-		if(sd_file.filename[0] != 0)
-		{
-			hydranfc_emul_mf_ultralight_file(con, sd_file.filename);
-		}else
-		{
-			hydranfc_emul_mf_ultralight(con);
-		}
-		*/
-		break;
-
-	case T_CLONE_MF_ULTRALIGHT:
-		cprintf(con, "T_CLONE_MF_ULTRALIGHT not implemented.\r\n");
-		break;
-
-	case T_SNIFF:
-		// TODO T_SNIFF
-		cprintf(con, "T_SNIFF not implemented.\r\n");
-#if 0
-		if(sniff_bin) {
-			if(sniff_raw) {
-				/* Sniffer Binary RAW UART1 only */
-				hydranfc_sniff_14443AB_bin_raw(con, sniff_frame_time, sniff_frame_time);
-			} else {
-				/* Sniffer Binary UART1 only */
-				hydranfc_sniff_14443A_bin(con, sniff_frame_time, sniff_frame_time, sniff_parity);
+	
+		case T_READ_MF_ULTRALIGHT:
+			cprintf(con, "T_READ_MF_ULTRALIGHT not implemented.\r\n");
+			// TODO T_READ_MF_ULTRALIGHT
+			//hydranfc_v2_read_mifare_ul(con, sd_file.filename);
+			break;
+	
+		case T_EMUL_MF_ULTRALIGHT:
+			cprintf(con, "T_EMUL_MF_ULTRALIGHT not implemented.\r\n");
+			// TODO T_EMUL_MF_ULTRALIGHT
+			/*
+			if(sd_file.filename[0] != 0)
+			{
+				hydranfc_emul_mf_ultralight_file(con, sd_file.filename);
+			}else
+			{
+				hydranfc_emul_mf_ultralight(con);
 			}
-		} else {
-			if(sniff_raw) {
-				/* Sniffer Binary RAW UART1 only */
-				hydranfc_sniff_14443AB_bin_raw(con, sniff_frame_time, sniff_frame_time);
-			} else {
-				/* Sniffer ASCII */
-				if(sniff_trace_uart1) {
-					if(sniff_frame_time)
-						cprintf(con, "frame-time disabled for trace-uart1 in ASCII\r\n");
-					hydranfc_sniff_14443A(con, FALSE, FALSE, TRUE);
+			*/
+			break;
+	
+		case T_CLONE_MF_ULTRALIGHT:
+			cprintf(con, "T_CLONE_MF_ULTRALIGHT not implemented.\r\n");
+			break;
+	
+		case T_SNIFF:
+			// TODO T_SNIFF
+			cprintf(con, "T_SNIFF not implemented.\r\n");
+	#if 0
+			if(sniff_bin) {
+				if(sniff_raw) {
+					/* Sniffer Binary RAW UART1 only */
+					hydranfc_sniff_14443AB_bin_raw(con, sniff_frame_time, sniff_frame_time);
 				} else {
-					hydranfc_sniff_14443A(con, sniff_frame_time, sniff_frame_time, FALSE);
+					/* Sniffer Binary UART1 only */
+					hydranfc_sniff_14443A_bin(con, sniff_frame_time, sniff_frame_time, sniff_parity);
+				}
+			} else {
+				if(sniff_raw) {
+					/* Sniffer Binary RAW UART1 only */
+					hydranfc_sniff_14443AB_bin_raw(con, sniff_frame_time, sniff_frame_time);
+				} else {
+					/* Sniffer ASCII */
+					if(sniff_trace_uart1) {
+						if(sniff_frame_time)
+							cprintf(con, "frame-time disabled for trace-uart1 in ASCII\r\n");
+						hydranfc_sniff_14443A(con, FALSE, FALSE, TRUE);
+					} else {
+						hydranfc_sniff_14443A(con, sniff_frame_time, sniff_frame_time, FALSE);
+					}
 				}
 			}
+	#endif
+			break;
+	
+		case T_EMUL_MIFARE:
+			cprintf(con, "T_EMUL_MIFARE not implemented.\r\n");
+			// TODO T_EMUL_MIFARE
+			//hydranfc_emul_mifare(con, mifare_uid);
+			break;
+	
+		case T_EMUL_ISO14443A:
+			cprintf(con, "ISO14443A card emulation.\r\n");
+			hydranfc_card_emul_iso14443a(con);
+			break;
+	
+		case T_EMUL_T4T:
+			cprintf(con, "Type 4 Tag emulation.\r\n");
+			user_tag_properties.level4_enabled = true;
+			hydranfc_card_emul_iso14443a(con);
+			user_tag_properties.level4_enabled = false;
+			break;
+	
+		case T_CARD_CONNECT_AUTO: {
+			/* Init st25r3916 IRQ function callback */
+			st25r3916_irq_fn = st25r3916Isr;
+			hydranfc_v2_reader_connect(con);
+	
+			irq_count = 0;
+			st25r3916_irq_fn = NULL;
+	
+			break;
 		}
-#endif
-		break;
-
-	case T_EMUL_MIFARE:
-		cprintf(con, "T_EMUL_MIFARE not implemented.\r\n");
-		// TODO T_EMUL_MIFARE
-		//hydranfc_emul_mifare(con, mifare_uid);
-		break;
-
-	case T_EMUL_ISO14443A:
-		cprintf(con, "ISO14443A card emulation.\r\n");
-		hydranfc_card_emul_iso14443a(con);
-		break;
-
-	case T_EMUL_T4T:
-		cprintf(con, "Type 4 Tag emulation.\r\n");
-		user_tag_properties.level4_enabled = true;
-		hydranfc_card_emul_iso14443a(con);
-		user_tag_properties.level4_enabled = false;
-		break;
-
-	case T_CARD_CONNECT_AUTO: {
-		/* Init st25r3916 IRQ function callback */
-		st25r3916_irq_fn = st25r3916Isr;
-		hydranfc_v2_reader_connect(con);
-
-		irq_count = 0;
-		st25r3916_irq_fn = NULL;
-
-		break;
-	}
-
-	case T_CARD_SEND: {
-		/* Init st25r3916 IRQ function callback */
-		st25r3916_irq_fn = st25r3916Isr;
-		hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
-
-		irq_count = 0;
-		st25r3916_irq_fn = NULL;
-
-		break;
-	}
-
-	default:
-		break;
+	
+		case T_CARD_SEND: {
+			/* Init st25r3916 IRQ function callback */
+			st25r3916_irq_fn = st25r3916Isr;
+			hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
+	
+			irq_count = 0;
+			st25r3916_irq_fn = NULL;
+	
+			break;
+		}
+	
+		default:
+			break;
+		}
 	}
 
 	return t - token_pos;

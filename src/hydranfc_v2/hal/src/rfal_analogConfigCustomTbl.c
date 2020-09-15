@@ -294,12 +294,14 @@ const uint8_t rfalAnalogConfigCustom[] = {
                         )
     
     /****** Default Analog Configuration for Chip-Specific Poll Common ******/
-    , MODE_ENTRY_9_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_POLL_COMMON)
+    , MODE_ENTRY_7_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_POLL_COMMON)
                         , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am  , ST25R3916_REG_MODE_tr_am_am                                           /* Use AM modulation */      
                         , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, ST25R3916_REG_TX_DRIVER_am_mod_12percent                /* Set Modulation index */
                         , ST25R3916_REG_AUX_MOD, (ST25R3916_REG_AUX_MOD_dis_reg_am | ST25R3916_REG_AUX_MOD_res_am), 0x00                           /* Use AM via regulator */
+#if 0
                         , ST25R3916_REG_ANT_TUNE_A, 0xFF, 0x49                                                                                  /* Set Antenna Tuning (Poller): ANTL */
                         , ST25R3916_REG_ANT_TUNE_B, 0xFF, 0x45                                                                                  /* Set Antenna Tuning (Poller): ANTL */
+#endif
                         , ST25R3916_REG_OVERSHOOT_CONF1,  0xFF, 0x00                                                                            /* Disable Overshoot Protection  */
                         , ST25R3916_REG_OVERSHOOT_CONF2,  0xFF, 0x00                                                                            /* Disable Overshoot Protection  */
                         , ST25R3916_REG_UNDERSHOOT_CONF1, 0xFF, 0x00                                                                            /* Disable Undershoot Protection */
@@ -527,9 +529,11 @@ const uint8_t rfalAnalogConfigCustom[] = {
                                                                                                                                                 
                                                                                                                                                 
     /****** Default Analog Configuration for Chip-Specific Listen On ******/
-    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_LISTEN_ON)
+    , MODE_ENTRY_4_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_LISTEN_ON)
+#if 0
                       , ST25R3916_REG_ANT_TUNE_A, 0xFF, 0x49                                                                                    /* Set Antenna Tuning (Listener): ANTL */
                       , ST25R3916_REG_ANT_TUNE_B, 0xFF, 0x45                                                                                    /* Set Antenna Tuning (Listener): ANTL */
+#endif
                       , ST25R3916_REG_OVERSHOOT_CONF1,  0xFF, 0x00                                                                              /* Disable Overshoot Protection  */
                       , ST25R3916_REG_OVERSHOOT_CONF2,  0xFF, 0x00                                                                              /* Disable Overshoot Protection  */
                       , ST25R3916_REG_UNDERSHOOT_CONF1, 0xFF, 0x00                                                                              /* Disable Undershoot Protection */
@@ -538,9 +542,11 @@ const uint8_t rfalAnalogConfigCustom[] = {
                                                                                                                                                 
                                                                                                                                                 
     /****** Default Analog Configuration for Listen AP2P Tx Common ******/
-    , MODE_ENTRY_7_REG( (RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX)
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX)
+#if 0
                       , ST25R3916_REG_ANT_TUNE_A, 0xFF, 0x49                                                                                    /* Set Antenna Tuning (Poller): ANTL */
                       , ST25R3916_REG_ANT_TUNE_B, 0xFF, 0x45                                                                                    /* Set Antenna Tuning (Poller): ANTL */
+#endif
                       , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, ST25R3916_REG_TX_DRIVER_am_mod_12percent                  /* Set Modulation index */
                       , ST25R3916_REG_OVERSHOOT_CONF1,  0xFF, 0x00                                                                              /* Disable Overshoot Protection  */
                       , ST25R3916_REG_OVERSHOOT_CONF2,  0xFF, 0x00                                                                              /* Disable Overshoot Protection  */
