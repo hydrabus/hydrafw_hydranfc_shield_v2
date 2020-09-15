@@ -873,7 +873,7 @@ static int phase_degree(uint8_t phase_raw)
 	return round_int( 17.0f + (((1.0f - ((float)(phase_raw)) / 255.0f)) * 146.0f) );
 }
 
-static int amplitude_mV(uint8_t amplitude_raw)
+static int amplitude_mVpp(uint8_t amplitude_raw)
 {
 	return round_int(13.02f * (float)(amplitude_raw));
 }
@@ -1247,7 +1247,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 						cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
 						cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
 						cprintf(con, "phase = %d° (%d / 0x%02X)\r\n", phase_degree(phase), phase, phase);
-						cprintf(con, "amplitude = %dmV (%d / 0x%02X)\r\n", amplitude_mV(amplitude), amplitude, amplitude);
+						cprintf(con, "amplitude = %dmVpp (%d / 0x%02X)\r\n", amplitude_mVpp(amplitude), amplitude, amplitude);
 						cprintf(con, "measureCnt = %d\r\n", tuningStatus.measureCnt);
 					} else {
 						cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
@@ -1292,7 +1292,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 					cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
 					cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
 					cprintf(con, "phase = %d° (%d / 0x%02X)\r\n", phase_degree(phase), phase, phase);
-					cprintf(con, "amplitude = %dmV (%d / 0x%02X)\r\n", amplitude_mV(amplitude), amplitude, amplitude);
+					cprintf(con, "amplitude = %dmVpp (%d / 0x%02X)\r\n", amplitude_mVpp(amplitude), amplitude, amplitude);
 				} else {
 					cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
 				}
@@ -1311,14 +1311,14 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			amplitude = 0;
 			phase = 0;
 
-			st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
-			st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
-
 			/* Get amplitude and phase */
 			err = rfalChipMeasureAmplitude(&amplitude);
 			if (ERR_NONE == err) {
 				err = rfalChipMeasurePhase(&phase);
 				if (ERR_NONE == err) {
+					st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_A, &aat_a);
+					st25r3916ReadRegister(ST25R3916_REG_ANT_TUNE_B, &aat_b);
+
 					cprintf(con, "get-nfc-tune variables:\r\n");
 					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_a, nfc_aat_a);
 					cprintf(con, "nfc-aat-a = %d / 0x%02X\r\n", nfc_aat_b, nfc_aat_b);
@@ -1326,7 +1326,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 					cprintf(con, "aat_a = %d / 0x%02X\r\n", aat_a, aat_a);
 					cprintf(con, "aat_b = %d / 0x%02X\r\n", aat_b, aat_b);
 					cprintf(con, "phase = %d° (%d / 0x%02X)\r\n", phase_degree(phase), phase, phase);
-					cprintf(con, "amplitude = %dmV (%d / 0x%02X)\r\n", amplitude_mV(amplitude), amplitude, amplitude);
+					cprintf(con, "amplitude = %dmVpp (%d / 0x%02X)\r\n", amplitude_mVpp(amplitude), amplitude, amplitude);
 				} else {
 					cprintf(con, "rfalChipMeasurePhase Error %d\r\n", err);
 				}
