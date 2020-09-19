@@ -48,17 +48,33 @@ assert resp[0] == 0x01
 print("Start Card emulation")
 ser.write(b"\x01")
 
-print("Get banner")
-print(ser.read(40).hex())
-
+BBIO_NFC_CE_CARD_ACTIVATION = 7
+BBIO_NFC_CE_CARD_CMD = 8
+BBIO_NFC_CE_END_EMULATION = 9
 
 while 1:
-    cmd_len = int.from_bytes(ser.read(2), byteorder="little")
-    print(f"Len: {cmd_len}")
-    cmd = ser.read(cmd_len)
-    print(f"Cmd {cmd.hex()}")
+    # We get the command tag
+    cmd_tag = int.from_bytes(ser.read(1), byteorder="little")
+    # print(f"Tag: {cmd_tag:02X}")
 
-    resp = bytes.fromhex("CAFEBABE9000")
-    resp_len = len(resp)
-    ser.write(resp_len.to_bytes(2, byteorder="little"))
-    ser.write(resp)
+    if cmd_tag == BBIO_NFC_CE_END_EMULATION:
+        print("Emulation stopped")
+        break
+    elif cmd_tag == BBIO_NFC_CE_CARD_ACTIVATION:
+        # A card was activated
+        print("Card activated")
+    elif cmd_tag == BBIO_NFC_CE_CARD_CMD:
+
+        # We get data length
+        cmd_len = int.from_bytes(ser.read(2), byteorder="little")
+        print(f"Len: {cmd_len}")
+
+        # We get data
+        cmd = ser.read(cmd_len)
+        print(f"Cmd {cmd.hex()}")
+
+        # We build the response
+        resp = bytes.fromhex("CAFEBABE9000")
+        resp_len = len(resp)
+        ser.write(resp_len.to_bytes(2, byteorder="little"))
+        ser.write(resp)

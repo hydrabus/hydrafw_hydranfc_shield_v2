@@ -44,6 +44,7 @@ static void (* st25r3916_irq_fn)(void) = NULL;
 
 extern sUserTagProperties user_tag_properties;
 extern void hydranfc_ce_set_processCmd_ptr(void * ptr);
+extern void ce_set_cardA_activated_ptr(void * ptr);
 
 /* Triggered when the Ext IRQ is pressed or released. */
 static void extcb1(void * arg)
@@ -201,6 +202,9 @@ static void init(void)
 static uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDatalen, uint8_t *rspData)
 {
 	uint16_t rspDataLen;
+	char cmd_byte = BBIO_NFC_CE_CARD_CMD;
+
+	cprint(g_con, &cmd_byte, 1);
 
 	cprint(g_con, (char*)&cmdDatalen, 2);
 	cprint(g_con, (char *) cmdData, cmdDatalen);
@@ -209,6 +213,14 @@ static uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdDatalen, uint8_t *rspD
 	chnRead(g_con->sdu, rspData, rspDataLen);
 
 	return rspDataLen*8;
+}
+
+static void cardA_activated(void)
+{
+	char cmd_byte = BBIO_NFC_CE_CARD_ACTIVATION;
+
+	cprint(g_con, &cmd_byte, 1);
+
 }
 
 void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con)
@@ -232,8 +244,12 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con)
 				user_tag_properties.level4_enabled = true;
 
 				hydranfc_ce_set_processCmd_ptr(&processCmd);
+				ce_set_cardA_activated_ptr(&cardA_activated);
 				g_con = con;
-				hydranfc_ce_common(con);
+				hydranfc_ce_common(con, TRUE);
+
+				bbio_subcommand = BBIO_NFC_CE_END_EMULATION;
+				cprint(con, (char *) &bbio_subcommand, 1);
 
 				irq_count = 0;
 				st25r3916_irq_fn = NULL;

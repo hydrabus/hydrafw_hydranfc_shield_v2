@@ -53,7 +53,7 @@
 #include "hydranfc_v2_ce.h"
 #include "hydranfc_v2_reader.h"
 
-extern void hydranfc_ce_common(t_hydra_console *con);
+extern void hydranfc_ce_common(t_hydra_console *con, bool quiet);
 extern uint32_t user_uid_len;
 extern uint8_t user_uid[8];
 extern uint8_t user_sak;
@@ -862,7 +862,7 @@ static void hydranfc_card_emul_iso14443a(t_hydra_console *con)
 	/* Init st25r3916 IRQ function callback */
 	st25r3916_irq_fn = st25r3916Isr;
 
-	hydranfc_ce_common(con);
+	hydranfc_ce_common(con, FALSE);
 
 	irq_count = 0;
 	st25r3916_irq_fn = NULL;
