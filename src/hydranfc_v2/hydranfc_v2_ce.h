@@ -37,7 +37,7 @@ typedef struct {
 
 extern sUserTagProperties user_tag_properties;
 
-void hydranfc_ce_common(t_hydra_console *con);
+void hydranfc_ce_common(t_hydra_console *con, bool quiet);
 
 #endif
 

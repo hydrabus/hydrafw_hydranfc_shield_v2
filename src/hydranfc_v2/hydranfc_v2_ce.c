@@ -288,7 +288,7 @@ void dispatcherInterruptHandler()
 	}
 }
 
-static void ceRun(t_hydra_console *con)
+static void ceRun(t_hydra_console *con, bool quiet)
 {
 	ReturnCode err = ERR_NONE;
 	uint16_t dataSize;
@@ -317,8 +317,11 @@ static void ceRun(t_hydra_console *con)
 		dataSize = (*current_processCmdPtr)(rxtxFrameBuf, dataSize, rxtxFrameBuf);
 		err = ceSetTx(CARDEMULATION_CMD_SET_TX_A,rxtxFrameBuf, dataSize);
 
-		if(err != ERR_NONE)
-			cprintf(con, "ceSetTx err %d\r\n", err);
+		if(err != ERR_NONE) {
+			if( quiet != TRUE) {
+				cprintf(con, "ceSetTx err %d\r\n", err);
+			}
+		}
 		printf_dbg("ceSetTx err %d\r\n", err);
 		// dataSize in bits after processCmd()
 		dataSize = rfalConvBitsToBytes(dataSize);
@@ -336,7 +339,7 @@ static void ceRun(t_hydra_console *con)
 		case ERR_LINK_LOSS:
 			break;
 		default:
-			cprintf(con, "ceGetRx err %d\r\n", err);
+			if( quiet != TRUE) { cprintf(con, "ceGetRx err %d\r\n", err); }
 			printf_dbg("ceGetRx err %d\r\n", err);
 			break;
 		}
@@ -349,7 +352,7 @@ void hydranfc_ce_set_processCmd_ptr(void * ptr)
 }
 
 
-void hydranfc_ce_common(t_hydra_console *con)
+void hydranfc_ce_common(t_hydra_console *con, bool quiet)
 {
 	uint16_t length = 0;
 	ReturnCode err = ERR_NONE;
@@ -403,18 +406,24 @@ void hydranfc_ce_common(t_hydra_console *con)
 
 	err = ceStart(startCmd, sizeof(startCmd));
 	if (err == ERR_NONE) {
-		cprintf(con, "CE started. Press user button to stop.\r\n");
+		if( quiet != TRUE) {
+			cprintf(con, "CE started. Press user button to stop.\r\n");
+		}
 
 		while (!hydrabus_ubtn()) {
-			ceRun(con);
+			ceRun(con, quiet);
 			chThdYield();
 			//		  chThdSleepMilliseconds(50);
 		}
 
 		ceStop();
-		cprintf(con, "CE finished\r\n");
+		if (quiet != TRUE) {
+			cprintf(con, "CE finished\r\n");
+		}
 	} else {
-		cprintf(con, "CE failed: %d\r\n", err);
+		if (quiet != TRUE) {
+			cprintf(con, "CE failed: %d\r\n", err);
+		}
 	}
 }
 
