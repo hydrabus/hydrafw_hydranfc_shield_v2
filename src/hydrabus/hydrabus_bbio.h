@@ -203,5 +203,6 @@
 #define BBIO_NFC_CE_CARD_ACTIVATION    0b00000111
 #define BBIO_NFC_CE_CARD_CMD           0b00001000
 #define BBIO_NFC_CE_END_EMULATION      0b00001001
+#define BBIO_NFC_CE_START_EMULATION_RAW 0b00001010
 
 int cmd_bbio(t_hydra_console *con);
