@@ -37,9 +37,14 @@
 #include "hydranfc_v2_ce.h"
 #include "hydranfc_v2_nfc_mode.h"
 
+#include "ff.h"
+#include "microsd.h"
+
+
 static uint8_t rxtxFrameBuf[512] __attribute__ ((section(".cmm")));
 
 uint16_t processCmd(uint8_t *cmdData, uint16_t  cmdLen, uint8_t *rspData, bool *card_reset);
+uint16_t processCmdMifUL(uint8_t *cmdData, uint16_t  cmdLen, uint8_t *rspData, bool *card_reset);
 uint16_t (*current_processCmdPtr)(uint8_t *, uint16_t, uint8_t *, bool *) = processCmd;
 
 void dispatcherInterruptHandler(void);
@@ -103,6 +108,98 @@ static uint32_t pdwFileSize[] = {sizeof(ccfile), NDEF_SIZE};
 sURI_Info w_uri = {URI_ID_0x01_STRING, "github.com/hydrabus", ""};
 
 sUserTagProperties user_tag_properties;
+
+// mifare ultralight factory image - this will be overwritten from an image file from SD
+// also note that startCmd[] in hydranfc_ce_common() with whatever sak/uid/etc values set
+// has no relation to the image content (e.g. image UID length/content will not match actual UID)
+// this was not so for HydraNFCv1, but this is not a requirement, and ,ay be useful as
+// hacking/penetration tests etc.
+uint8_t ul_image[] = {
+		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		// roll over bit
+		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00
+};
+
+const uint8_t ul_image_factory[] = {
+		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		// roll over bit
+		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00
+};
+
+// page set at compatibility write first part command
+// ul_cwrite_page_set = page set + 1 (0 is page not set)
+// after first part is processed, second part can come after any delay (no time constraints)
+// or HLTA can be sent
+uint8_t ul_cwrite_page_set = 0;
+
+// mifare ultralight commands and responses
+#define CMD_UL_READ 0x30
+#define CMD_UL_WRITE 0xA2
+#define CMD_UL_CWRITE 0xA0
+#define MIF_ACK 0xA
+#define MIF_NAK 0x0
+
+#define MFC_ULTRALIGHT_DATA_SIZE (16 * 4)
+
+void reset_ul_image_file(void)
+{
+	memcpy(ul_image, ul_image_factory, sizeof(ul_image));
+}
+
+int read_ul_image_file(t_hydra_console *con, char* filename)
+{
+	int i, filelen;
+	FIL fp;
+	uint32_t cnt;
+
+	if (!is_fs_ready()) {
+		if(mount() != 0) {
+			cprintf(con, "Mount failed\r\n");
+			return FALSE;
+		}
+	}
+
+	if (!file_open(&fp, filename, 'r')) {
+		cprintf(con, "Failed to open file %s\r\n", filename);
+		return FALSE;
+	}
+
+	filelen = f_size(&fp);
+	if(filelen != MFC_ULTRALIGHT_DATA_SIZE) {
+		cprintf(con, "Expected file size shall be equal to %d Bytes and it is %d Bytes\r\n", MFC_ULTRALIGHT_DATA_SIZE, filelen);
+		return FALSE;
+	}
+
+	cnt = MFC_ULTRALIGHT_DATA_SIZE;
+	cnt = file_read(&fp, ul_image, cnt);
+	if (!cnt)
+	{
+		cprintf(con, "Failed to read %d bytes in file (cnt %d)\r\n", MFC_ULTRALIGHT_DATA_SIZE, cnt);
+		return FALSE;
+	}
+	file_close(&fp);
+
+	cprintf(con, "DATA:");
+	for (i = 0; i < MFC_ULTRALIGHT_DATA_SIZE; i++) {
+		if(i % 16 == 0)
+			cprintf(con, "\r\n");
+
+		cprintf(con, " %02X", ul_image[i]);
+	}
+	cprintf(con, "\r\n");
+
+	// copy 'roll over' piece
+	memcpy(&ul_image[MFC_ULTRALIGHT_DATA_SIZE], &ul_image[0], 12);
+
+	return TRUE;
+}
+
 
 /* Helper method to test if a command is present */
 static bool cmdFind(uint8_t *cmd, uint8_t *find, uint16_t len)
@@ -212,29 +309,55 @@ static uint16_t update(uint8_t *cmdData, uint8_t *rspData)
 	return 2;
 }
 
-uint8_t ul_image[] = {
-		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		// roll over bit
-		0x04, 0x3b, 0x99, 0x2e, 0x0a, 0x9d, 0x32, 0x80, 0x25, 0x48, 0x00, 0x00
-};
 
-// page set at compatibility write first part command
-// ul_cwrite_page_set = page set + 1 (0 is page not set)
-// after first part is processed, second part can come after any delay (no time constraints)
-// or HLTA can be sent
-uint8_t ul_cwrite_page_set = 0;
-
-#define CMD_UL_READ 0x30
-#define CMD_UL_WRITE 0xA2
-#define CMD_UL_CWRITE 0xA0
-#define MIF_ACK 0xA
-#define MIF_NAK 0x0
-
-/* Main command management function */
+// command management - Level4 and 'emul-3a' dummy
 uint16_t processCmd(uint8_t *cmdData, uint16_t cmdLen, uint8_t *rspData, bool *card_reset)
+{
+	(void)cmdLen;
+
+	rfalLmState state = rfalListenGetState(NULL, NULL);
+	*card_reset = false;
+
+	switch (state) {
+	case RFAL_LM_STATE_ACTIVE_A:
+	case RFAL_LM_STATE_ACTIVE_Ax:
+			printf_dbg("rx %x... ignored \r\n", cmdData[0]);
+			// todo check if it makes sense to stay in active state
+			*card_reset = true;
+			return 0;
+	case RFAL_LM_STATE_CARDEMU_4A:
+		if(cmdData[0] == T4T_CLA_00) {
+			switch(cmdData[1]) {
+			case T4T_INS_SELECT:
+				return 8*t4select(cmdData, rspData);
+
+			case T4T_INS_READ:
+				return 8*read(cmdData, rspData);
+
+			case T4T_INS_UPDATE:
+				return 8*update(cmdData, rspData);
+
+			default:
+				break;
+			}
+		}
+
+		// Function not supported ..
+		rspData[0] = ((char)0x68);
+		rspData[1] = ((char)0x00);
+		return 8*2;
+	case RFAL_LM_STATE_SLEEP_A:
+		break;
+	default:
+		printf_dbg("processCmd unhandled LGS %d\r\n", state);
+		break;
+	}
+
+	return 0;
+}
+
+// command management - Mifare Ultralight
+uint16_t processCmdMifUL(uint8_t *cmdData, uint16_t cmdLen, uint8_t *rspData, bool *card_reset)
 {
 	uint8_t ul_cwrite_addr = 0;
 	bool cwrite_phase2 = false;
@@ -370,26 +493,9 @@ uint16_t processCmd(uint8_t *cmdData, uint16_t cmdLen, uint8_t *rspData, bool *c
 		}
 		break;
 	case RFAL_LM_STATE_CARDEMU_4A:
-		if(cmdData[0] == T4T_CLA_00) {
-			switch(cmdData[1]) {
-			case T4T_INS_SELECT:
-				return 8*t4select(cmdData, rspData);
-
-			case T4T_INS_READ:
-				return 8*read(cmdData, rspData);
-
-			case T4T_INS_UPDATE:
-				return 8*update(cmdData, rspData);
-
-			default:
-				break;
-			}
-		}
-
-		// Function not supported ..
-		rspData[0] = ((char)0x68);
-		rspData[1] = ((char)0x00);
-		return 8*2;
+		printf_dbg("Unexpected RFAL_LM_STATE_CARDEMU_4A state!\r\n");
+		*card_reset = true;
+		return 0;
 	case RFAL_LM_STATE_SLEEP_A:
 		break;
 	default:
@@ -399,6 +505,7 @@ uint16_t processCmd(uint8_t *cmdData, uint16_t cmdLen, uint8_t *rspData, bool *c
 
 	return 0;
 }
+
 
 static const uint8_t dispatcherInterruptResultRegs[32]= {
 	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff, /* 1st byte */
@@ -442,7 +549,6 @@ static void ceRun(t_hydra_console *con)
 	ceHandler();  // | 130 uS in idle
 
 	dataSize = sizeof(rxtxFrameBuf);
-//	rxSize = 512;
 	err = ceGetRx(CARDEMULATION_CMD_GET_RX_A, rxtxFrameBuf, &dataSize);
 
 	if(err == ERR_NONE) {
@@ -503,10 +609,10 @@ void hydranfc_ce_common(t_hydra_console *con)
 	};
 	// ats = 07 78 00 80 00 73 74 00
 
-	if (user_tag_properties.uri != NULL) {
-		// safe strcpy
-		snprintf(w_uri.URI_Message, sizeof(w_uri.URI_Message) - 1, "%s", (char *)user_tag_properties.uri);
-	}
+//	if (user_tag_properties.uri != NULL) {
+//		// safe strcpy
+//		snprintf(w_uri.URI_Message, sizeof(w_uri.URI_Message) - 1, "%s", (char *)user_tag_properties.uri);
+//	}
 	NDEF_PrepareURIMessage(&w_uri, &NDEF_Buffer[2], &length);
 	NDEF_Buffer[0] = length >> 8;
 	NDEF_Buffer[1] = length & 0xFF;
@@ -532,6 +638,27 @@ void hydranfc_ce_common(t_hydra_console *con)
 		}
 	}
 
+	printf_dbg("level4_enabled is %d\r\n", user_tag_properties.level4_enabled);
+	printf_dbg("t4tEmulationMode is %d\r\n", user_tag_properties.t4tEmulationMode);
+	printf_dbg("l3EmulationMode is %d\r\n", user_tag_properties.l3EmulationMode);
+
+	switch (user_tag_properties.l3EmulationMode) {
+	case L3_MODE_MIF_UL:
+		// use proper handler
+		hydranfc_ce_set_processCmd_ptr(processCmdMifUL);
+		// must copy factory file as ul_image[] may contain image from previous invokation...
+		if (user_tag_properties.ce_image_filename == NULL ||
+				user_tag_properties.ce_image_filename[0] == 0 ||
+				!read_ul_image_file(con, user_tag_properties.ce_image_filename)) {
+			reset_ul_image_file();
+		}
+		break;
+	default:
+		hydranfc_ce_set_processCmd_ptr(processCmd);
+		break;
+	}
+
+
 	rfalFieldOff();
 	ceInitalize();
 	rfalIsoDepInitialize();
@@ -550,6 +677,24 @@ void hydranfc_ce_common(t_hydra_console *con)
 	} else {
 		cprintf(con, "CE failed: %d\r\n", err);
 	}
+
+	// reset all 'non-property' data
+	// todo separate fun
+	user_tag_properties.t4tEmulationMode = T4T_MODE_NOT_SET;
+	user_tag_properties.l3EmulationMode = L3_MODE_NOT_SET;
+	user_tag_properties.level4_enabled = false;
+
 }
+
+void hydranfc_ce_set_uri(uint8_t *uri_ptr)
+{
+	if (uri_ptr != NULL) {
+		// safe strcpy
+		snprintf(w_uri.URI_Message, sizeof(w_uri.URI_Message) - 1, "%s", (char *)uri_ptr);
+	}
+	// persist through different ce sessions
+	user_tag_properties.uri = (uint8_t *)w_uri.URI_Message;
+}
+
 
 

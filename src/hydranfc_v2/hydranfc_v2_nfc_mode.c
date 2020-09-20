@@ -843,7 +843,7 @@ static void hydranfc_card_emul_iso14443a(t_hydra_console *con)
 	cprintf(con, "UID %s\r\n", ascii_buf);
 	buf_hex2ascii(ascii_buf, user_tag_properties.sak, user_tag_properties.sak_len, "0x", " ");
 	cprintf(con, "SAK %s\r\n", ascii_buf);
-	if (user_tag_properties.uri != NULL) {
+	if (user_tag_properties.t4tEmulationMode == T4T_MODE_URI && user_tag_properties.uri != NULL) {
 		cprintf(con, "URI %s\r\n", user_tag_properties.uri);
 	}
 
@@ -1068,7 +1068,8 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			//			printf_dbg("uri: token 0=%d, 1=%d, 2=%d\n", p->tokens[t+0],p->tokens[t+1],p->tokens[t+2]);
 			if (p->tokens[t+1] == T_ARG_STRING) {
 				memcpy(&str_offset, &p->tokens[t+2], sizeof(int));
-				user_tag_properties.uri = (uint8_t *)(p->buf + str_offset);
+//				user_tag_properties.uri = (uint8_t *)(p->buf + str_offset);
+				hydranfc_ce_set_uri((uint8_t *)(p->buf + str_offset));
 				t += 2;
 			} else {
 				user_tag_properties.t4tEmulationMode = T4T_MODE_URI;
@@ -1165,17 +1166,20 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		break;
 
 	case T_EMUL_MF_ULTRALIGHT:
-		cprintf(con, "T_EMUL_MF_ULTRALIGHT not implemented.\r\n");
-		// TODO T_EMUL_MF_ULTRALIGHT
-		/*
+		cprintf(con, "Mifare Ultralight card emulation.\r\n");
 		if(sd_file.filename[0] != 0)
 		{
-			hydranfc_emul_mf_ultralight_file(con, sd_file.filename);
+			cprintf(con, "Using image file %s.\r\n", sd_file.filename);
+			user_tag_properties.ce_image_filename = sd_file.filename;
 		}else
 		{
-			hydranfc_emul_mf_ultralight(con);
+			cprintf(con, "Using 'factory' image file.\r\n");
+			user_tag_properties.ce_image_filename = NULL;
 		}
-		*/
+		user_tag_properties.l3EmulationMode = L3_MODE_MIF_UL;
+		hydranfc_card_emul_iso14443a(con);
+		user_tag_properties.l3EmulationMode = L3_MODE_NOT_SET;
+		user_tag_properties.ce_image_filename = NULL;
 		break;
 
 	case T_CLONE_MF_ULTRALIGHT:

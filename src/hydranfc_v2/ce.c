@@ -68,6 +68,8 @@ rfalLmState statePrev = RFAL_LM_STATE_NOT_INIT;
 rfalTransceiveState     tStateCur = 3;
 rfalTransceiveState     tStatePrev = 3;
 
+static rfalLmState state;
+
 void ceInitalize( void )
 {
 	transceiveCtx.txBuf = txBuf_ce;
@@ -103,7 +105,18 @@ void ceInitalize( void )
 	ul_cwrite_page_set = 0;
 }
 
-static rfalLmState state;
+//--------------------------------------------------------------------------
+// debug quick toggles for ceHandler()
+
+// disable to check the Listen Mode and Transcieve states of the rfal worker
+// handy for debugging but flood the logs + slightly mess with timings
+#define NO_DEBUG_LGS_GTS TRUE
+
+// disable to see RX buf at RATS time
+#define NO_RATS_DUMP TRUE
+// disable to see RX buf at 14443-3A before ceGetRx()
+#define NO_NFCA_L3_DUMP TRUE
+//--------------------------------------------------------------------------
 
 void ceHandler( void )
 {
@@ -116,17 +129,22 @@ void ceHandler( void )
 	}
 
 	state = rfalListenGetState(&dataFlag, NULL);
+
+#if !NO_DEBUG_LGS_GTS
 	if (state != statePrev) {
 		// new state
 		printf_dbg("rLGS %d\r\n", state);
 		statePrev = state;
 	}
+
 	tStateCur = rfalGetTransceiveState( );
+
 	if (tStateCur != tStatePrev) {
 		// new state
 		printf_dbg("rGTS %d\r\n", tStateCur);
 		tStatePrev = tStateCur;
 	}
+#endif
 
 
 	switch (state) {
@@ -156,14 +174,18 @@ void ceHandler( void )
 				} else {
 					// idle/halt state for all the commands we "don't support"
 
-//					int i, rxSize;
+#if !NO_RATS_DUMP
+					int i, rxSize;
+#endif
 					if (rxRcvdLen > 0) {
 						printf_dbg("RATS ignored...\r\n");
 
-//						rxSize = rfalConvBitsToBytes(rxRcvdLen);
-//						for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
-//							printf_dbg(" %02X", rxBuf_ce[i]);
-//						printf_dbg("\r\n");
+#if !NO_RATS_DUMP
+						rxSize = rfalConvBitsToBytes(rxRcvdLen);
+						for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
+							printf_dbg(" %02X", rxBuf_ce[i]);
+						printf_dbg("\r\n");
+#endif
 
 						if (state == RFAL_LM_STATE_ACTIVE_Ax) {
 							rfalListenSleepStart( RFAL_LM_STATE_SLEEP_A, rxBuf_ce, RX_BUF_LENGTH, &rxRcvdLen );
@@ -177,14 +199,18 @@ void ceHandler( void )
 				printf_dbg("HLTA\r\n");
 				rfalListenSleepStart( RFAL_LM_STATE_SLEEP_A, rxBuf_ce, RX_BUF_LENGTH, &rxRcvdLen );
 			} else {
-//				int i, rxSize;
+#if !NO_NFCA_L3_DUMP
+				int i, rxSize;
+#endif
 				if (rxRcvdLen > 0) {
-//					printf_dbg("Hndler A3 rx: ");
-//
-//					rxSize = rfalConvBitsToBytes(rxRcvdLen);
-//					for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
-//						printf_dbg(" %02X", rxBuf_ce[i]);
-//					printf_dbg("\r\n");
+#if !NO_NFCA_L3_DUMP
+					printf_dbg("Hndler A3 rx: ");
+
+					rxSize = rfalConvBitsToBytes(rxRcvdLen);
+					for (i = 0; i < (rxSize > 16? 16 : rxSize); i++)
+						printf_dbg(" %02X", rxBuf_ce[i]);
+					printf_dbg("\r\n");
+#endif
 
 					// not HLTA and not RATS - layer3 comms
 					rxReady = true;

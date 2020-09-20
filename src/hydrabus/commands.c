@@ -527,6 +527,11 @@ t_token tokens_connect_auto_opt[] = {
 		.arg_type = T_ARG_STRING,              \
 		.help = "Send APDU(NFC-A/B) or data+crc(NFC-V) to a tag"\
 	},\
+	{\
+		T_EMUL_MF_ULTRALIGHT,\
+		.subtokens = tokens_mode_nfc_emul_mf_ul,\
+		.help = "Emul Tag Mifare Ultralight (optional image file from microSD)"\
+	},\
 /*
 	{\
 		T_READ_MF_ULTRALIGHT,\
