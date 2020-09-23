@@ -401,7 +401,7 @@ void hydranfc_ce_common(t_hydra_console *con, bool quiet)
 	}
 
 	rfalFieldOff();
-	ceInitalize();
+	ceInit();
 	rfalIsoDepInitialize();
 
 	err = ceStart(startCmd, sizeof(startCmd));
