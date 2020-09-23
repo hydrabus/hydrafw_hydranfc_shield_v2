@@ -46,7 +46,7 @@ typedef struct {
 extern sUserTagProperties user_tag_properties;
 extern uint8_t ul_cwrite_page_set;
 
-void hydranfc_ce_common(t_hydra_console *con);
+void hydranfc_ce_common(t_hydra_console *con, bool quiet);
 void hydranfc_ce_set_uri(uint8_t *uri_ptr);
 
 #endif

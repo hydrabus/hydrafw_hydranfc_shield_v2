@@ -70,6 +70,13 @@ rfalTransceiveState     tStatePrev = 3;
 
 static rfalLmState state;
 
+uint16_t (*cardA_activated_ptr)(void) = NULL;
+
+void ce_set_cardA_activated_ptr(void * ptr)
+{
+	cardA_activated_ptr = ptr;
+}
+
 void ceInitalize( void )
 {
 	transceiveCtx.txBuf = txBuf_ce;
@@ -264,6 +271,9 @@ void ceHandler( void )
 
 				case ERR_NONE:
 					isActivatedA = true;
+					if(cardA_activated_ptr != NULL) {
+						cardA_activated_ptr();
+					}
 					break;
 
 				// all other error cases are simple ignored ..

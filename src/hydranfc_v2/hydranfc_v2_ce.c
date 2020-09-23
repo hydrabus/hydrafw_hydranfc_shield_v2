@@ -535,9 +535,10 @@ void dispatcherInterruptHandler()
 	}
 }
 
-static void ceRun(t_hydra_console *con)
+static void ceRun(t_hydra_console *con, bool quiet)
 {
 	(void)con;
+	(void)quiet;
 	ReturnCode err = ERR_NONE;
 	uint16_t dataSize;
 	int i;
@@ -590,7 +591,7 @@ void hydranfc_ce_set_processCmd_ptr(void * ptr)
 	current_processCmdPtr = ptr;
 }
 
-void hydranfc_ce_common(t_hydra_console *con)
+void hydranfc_ce_common(t_hydra_console *con, bool quiet)
 {
 	uint16_t length = 0;
 	ReturnCode err = ERR_NONE;
@@ -609,10 +610,6 @@ void hydranfc_ce_common(t_hydra_console *con)
 	};
 	// ats = 07 78 00 80 00 73 74 00
 
-//	if (user_tag_properties.uri != NULL) {
-//		// safe strcpy
-//		snprintf(w_uri.URI_Message, sizeof(w_uri.URI_Message) - 1, "%s", (char *)user_tag_properties.uri);
-//	}
 	NDEF_PrepareURIMessage(&w_uri, &NDEF_Buffer[2], &length);
 	NDEF_Buffer[0] = length >> 8;
 	NDEF_Buffer[1] = length & 0xFF;
@@ -665,17 +662,23 @@ void hydranfc_ce_common(t_hydra_console *con)
 
 	err = ceStart(startCmd, sizeof(startCmd));
 	if (err == ERR_NONE) {
-		cprintf(con, "CE started. Press user button to stop.\r\n");
+		if( quiet != TRUE) {
+			cprintf(con, "CE started. Press user button to stop.\r\n");
+		}
 
 		while (!hydrabus_ubtn()) {
-			ceRun(con);
+			ceRun(con, quiet);
 			chThdYield();
 		}
 
 		ceStop();
-		cprintf(con, "CE finished\r\n");
+		if (quiet != TRUE) {
+			cprintf(con, "CE finished\r\n");
+		}
 	} else {
-		cprintf(con, "CE failed: %d\r\n", err);
+		if (quiet != TRUE) {
+			cprintf(con, "CE failed: %d\r\n", err);
+		}
 	}
 
 	// reset all 'non-property' data

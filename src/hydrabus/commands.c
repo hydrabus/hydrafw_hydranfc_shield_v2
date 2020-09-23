@@ -115,6 +115,11 @@ t_token_dict tl_dict[] = {
 	{ T_NFC_OBSV, "nfc-obsv"},
 	{ T_NFC_OBSV_TX, "nfc-obsv-tx"},
 	{ T_NFC_OBSV_RX, "nfc-obsv-rx"},
+	{ T_NFC_TUNE_AUTO, "nfc-tune-auto"},
+	{ T_SET_NFC_TUNE, "set-nfc-tune"},
+	{ T_GET_NFC_TUNE, "get-nfc-tune"},
+	{ T_NFC_AAT_A, "nfc-aat-a"},
+	{ T_NFC_AAT_B, "nfc-aat-b"},
 	{ T_NFC_TRANSPARENT, "nfc-transp" },
 	{ T_NFC_STREAM, "nfc-stream" },
 	{ T_SET_EMUL_TAG_PROPERTIES, "ce" },
@@ -369,6 +374,20 @@ t_token tokens_set_nfc_obsv[] = {
 	{ }
 };
 
+t_token tokens_set_nfc_tune[] = {
+	{
+		T_NFC_AAT_A,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC AAT_A(Serial Cap) value (8bits)"
+	},
+	{
+		T_NFC_AAT_B,
+		.arg_type = T_ARG_UINT,
+		.help = "Set NFC AAT_B(Parallel cap) value (8bits)"
+	},
+	{ }
+};
+
 t_token tokens_mode_nfc_scan[] = {
 	{
 		T_PERIOD,
@@ -469,6 +488,19 @@ t_token tokens_connect_auto_opt[] = {
 	{\
 		T_GET_NFC_OBSV,\
 		.help = "Get NFC Observer(ON=1/OFF=0) and 8bits value for TX/RX"\
+	},\
+	{\
+		T_NFC_TUNE_AUTO,\
+		.help = "NFC antenna tuning automatic"\
+	},\
+	{\
+		T_SET_NFC_TUNE,\
+		.subtokens = tokens_set_nfc_tune,\
+		.help = "Set NFC antenna tuning values"\
+	},\
+	{\
+		T_GET_NFC_TUNE,\
+		.help = "Get NFC antenna tuning values"\
 	},\
 	{\
 		T_NFC_ALL,\

@@ -200,5 +200,8 @@
 #define BBIO_NFC_CE_GET_RX             0b00000011
 #define BBIO_NFC_CE_SET_UID            0b00000100
 #define BBIO_NFC_CE_SET_SAK            0b00000101
+#define BBIO_NFC_CE_CARD_ACTIVATION    0b00000111
+#define BBIO_NFC_CE_CARD_CMD           0b00001000
+#define BBIO_NFC_CE_END_EMULATION      0b00001001
 
 int cmd_bbio(t_hydra_console *con);

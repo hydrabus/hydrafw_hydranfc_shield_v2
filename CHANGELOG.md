@@ -62,9 +62,9 @@
    * See [HydraFW-HydraNFC-v2-guide-dnfc-mode](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/wiki/HydraFW-HydraNFC-v2-guide-dnfc-mode) for more details/examples
  * Get/Set NFC Mode (NFCA/B/V/F/Custom)
    * Add command `set-nfc-mode` Set the NFC mode using following sub-parameter
-     * sub-parameter `nfc-mode` Set NFC Mode to one of thise value: POLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6, POLL_NFCV=7, POLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13
-     * sub-parameter `nfc-mode-tx_br` Set TX BitRate to one of thise value: BR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237
-     * sub-parameter `nfc-mode-rx_br` Set RX BitRate to one of thise value: BR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237
+     * sub-parameter `nfc-mode` Set NFC Mode to one of this value: POLL_NFCA=1, POLL_NFCA_T1T=2, POLL_NFCB=3, POLL_B_PRIME=4, POLL_B_CTS=5, POLL_NFCF=6, POLL_NFCV=7, POLL_PICOPASS=8, POLL_ACTIVE_P2P=9, LISTEN_NFCA=10, LISTEN_NFCB=11, LISTEN_NFCF=12, LISTEN_ACTIVE_P2P=13
+     * sub-parameter `nfc-mode-tx_br` Set TX BitRate to one of this value: BR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237
+     * sub-parameter `nfc-mode-rx_br` Set RX BitRate to one of this value: BR_106=0, BR_212=1, BR_424=2, BR_848=3, BR_52p97=235, BR_26p48=236, BR_1p66=237
    * Add command `get-nfc-mode` Get NFC Mode and parameters values
    * See [HydraFW-HydraNFC-v2-guide-dnfc-mode#debugdeveloper-mode-for-nfc-shield-v2-with-dnfc-mode-using-nfc-mode-and-doing-manual-anti-collision-on-nfc-a](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/wiki/HydraFW-HydraNFC-v2-guide-dnfc-mode#debugdeveloper-mode-for-nfc-shield-v2-with-dnfc-mode-using-nfc-mode-and-doing-manual-anti-collision-on-nfc-a) for more details/examples
 
