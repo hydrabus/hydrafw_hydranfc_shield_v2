@@ -77,7 +77,7 @@ void ce_set_cardA_activated_ptr(void * ptr)
 	cardA_activated_ptr = ptr;
 }
 
-void ceInitalize( void )
+void ceInit(void)
 {
 	transceiveCtx.txBuf = txBuf_ce;
 	transceiveCtx.txBufLen = 0;
@@ -125,7 +125,7 @@ void ceInitalize( void )
 #define NO_NFCA_L3_DUMP TRUE
 //--------------------------------------------------------------------------
 
-void ceHandler( void )
+void ceHandler(void)
 {
 	bool dataFlag = false;
 	ReturnCode retCode;
@@ -445,10 +445,10 @@ ReturnCode ceStart(const uint8_t *rxData, const uint16_t rxSize)
 	                        &rxRcvdLen);
 }
 
-ReturnCode ceStop( void )
+ReturnCode ceStop(void)
 {
 	rfalListenStop();
-	ceInitalize();
+	ceInit();
 	return ERR_NONE;
 }
 

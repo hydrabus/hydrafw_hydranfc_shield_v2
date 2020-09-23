@@ -50,11 +50,11 @@ enum cardEmulationCommand {
 //    CARDEMULATION_STATE_UPLOAD                  = 0x03, /*!<  */
 //};
 
-extern void ceInitalize( void );
-extern void ceHandler( void );
+extern void ceInit(void);
+extern void ceHandler(void);
 
 extern ReturnCode ceStart(const uint8_t *rxData, const uint16_t rxSize);
-extern ReturnCode ceStop( void );
+extern ReturnCode ceStop(void);
 
 extern ReturnCode ceGetRx(const uint8_t cmd, uint8_t *txData, uint16_t *txSize);
 extern ReturnCode ceSetTx(const uint8_t cmd, const uint8_t* rxData, const uint16_t rxSize, bool is_card_reset_needed);
