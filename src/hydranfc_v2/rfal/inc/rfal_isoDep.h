@@ -637,6 +637,7 @@ uint16_t rfalIsoDepGetMaxInfLen( void );
  */
 ReturnCode rfalIsoDepStartTransceive( rfalIsoDepTxRxParam param );
 
+ReturnCode rfalIsoDepGetTransceiveStatusRawMode( void );
 
 /*!
  *****************************************************************************
