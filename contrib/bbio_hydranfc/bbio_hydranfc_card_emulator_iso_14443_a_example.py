@@ -35,13 +35,19 @@ enter_bbio(ser)
 
 uid = bytes.fromhex("DEADBEEF")
 print(f"Set UID to {uid.hex()}")
-ser.write(b"\04" + b"\04" + uid)
+ser.write(b"\x04" + b"\x04" + uid)
 resp = ser.read(1)
 assert resp[0] == 0x01
 
 sak = b"\x21"
 print(f"Set SAK to {sak.hex()}")
-ser.write(b"\05" + b"\01" + sak)
+ser.write(b"\x05" + b"\x01" + sak)
+resp = ser.read(1)
+assert resp[0] == 0x01
+
+ats_hist_bytes = bytes("HydraNFC", "ascii")
+print(f"Set ATS Historical bytes to {ats_hist_bytes.hex()}")
+ser.write(b"\x0B" + bytes([len(ats_hist_bytes)]) + ats_hist_bytes)
 resp = ser.read(1)
 assert resp[0] == 0x01
 
