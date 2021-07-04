@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 
 /*
@@ -293,7 +288,7 @@ typedef struct
 typedef union {/*  PRQA S 0750 # MISRA 19.2 - Both members of the union will not be used concurrently, device is only of type A or B at a time. Thus no problem can occur. */
 
     /*! NFC-A information                                                                         */
-    union {/*  PRQA S 0750 # MISRA 19.2 - Both members of the union will not be used concurrently, device is only PCD or PICC at a time. Thus no problem can occur. */
+    union {
         struct {
             rfalIsoDepAts        ATS;               /*!< ATS response            (Poller mode)    */
             uint8_t              ATSLen;            /*!< ATS response length     (Poller mode)    */
@@ -304,7 +299,7 @@ typedef union {/*  PRQA S 0750 # MISRA 19.2 - Both members of the union will not
     }A;
     
     /*! NFC-B information                                                                         */
-    union {/*  PRQA S 0750 # MISRA 19.2 - Both members of the union will not be used concurrently, device is only PCD or PICC at a time. Thus no problem can occur. */
+    union {
         struct{
             rfalIsoDepAttribRes  ATTRIB_RES;        /*!< ATTRIB_RES              (Poller mode)    */
             uint8_t              ATTRIB_RESLen;     /*!< ATTRIB_RES length       (Poller mode)    */
@@ -821,10 +816,10 @@ ReturnCode rfalIsoDepDeselect( void );
  *  both devices it additionally sends PPS
  *  Once Activated all details of the device are provided on isoDepDev
  *   
- *  \param[in]  FSDI      : Frame Size Device Integer to be used
- *  \param[in]  DID       : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
- *  \param[in]  maxBR     : Max bit rate supported by the Poller
- *  \param[out] isoDepDev : ISO-DEP information of the activated Listen device
+ *  \param[in]  FSDI          : Frame Size Device Integer to be used
+ *  \param[in]  DID           : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
+ *  \param[in]  maxBR         : Max bit rate supported by the Poller
+ *  \param[out] rfalIsoDepDev : ISO-DEP information of the activated Listen device
  *
  *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
  *  \return ERR_PARAM        : Invalid parameters
@@ -837,7 +832,7 @@ ReturnCode rfalIsoDepDeselect( void );
  *  \return ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
-ReturnCode rfalIsoDepPollAHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, rfalIsoDepDevice *isoDepDev );
+ReturnCode rfalIsoDepPollAHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, rfalIsoDepDevice *rfalIsoDepDev );
 
 
 /*! 
@@ -849,14 +844,14 @@ ReturnCode rfalIsoDepPollAHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rf
  *  devices and performs activation.
  *  Once Activated all details of the device are provided on isoDepDev
  *   
- *  \param[in]  FSDI         : Frame Size Device Integer to be used
- *  \param[in]  DID          : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
- *  \param[in]  maxBR        : Max bit rate supported by the Poller
- *  \param[in]  PARAM1       : ATTRIB PARAM1 byte (communication parameters)
- *  \param[in]  nfcbDev      : pointer to the NFC-B Device containing the SENSB_RES
- *  \param[in]  HLInfo       : pointer to Higher layer INF (NULL if none)
- *  \param[in]  HLInfoLen    : Length HLInfo
- *  \param[out] isoDepDev    : ISO-DEP information of the activated Listen device
+ *  \param[in]  FSDI           : Frame Size Device Integer to be used
+ *  \param[in]  DID            : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
+ *  \param[in]  maxBR          : Max bit rate supported by the Poller
+ *  \param[in]  PARAM1         : ATTRIB PARAM1 byte (communication parameters)
+ *  \param[in]  nfcbDev        : pointer to the NFC-B Device containing the SENSB_RES
+ *  \param[in]  HLInfo         : pointer to Higher layer INF (NULL if none)
+ *  \param[in]  HLInfoLen      : Length HLInfo
+ *  \param[out] rfalIsoDepDev  : ISO-DEP information of the activated Listen device
  *
  *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
  *  \return ERR_PARAM        : Invalid parameters
@@ -869,7 +864,7 @@ ReturnCode rfalIsoDepPollAHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rf
  *  \return ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
-ReturnCode rfalIsoDepPollBHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, uint8_t PARAM1, const rfalNfcbListenDevice *nfcbDev, const uint8_t* HLInfo, uint8_t HLInfoLen, rfalIsoDepDevice *isoDepDev );
+ReturnCode rfalIsoDepPollBHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, uint8_t PARAM1, const rfalNfcbListenDevice *nfcbDev, const uint8_t* HLInfo, uint8_t HLInfoLen, rfalIsoDepDevice *rfalIsoDepDev );
 
 
 /*! 
@@ -880,9 +875,9 @@ ReturnCode rfalIsoDepPollBHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rf
  *  capabilities and sets the Bit Rate at the highest supported by both
  *  devices
  *   
- *  \param[out] isoDepDev    : ISO-DEP information of the activated Listen device
- *  \param[in]  maxTxBR      : Maximum Tx bit rate supported by PCD
- *  \param[in]  maxRxBR      : Maximum Rx bit rate supported by PCD
+ *  \param[out] rfalIsoDepDev  : ISO-DEP information of the activated Listen device
+ *  \param[in]  maxTxBR        : Maximum Tx bit rate supported by PCD
+ *  \param[in]  maxRxBR        : Maximum Rx bit rate supported by PCD
  *
  *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
  *  \return ERR_PARAM        : Invalid parameters
@@ -893,7 +888,7 @@ ReturnCode rfalIsoDepPollBHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rf
  *  \return ERR_NONE         : No error, S(PARAMETERS) selection successful
  *****************************************************************************
  */
-ReturnCode rfalIsoDepPollHandleSParameters( rfalIsoDepDevice *isoDepDev, rfalBitRate maxTxBR, rfalBitRate maxRxBR );
+ReturnCode rfalIsoDepPollHandleSParameters( rfalIsoDepDevice *rfalIsoDepDev, rfalBitRate maxTxBR, rfalBitRate maxRxBR );
 
 
 /*!
@@ -908,10 +903,10 @@ ReturnCode rfalIsoDepPollHandleSParameters( rfalIsoDepDevice *isoDepDev, rfalBit
  *
  *  \see rfalIsoDepPollAGetActivationStatus
  *
- *  \param[in]  FSDI      : Frame Size Device Integer to be used
- *  \param[in]  DID       : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
- *  \param[in]  maxBR     : Max bit rate supported by the Poller
- *  \param[out] isoDepDev : ISO-DEP information of the activated Listen device
+ *  \param[in]  FSDI          : Frame Size Device Integer to be used
+ *  \param[in]  DID           : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
+ *  \param[in]  maxBR         : Max bit rate supported by the Poller
+ *  \param[out] rfalIsoDepDev : ISO-DEP information of the activated Listen device
  *
  *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
  *  \return ERR_PARAM        : Invalid parameters
@@ -924,7 +919,7 @@ ReturnCode rfalIsoDepPollHandleSParameters( rfalIsoDepDevice *isoDepDev, rfalBit
  *  \return ERR_NONE         : No error, start of asynchronous operation successful
  *****************************************************************************
  */
-ReturnCode rfalIsoDepPollAStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, rfalIsoDepDevice *isoDepDev );
+ReturnCode rfalIsoDepPollAStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, rfalIsoDepDevice *rfalIsoDepDev );
 
 
 /*!
@@ -961,14 +956,14 @@ ReturnCode rfalIsoDepPollAGetActivationStatus( void );
  *
  *  \see rfalIsoDepPollBGetActivationStatus
  *
- *  \param[in]  FSDI         : Frame Size Device Integer to be used
- *  \param[in]  DID          : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
- *  \param[in]  maxBR        : Max bit rate supported by the Poller
- *  \param[in]  PARAM1       : ATTRIB PARAM1 byte (communication parameters)
- *  \param[in]  nfcbDev      : pointer to the NFC-B Device containing the SENSB_RES
- *  \param[in]  HLInfo       : pointer to Higher layer INF (NULL if none)
- *  \param[in]  HLInfoLen    : Length HLInfo
- *  \param[out] isoDepDev    : ISO-DEP information of the activated Listen device
+ *  \param[in]  FSDI          : Frame Size Device Integer to be used
+ *  \param[in]  DID           : Device ID to be used or RFAL_ISODEP_NO_DID for not use DID
+ *  \param[in]  maxBR         : Max bit rate supported by the Poller
+ *  \param[in]  PARAM1        : ATTRIB PARAM1 byte (communication parameters)
+ *  \param[in]  nfcbDev       : pointer to the NFC-B Device containing the SENSB_RES
+ *  \param[in]  HLInfo        : pointer to Higher layer INF (NULL if none)
+ *  \param[in]  HLInfoLen     : Length HLInfo
+ *  \param[out] rfalIsoDepDev : ISO-DEP information of the activated Listen device
  *
  *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
  *  \return ERR_PARAM        : Invalid parameters
@@ -981,7 +976,7 @@ ReturnCode rfalIsoDepPollAGetActivationStatus( void );
  *  \return ERR_NONE         : No error, start of asynchronous operation successful
  *****************************************************************************
  */
-ReturnCode rfalIsoDepPollBStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, uint8_t PARAM1, const rfalNfcbListenDevice *nfcbDev, const uint8_t* HLInfo, uint8_t HLInfoLen, rfalIsoDepDevice *isoDepDev );
+ReturnCode rfalIsoDepPollBStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, uint8_t PARAM1, const rfalNfcbListenDevice *nfcbDev, const uint8_t* HLInfo, uint8_t HLInfoLen, rfalIsoDepDevice *rfalIsoDepDev );
 
 
 /*!

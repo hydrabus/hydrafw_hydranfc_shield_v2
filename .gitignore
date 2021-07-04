@@ -18,3 +18,4 @@ hydrafwEm.elay
 /src/.idea/
 src/hydrafw_hydranfc_shield_v2 Debug.launch
 
+/src/hydranfc_v2/rfal/doc/*.chw

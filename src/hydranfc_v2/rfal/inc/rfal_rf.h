@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 
 /*
@@ -91,7 +86,7 @@
 * GLOBAL DEFINES
 ******************************************************************************
 */
-#define RFAL_VERSION                               0x020200U                                    /*!< RFAL Current Version: v2.2.0                      */
+#define RFAL_VERSION                               0x020400U                                    /*!< RFAL Current Version: v2.4.0                      */
 
 #define RFAL_FWT_NONE                              0xFFFFFFFFU                                  /*!< Disabled FWT: Wait forever for a response         */
 #define RFAL_GT_NONE                               RFAL_TIMING_NONE                             /*!< Disabled GT: No GT will be applied after Field On */
@@ -99,6 +94,7 @@
 #define RFAL_TIMING_NONE                           0x00U                                        /*!< Timing disabled | Don't apply                     */
 
 #define RFAL_1FC_IN_4096FC                         (uint32_t)4096U                              /*!< Number of 1/fc cycles in one 4096/fc              */
+#define RFAL_1FC_IN_2048FC                         (uint32_t)2048U                              /*!< Number of 1/fc cycles in one 2048/fc              */
 #define RFAL_1FC_IN_512FC                          (uint32_t)512U                               /*!< Number of 1/fc cycles in one 512/fc               */
 #define RFAL_1FC_IN_64FC                           (uint32_t)64U                                /*!< Number of 1/fc cycles in one 64/fc                */
 #define RFAL_1FC_IN_8FC                            (uint32_t)8U                                 /*!< Number of 1/fc cycles in one 8/fc                 */
@@ -167,6 +163,9 @@
 #define rfalConv1fcTo512fc( t )              (uint32_t)( (uint32_t)(t) / RFAL_1FC_IN_512FC )                             /*!< Converts the given t from 1/fc  to 512/fc  */
 #define rfalConv512fcTo1fc( t )              (uint32_t)( (uint32_t)(t) * RFAL_1FC_IN_512FC )                             /*!< Converts the given t from 512/fc to 1/fc   */
 
+#define rfalConv1fcTo2018fc( t )             (uint32_t)( (uint32_t)(t) / RFAL_1FC_IN_2048FC )                            /*!< Converts the given t from 1/fc to 2048/fc  */
+#define rfalConv2048fcTo1fc( t )             (uint32_t)( (uint32_t)(t) * RFAL_1FC_IN_2048FC )                            /*!< Converts the given t from 2048/fc to 1/fc  */
+
 #define rfalConv1fcTo4096fc( t )             (uint32_t)( (uint32_t)(t) / RFAL_1FC_IN_4096FC )                            /*!< Converts the given t from 1/fc to 4096/fc  */
 #define rfalConv4096fcTo1fc( t )             (uint32_t)( (uint32_t)(t) * RFAL_1FC_IN_4096FC )                            /*!< Converts the given t from 4096/fc to 1/fc  */
 
@@ -183,6 +182,8 @@
 #define rfalConvBytesToBits( n )             (uint32_t)( (uint32_t)(n) * (RFAL_BITS_IN_BYTE) )                           /*!< Converts the given n from bytes to bits    */
 
 
+#define rfalRunBlocking( e, fn )              do{ (e)=(fn); rfalWorker(); }while( (e) == ERR_BUSY )                      /*!< Macro used for the blocking methods        */
+
 
 /*! Computes a Transceive context \a ctx with default flags and the lengths 
  * in bytes with the given arguments
@@ -191,7 +192,7 @@
  *    \a tBL   : txBuf length in bytes
  *    \a rB    : rxBuf the pointer to the buffer to place the received frame
  *    \a rBL   : rxBuf length in bytes
- *    \a rBL   : rxBuf length in bytes
+ *    \a rdL   : rxRcvdLen the pointer to place the rx length 
  *    \a t     : FWT to be used on this transceive in 1/fc
  */
 #define rfalCreateByteTxRxContext( ctx, tB, tBL, rB, rBL, rdL, t ) \
@@ -264,7 +265,7 @@
 #define    RFAL_FDT_POLL_NFCF_POLLER         6800U    /*!< FDTF,POLL,MIN   Digital 2.1  8.7.3 & B.4                                                                        */
 #define    RFAL_FDT_POLL_NFCV_POLLER         4192U    /*!< FDTV,POLL  Digital 2.1  9.7.3.1  & B.5                                                                          */
 #define    RFAL_FDT_POLL_PICOPASS_POLLER     1790U    /*!< FDT Max                                                                                                         */
-#define    RFAL_FDT_POLL_AP2P_POLLER         0U       /*!< FDT AP2P No actual FDTPoll exists as fields switch and collision avoidance                                      */
+#define    RFAL_FDT_POLL_AP2P_POLLER         6800U    /*!< AP2P inhere FDT from the Technology used (use longest: TR0F,POLL,MIN + TR1F)     Digital 2.2  17.11.1           */
 
 
 /*
@@ -338,12 +339,13 @@ typedef enum {
     RFAL_TXRX_STATE_TX_IDLE          = 11,
     RFAL_TXRX_STATE_TX_WAIT_GT       = 12,
     RFAL_TXRX_STATE_TX_WAIT_FDT      = 13,
-    RFAL_TXRX_STATE_TX_TRANSMIT      = 14,
-    RFAL_TXRX_STATE_TX_WAIT_WL       = 15,
-    RFAL_TXRX_STATE_TX_RELOAD_FIFO   = 16,
-    RFAL_TXRX_STATE_TX_WAIT_TXE      = 17,
-    RFAL_TXRX_STATE_TX_DONE          = 18,
-    RFAL_TXRX_STATE_TX_FAIL          = 19,
+    RFAL_TXRX_STATE_TX_PREP_TX       = 14,
+    RFAL_TXRX_STATE_TX_TRANSMIT      = 15,
+    RFAL_TXRX_STATE_TX_WAIT_WL       = 16,
+    RFAL_TXRX_STATE_TX_RELOAD_FIFO   = 17,
+    RFAL_TXRX_STATE_TX_WAIT_TXE      = 18,
+    RFAL_TXRX_STATE_TX_DONE          = 19,
+    RFAL_TXRX_STATE_TX_FAIL          = 20,
     
     RFAL_TXRX_STATE_RX_IDLE          = 81,
     RFAL_TXRX_STATE_RX_WAIT_EON      = 82,
@@ -370,7 +372,7 @@ enum {
     RFAL_TXRX_FLAGS_AGC_OFF          = (1U<<3),   /*!< Disable Automatic Gain Control, improving multiple devices collision detection        */
     RFAL_TXRX_FLAGS_AGC_ON           = (0U<<3),   /*!< Enable Automatic Gain Control, improving single device reception                      */
     RFAL_TXRX_FLAGS_PAR_RX_KEEP      = (1U<<4),   /*!< Disable Parity and CRC check and keep the Parity and CRC bits in the received buffer  */
-    RFAL_TXRX_FLAGS_PAR_RX_REMV      = (0U<<0),   /*!< Enable Parity check and remove the parity bits from the received buffer               */
+    RFAL_TXRX_FLAGS_PAR_RX_REMV      = (0U<<4),   /*!< Enable Parity check and remove the parity bits from the received buffer               */
     RFAL_TXRX_FLAGS_PAR_TX_NONE      = (1U<<5),   /*!< Disable automatic Parity generation (ISO14443A) and use the one provided in the buffer*/
     RFAL_TXRX_FLAGS_PAR_TX_AUTO      = (0U<<5),   /*!< Enable automatic Parity generation (ISO14443A)                                        */
     RFAL_TXRX_FLAGS_NFCV_FLAG_MANUAL = (1U<<6),   /*!< Disable automatic adaption of flag byte (ISO15693) according to current comm params   */
@@ -381,8 +383,7 @@ enum {
 /*! RFAL error handling                                                                                                                      */
 typedef enum {
     RFAL_ERRORHANDLING_NONE          = 0,         /*!< No special error handling will be performed                                           */
-    RFAL_ERRORHANDLING_NFC           = 1,         /*!< Error handling set to perform as NFC compliant device                                 */
-    RFAL_ERRORHANDLING_EMVCO         = 2          /*!< Error handling set to perform as EMVCo compliant device                               */
+    RFAL_ERRORHANDLING_EMD           = 1          /*!< EMD suppression enabled  Digital 2.1  4.1.1.1 ; EMVCo 3.0  4.9.2 ; ISO 14443-3  8.3   */
 } rfalEHandling;
 
 
@@ -409,6 +410,8 @@ typedef void (* rfalPreTxRxCallback)(void);
 /*! Callback to be executed after a Transceive                               */
 typedef void (* rfalPostTxRxCallback)(void);
 
+/*! Callback to sync actual transmission start                               */
+typedef bool (* rfalSyncTxRxCallback)(void);
 
 /*******************************************************************************/
 /*  ISO14443A                                                                  */
@@ -437,9 +440,9 @@ typedef enum
 /*! NFC-F RC (Request Code) codes  NFC Forum Digital 1.1 Table 42                                                                                                        */
 enum 
 {
-    RFAL_FELICA_POLL_RC_NO_REQUEST        =     0x00,                                           /*!< RC: No System Code information requested                            */
-    RFAL_FELICA_POLL_RC_SYSTEM_CODE       =     0x01,                                           /*!< RC: System Code information requested                               */
-    RFAL_FELICA_POLL_RC_COM_PERFORMANCE   =     0x02                                            /*!< RC: Advanced protocol features supported                            */
+    RFAL_FELICA_POLL_RC_NO_REQUEST        =     0x00U,                                          /*!< RC: No System Code information requested                            */
+    RFAL_FELICA_POLL_RC_SYSTEM_CODE       =     0x01U,                                          /*!< RC: System Code information requested                               */
+    RFAL_FELICA_POLL_RC_COM_PERFORMANCE   =     0x02U                                           /*!< RC: Advanced protocol features supported                            */
 };
 
 
@@ -528,7 +531,7 @@ typedef struct
 /*  Wake-Up Mode                                                               */  
 /*******************************************************************************/
 
-#define RFAL_WUM_REFERENCE_AUTO           0xFFU      /*!< Indicates new reference is set by the driver*/
+#define RFAL_WUM_REFERENCE_AUTO           0xFFU      /*!< Indicates new reference is set by the driver */
 
 /*! RFAL Wake-Up Mode States */
 typedef enum 
@@ -537,71 +540,6 @@ typedef enum
     RFAL_WUM_STATE_ENABLED               = 0x01,     /*!< Wake-Up mode is enabled                     */
     RFAL_WUM_STATE_ENABLED_WOKE          = 0x02,     /*!< Wake-Up mode enabled and has received IRQ(s)*/
 } rfalWumState;
-
-/*! RFAL Wake-Up Period/Timer */
-typedef enum 
-{
-    RFAL_WUM_PERIOD_10MS      = 0x00,     /*!< Wake-Up timer 10ms                          */
-    RFAL_WUM_PERIOD_20MS      = 0x01,     /*!< Wake-Up timer 20ms                          */
-    RFAL_WUM_PERIOD_30MS      = 0x02,     /*!< Wake-Up timer 30ms                          */
-    RFAL_WUM_PERIOD_40MS      = 0x03,     /*!< Wake-Up timer 40ms                          */
-    RFAL_WUM_PERIOD_50MS      = 0x04,     /*!< Wake-Up timer 50ms                          */
-    RFAL_WUM_PERIOD_60MS      = 0x05,     /*!< Wake-Up timer 60ms                          */
-    RFAL_WUM_PERIOD_70MS      = 0x06,     /*!< Wake-Up timer 70ms                          */
-    RFAL_WUM_PERIOD_80MS      = 0x07,     /*!< Wake-Up timer 80ms                          */
-    RFAL_WUM_PERIOD_100MS     = 0x10,     /*!< Wake-Up timer 100ms                         */
-    RFAL_WUM_PERIOD_200MS     = 0x11,     /*!< Wake-Up timer 200ms                         */
-    RFAL_WUM_PERIOD_300MS     = 0x12,     /*!< Wake-Up timer 300ms                         */
-    RFAL_WUM_PERIOD_400MS     = 0x13,     /*!< Wake-Up timer 400ms                         */
-    RFAL_WUM_PERIOD_500MS     = 0x14,     /*!< Wake-Up timer 500ms                         */
-    RFAL_WUM_PERIOD_600MS     = 0x15,     /*!< Wake-Up timer 600ms                         */
-    RFAL_WUM_PERIOD_700MS     = 0x16,     /*!< Wake-Up timer 700ms                         */
-    RFAL_WUM_PERIOD_800MS     = 0x17,     /*!< Wake-Up timer 800ms                         */
-} rfalWumPeriod;
-
-
-/*! RFAL Wake-Up Period/Timer */
-typedef enum 
-{
-    RFAL_WUM_AA_WEIGHT_4       = 0x00,     /*!< Wake-Up Auto Average Weight 4              */
-    RFAL_WUM_AA_WEIGHT_8       = 0x01,     /*!< Wake-Up Auto Average Weight 8              */
-    RFAL_WUM_AA_WEIGHT_16      = 0x02,     /*!< Wake-Up Auto Average Weight 16             */
-    RFAL_WUM_AA_WEIGHT_32      = 0x03,     /*!< Wake-Up Auto Average Weight 32             */
-} rfalWumAAWeight;
-
-
-/*! RFAL Wake-Up Mode configuration */
-typedef struct 
-{
-    rfalWumPeriod        period;     /*!< Wake-Up Timer period;how often measurement(s) is performed */
-    bool                 irqTout;    /*!< IRQ at every timeout will refresh the measurement(s)       */
-    bool                 swTagDetect;/*!< Use SW Tag Detection instead of HW Wake-Up mode            */
-  
-    struct{
-        bool             enabled;    /*!< Inductive Amplitude measurement enabled                   */
-        uint8_t          delta;      /*!< Delta between the reference and measurement to wake-up    */
-        uint16_t         reference;  /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto */
-        bool             autoAvg;    /*!< Use the HW Auto Averaging feature                         */
-        bool             aaInclMeas; /*!< When AutoAvg is enabled, include IRQ measurement          */
-        rfalWumAAWeight  aaWeight;   /*!< When AutoAvg is enabled, last measure weight              */
-    }indAmp;                         /*!< Inductive Amplitude Configuration                         */
-    struct{
-        bool             enabled;    /*!< Inductive Phase measurement enabled                       */
-        uint8_t          delta;      /*!< Delta between the reference and measurement to wake-up    */
-        uint16_t         reference;  /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto */
-        bool             autoAvg;    /*!< Use the HW Auto Averaging feature                         */
-        bool             aaInclMeas; /*!< When AutoAvg is enabled, include IRQ measurement          */
-        rfalWumAAWeight  aaWeight;   /*!< When AutoAvg is enabled, last measure weight              */
-    }indPha;                         /*!< Inductive Phase Configuration                             */
-    struct{
-        bool             enabled;    /*!< Capacitive measurement enabled                            */
-        uint8_t          delta;      /*!< Delta between the reference and measurement to wake-up    */
-        uint16_t         reference;  /*!< Reference to be used;RFAL_WUM_REFERENCE_AUTO sets it auto */
-        bool             autoAvg;    /*!< Use the HW Auto Averaging feature                         */
-        bool             aaInclMeas; /*!< When AutoAvg is enabled, include IRQ measurement          */
-        rfalWumAAWeight  aaWeight;   /*!< When AutoAvg is enabled, last measure weight              */
-    }cap;                            /*!< Capacitive Configuration                                  */
-} rfalWakeUpConfig;
 
 
 /*******************************************************************************/
@@ -688,6 +626,21 @@ void rfalSetUpperLayerCallback( rfalUpperLayerCallback pFunc );
  *****************************************************************************
  */
 void rfalSetPreTxRxCallback( rfalPreTxRxCallback pFunc );
+
+
+/*!
+ *****************************************************************************
+ * \brief RFAL Sync Pre Tx Callback
+ *
+ * Sets a callback for the driver to execute in order to Syncronize actual
+ * transmission start.
+ * If the callback is set TxRx will hold until Sync callback returns true.
+ * 
+ * \param[in]  pFunc : method pointer for the Sync Tx callback 
+ * 
+ *****************************************************************************
+ */
+void rfalSetSyncTxRxCallback( rfalSyncTxRxCallback pFunc );
 
 /*!
  *****************************************************************************
@@ -845,7 +798,7 @@ rfalEHandling rfalGetErrorHandling( void );
  *          Please refer to the corresponding Datasheet or Application Note(s)
  *****************************************************************************
  */
-void rfalSetObsvMode( uint8_t txMode, uint8_t rxMode );
+void rfalSetObsvMode( uint32_t txMode, uint32_t rxMode );
 
 
 /*! 
@@ -1159,9 +1112,9 @@ void rfalWorker( void );
  *         a response, which on a blocking method may not be the 
  *         desired usage 
  * 
- * \return ERR_NONE if there is response
- * \return ERR_TIMEOUT if there is no response
- * \return ERR_COLLISION collision has occurred
+ * \return ERR_NONE         : If there is response
+ * \return ERR_TIMEOUT      : If there is no response
+ * \return ERR_RF_COLLISION : A collision was detected
  *  
  *****************************************************************************
  */
@@ -1211,11 +1164,52 @@ ReturnCode rfalISO14443ATransceiveAnticollisionFrame( uint8_t *buf, uint8_t *byt
  * \param[out]  devicesDetected   : number of cards found
  * \param[out]  collisionsDetected: number of collisions detected
  * 
- * \return ERR_NONE if there is no error
- * \return ERR_TIMEOUT if there is no response
+ * \return ERR_NONE        : If there is no error
+ * \return ERR_PARAM       : Invalid parameter
+ * \return ERR_WRONG_STATE : RFAL not initialized or mode not set
+ * \return ERR_TIMEOUT     : If there is no response
  *****************************************************************************
  */
 ReturnCode rfalFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t reqCode, rfalFeliCaPollRes* pollResList, uint8_t pollResListSize, uint8_t *devicesDetected, uint8_t *collisionsDetected );
+
+/*!
+ *****************************************************************************
+ * \brief Start FeliCa Poll 
+ * 
+ * Triggers a Poll Request and all Poll Responses will be collected according 
+ * to the given nuber of slots  
+ * 
+ * 
+ * \param[in]   slots             : number of slots for the Poll Request
+ * \param[in]   sysCode           : system code (SC) for the Poll Request  
+ * \param[in]   reqCode           : request code (RC) for the Poll Request
+ * \param[out]  pollResList       : list of all responses
+ * \param[in]   pollResListSize   : number of responses that can be placed in pollResList 
+ * \param[out]  devicesDetected   : number of cards found
+ * \param[out]  collisionsDetected: number of collisions detected
+ * 
+ * \return ERR_NONE        : If there is no error
+ * \return ERR_PARAM       : Invalid parameter
+ * \return ERR_WRONG_STATE : RFAL not initialized or mode not set
+ *****************************************************************************
+ */
+ReturnCode rfalStartFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t reqCode, rfalFeliCaPollRes* pollResList, uint8_t pollResListSize, uint8_t *devicesDetected, uint8_t *collisionsDetected );
+
+/*!
+ *****************************************************************************
+ * \brief Get FeliCa Poll Status
+ * 
+ * Gets the current state of the Felica Poll Request triggered before
+ *  by rfalStartFeliCaPoll()
+ * 
+ * 
+ * 
+ * \return ERR_NONE        : If there is no error
+ * \return  ERR_BUSY       : Operation ongoing
+ * \return ERR_TIMEOUT     : If there is no response
+ *****************************************************************************
+ */
+ReturnCode rfalGetFeliCaPollStatus( void );
 
 
 /*****************************************************************************
@@ -1510,6 +1504,27 @@ ReturnCode rfalWakeUpModeStart( const rfalWakeUpConfig *config );
  *****************************************************************************
  */
 bool rfalWakeUpModeHasWoke( void );
+
+
+/*!
+ *****************************************************************************
+ * \brief Wake-Up Get Info
+ *
+ * Returns the current information while Wake-up mode is running
+ *
+ * \warning The information returned will only be updated in case force is 
+ *  enabled, or if an event IRQ has happen. 
+ *  Otherwise the info will be filled with zeros.
+ * 
+ * \param[in]  force       : Force info update info by retrieving it from device
+ * \param[out] info        : pointer where WU mode info is to be stored
+ *
+ * \return ERR_WRONG_STATE : Not initialized properly
+ * \return ERR_PARAM       : Invalid parameter
+ * \return ERR_NONE        : Done with no error
+ *****************************************************************************
+ */
+ReturnCode rfalWakeUpModeGetInfo( bool force, rfalWakeUpInfo *info );
 
 
 /*!

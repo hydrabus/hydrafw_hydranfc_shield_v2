@@ -2,16 +2,10 @@
 /******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -142,8 +136,8 @@ ReturnCode rfalDpoTableWrite( rfalDpoEntry* powerTbl, uint8_t powerTblEntries )
     
     if(gRfalDpoTableEntry > powerTblEntries)
     {
-      /* is always greater then zero, otherwise we already returned ERR_PARAM */
-      gRfalDpoTableEntry = (powerTblEntries - 1); 
+        /* Is always greater then zero, otherwise we already returned ERR_PARAM */
+        gRfalDpoTableEntry = (powerTblEntries - 1); 
     }
     
     return ERR_NONE;
@@ -194,7 +188,7 @@ ReturnCode rfalDpoAdjust( void )
 
     
     if( refValue >= dpoTable[gRfalDpoTableEntry].inc )
-    { /* Increase the output power */
+    {   /* Increase the output power */
         /* the top of the table represents the highest amplitude value*/
         if( gRfalDpoTableEntry == 0 )
         {
@@ -207,7 +201,7 @@ ReturnCode rfalDpoAdjust( void )
         }
     }
     else if(refValue <= dpoTable[gRfalDpoTableEntry].dec)
-    { /* decrease the output power */
+    {   /* decrease the output power */
         /* The bottom is the highest possible value */
         if( (gRfalDpoTableEntry + 1) >= gRfalDpoTableEntries)
         {

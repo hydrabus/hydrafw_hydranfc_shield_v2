@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 /*
  *      PROJECT:   ST25R391x firmware
@@ -120,12 +115,42 @@ typedef struct
 } rfalNfcfSensfReq;
 
 
+
+/*! Colission Resolution states */
+typedef enum{
+    RFAL_NFCF_CR_POLL,                     /*!< Poll Request                    */
+    RFAL_NFCF_CR_PARSE,                    /*!< Parse Poll Response             */
+    RFAL_NFCF_CR_POLL_SC,                  /*!< Poll Request with RC=SC         */
+}rfalNfcFColResState;
+
+
+
+/*! Colission Resolution context */
+typedef struct{
+    rfalNfcfGreedyF       greedyF;
+    uint8_t               devLimit;        /*!< Device limit to be used                                 */
+    rfalComplianceMode    compMode;        /*!< Compliancy mode to be used                              */
+    rfalNfcfListenDevice* nfcfDevList;     /*!< Location of the device list                             */
+    uint8_t*              devCnt;          /*!< Location of the device counter                          */
+    bool                  collPending;     /*!< Collision pending flag                                  */
+    bool                  nfcDepFound;
+    rfalNfcFColResState   state;            /*!< Single Collision Resolution state (Single CR)           */
+}rfalNfcfColResParams;
+
+
+/*! RFAL NFC-F instance */
+typedef struct
+{
+    rfalNfcfColResParams CR;                 /*!< Collision Resolution */
+} rfalNfcf;
+
+
 /*
 ******************************************************************************
 * LOCAL VARIABLES
 ******************************************************************************
 */
-static rfalNfcfGreedyF gRfalNfcfGreedyF;   /*!< Activity's NFCF Greedy collection */
+static rfalNfcf gNfcf;  /*!< RFAL NFC-F instance  */
 
 
 /*
@@ -154,13 +179,13 @@ static void rfalNfcfComputeValidSENF( rfalNfcfListenDevice *outDevInfo, uint8_t 
     /*******************************************************************************/
     /* Go through all responses check if valid and duplicates                      */
     /*******************************************************************************/
-    while( (gRfalNfcfGreedyF.pollFound > 0U) && ((*curDevIdx) < devLimit) )
+    while( (gNfcf.CR.greedyF.pollFound > 0U) && ((*curDevIdx) < devLimit) )
     {
         duplicate = false;
-        gRfalNfcfGreedyF.pollFound--;
+        gNfcf.CR.greedyF.pollFound--;
         
         /* MISRA 11.3 - Cannot point directly into different object type, use local copy */
-        ST_MEMCPY( (uint8_t*)&sensfCopy, (uint8_t*)&gRfalNfcfGreedyF.POLL_F[gRfalNfcfGreedyF.pollFound], sizeof(rfalNfcfSensfResBuf) );
+        ST_MEMCPY( (uint8_t*)&sensfCopy, (uint8_t*)&gNfcf.CR.greedyF.POLL_F[gNfcf.CR.greedyF.pollFound], sizeof(rfalNfcfSensfResBuf) );
         
         
         /* Point to received SENSF_RES */
@@ -234,7 +259,7 @@ ReturnCode rfalNfcfPollerInitialize( rfalBitRate bitRate )
     }
     
     EXIT_ON_ERR( ret, rfalSetMode( RFAL_MODE_POLL_NFCF, bitRate, bitRate ) );
-    rfalSetErrorHandling( RFAL_ERRORHANDLING_NFC );
+    rfalSetErrorHandling( RFAL_ERRORHANDLING_NONE );
     
     rfalSetGT( RFAL_GT_NFCF );
     rfalSetFDTListen( RFAL_FDT_LISTEN_NFCF_POLLER );
@@ -242,8 +267,6 @@ ReturnCode rfalNfcfPollerInitialize( rfalBitRate bitRate )
     
     return ERR_NONE;
 }
-
-
 
 /*******************************************************************************/
 ReturnCode rfalNfcfPollerPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t reqCode, rfalFeliCaPollRes *cardList, uint8_t *devCnt, uint8_t *collisions )
@@ -254,75 +277,155 @@ ReturnCode rfalNfcfPollerPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint
 /*******************************************************************************/
 ReturnCode rfalNfcfPollerCheckPresence( void )
 {
-    gRfalNfcfGreedyF.pollFound     = 0;
-    gRfalNfcfGreedyF.pollCollision = 0;
+    ReturnCode ret;
+    
+    EXIT_ON_ERR( ret, rfalNfcfPollerStartCheckPresence() );
+    rfalRunBlocking( ret, rfalNfcfPollerGetCheckPresenceStatus() );
+    
+    return ret;
+}
+
+/*******************************************************************************/
+ReturnCode rfalNfcfPollerStartCheckPresence( void )
+{
+    gNfcf.CR.greedyF.pollFound     = 0;
+    gNfcf.CR.greedyF.pollCollision = 0;
         
     /* ACTIVITY 1.0 & 1.1 - 9.2.3.17 SENSF_REQ  must be with number of slots equal to 4
      *                                SC must be 0xFFFF
      *                                RC must be 0x00 (No system code info required) */
-    return rfalFeliCaPoll( RFAL_FELICA_4_SLOTS, RFAL_NFCF_SYSTEMCODE, RFAL_FELICA_POLL_RC_NO_REQUEST, gRfalNfcfGreedyF.POLL_F, rfalNfcfSlots2CardNum(RFAL_FELICA_4_SLOTS), &gRfalNfcfGreedyF.pollFound, &gRfalNfcfGreedyF.pollCollision );
+    return rfalStartFeliCaPoll( RFAL_FELICA_4_SLOTS, RFAL_NFCF_SYSTEMCODE, RFAL_FELICA_POLL_RC_NO_REQUEST, gNfcf.CR.greedyF.POLL_F, rfalNfcfSlots2CardNum(RFAL_FELICA_4_SLOTS), &gNfcf.CR.greedyF.pollFound, &gNfcf.CR.greedyF.pollCollision );
+}
+
+/*******************************************************************************/
+ReturnCode rfalNfcfPollerGetCheckPresenceStatus( void )
+{
+   return rfalGetFeliCaPollStatus();
 }
 
 
 /*******************************************************************************/
 ReturnCode rfalNfcfPollerCollisionResolution( rfalComplianceMode compMode, uint8_t devLimit, rfalNfcfListenDevice *nfcfDevList, uint8_t *devCnt )
 {
-    ReturnCode  ret;
-    bool        nfcDepFound;
+    ReturnCode ret;
     
+    EXIT_ON_ERR( ret, rfalNfcfPollerStartCollisionResolution( compMode, devLimit, nfcfDevList, devCnt ) );
+    rfalRunBlocking( ret, rfalNfcfPollerGetCollisionResolutionStatus() );
+    
+    return ret;
+}
+
+
+/*******************************************************************************/
+ReturnCode rfalNfcfPollerStartCollisionResolution( rfalComplianceMode compMode, uint8_t devLimit, rfalNfcfListenDevice *nfcfDevList, uint8_t *devCnt )
+{
     if( (nfcfDevList == NULL) || (devCnt == NULL) )
     {
         return ERR_PARAM;
     }
             
     *devCnt      = 0;
-    nfcDepFound  = false;
-    
     
     /*******************************************************************************************/
     /* ACTIVITY 1.0 - 9.3.6.3 Copy valid SENSF_RES in GRE_POLL_F into GRE_SENSF_RES            */
     /* ACTIVITY 1.0 - 9.3.6.6 The NFC Forum Device MUST remove all entries from GRE_SENSF_RES[]*/
-    /* ACTIVITY 1.1 - 9.3.63.59 Populate GRE_SENSF_RES with data from GRE_POLL_F               */
+    /* ACTIVITY 2.1 - 9.3.6.2 Populate GRE_SENSF_RES with data from GRE_POLL_F               */
     /*                                                                                         */
     /* CON_DEVICES_LIMIT = 0 Just check if devices from Tech Detection exceeds -> always true  */
     /* Allow the number of slots open on Technology Detection                                  */
     /*******************************************************************************************/
-    rfalNfcfComputeValidSENF( nfcfDevList, devCnt, ((devLimit == 0U) ? rfalNfcfSlots2CardNum( RFAL_FELICA_4_SLOTS ) : devLimit), false, &nfcDepFound );
-
+    rfalNfcfComputeValidSENF( nfcfDevList, devCnt, ((devLimit == 0U) ? rfalNfcfSlots2CardNum( RFAL_FELICA_4_SLOTS ) : devLimit), false, &gNfcf.CR.nfcDepFound );
     
-    /*******************************************************************************/
-    /* ACTIVITY 1.0 - 9.3.6.4                                                      */
-    /* ACTIVITY 1.1 - 9.3.63.60 Check if devices found are lower than the limit    */
-    /* and send a SENSF_REQ if so                                                  */
-    /*******************************************************************************/
-    if( *devCnt < devLimit )
+    /* Store context */
+    gNfcf.CR.nfcfDevList = nfcfDevList;
+    gNfcf.CR.compMode    = compMode;
+    gNfcf.CR.devLimit    = devLimit;
+    gNfcf.CR.devCnt      = devCnt;
+    gNfcf.CR.state       = RFAL_NFCF_CR_POLL;
+    
+    return ERR_NONE;
+}
+
+/*******************************************************************************/
+ReturnCode rfalNfcfPollerGetCollisionResolutionStatus( void )
+{
+    ReturnCode  ret;
+    
+    switch( gNfcf.CR.state )
     {
-        /* ACTIVITY 1.0 - 9.3.6.5  Copy valid SENSF_RES and then to remove it
-         * ACTIVITY 1.1 - 9.3.6.65 Copy and filter duplicates                                           
-         * For now, due to some devices keep generating different nfcid2, we use 1.0  
-         * Phones detected: Samsung Galaxy Nexus,Samsung Galaxy S3,Samsung Nexus S */
-        *devCnt = 0;
+        /*******************************************************************************/
+        case RFAL_NFCF_CR_POLL:
+        case RFAL_NFCF_CR_POLL_SC:
         
-        ret = rfalNfcfPollerPoll( RFAL_FELICA_16_SLOTS, RFAL_NFCF_SYSTEMCODE, RFAL_FELICA_POLL_RC_NO_REQUEST, gRfalNfcfGreedyF.POLL_F, &gRfalNfcfGreedyF.pollFound, &gRfalNfcfGreedyF.pollCollision );
-        if( ret == ERR_NONE )
-        {
-            rfalNfcfComputeValidSENF( nfcfDevList, devCnt, devLimit, false, &nfcDepFound );
-        }
-      
-      /*******************************************************************************/
-      /* ACTIVITY 1.1 -  9.3.6.63 Check if any device supports NFC DEP               */
-      /*******************************************************************************/
-      if( nfcDepFound && (compMode == RFAL_COMPLIANCE_MODE_NFC) )
-      {
-          ret = rfalNfcfPollerPoll( RFAL_FELICA_16_SLOTS, RFAL_NFCF_SYSTEMCODE, RFAL_FELICA_POLL_RC_SYSTEM_CODE, gRfalNfcfGreedyF.POLL_F, &gRfalNfcfGreedyF.pollFound, &gRfalNfcfGreedyF.pollCollision );
-          if( ret == ERR_NONE )
-          {
-              rfalNfcfComputeValidSENF( nfcfDevList, devCnt, devLimit, true, &nfcDepFound );
-          }
-      }
+            
+            if( gNfcf.CR.state == RFAL_NFCF_CR_POLL  )
+            {
+                /*******************************************************************************/
+                /* Activity 2.1  9.3.6.3  - Symbol 2 Check if devices found are lower than the limit */
+                if( *gNfcf.CR.devCnt >= gNfcf.CR.devLimit )
+                {
+                    break;
+                }
+
+                /*******************************************************************************/
+                /* Activity 1.0 - 9.3.6.5  Copy valid SENSF_RES and then to remove it          */
+                /* Activity 1.1 - 9.3.6.65 Copy and filter duplicates                          */
+                /* For now, due to some devices keep generating different nfcid2, we use 1.0   */
+                /* Phones detected: Samsung Galaxy Nexus,Samsung Galaxy S3,Samsung Nexus S     */
+                /*******************************************************************************/   
+                *gNfcf.CR.devCnt = 0;
+            }
+
+            EXIT_ON_ERR( ret, rfalStartFeliCaPoll( RFAL_FELICA_16_SLOTS, 
+                                                   RFAL_NFCF_SYSTEMCODE, 
+                                                  (uint8_t)((gNfcf.CR.state == RFAL_NFCF_CR_POLL_SC) ? RFAL_FELICA_POLL_RC_SYSTEM_CODE : RFAL_FELICA_POLL_RC_NO_REQUEST), 
+                                                  gNfcf.CR.greedyF.POLL_F, 
+                                                  rfalNfcfSlots2CardNum((uint8_t)RFAL_FELICA_16_SLOTS), 
+                                                  &gNfcf.CR.greedyF.pollFound, 
+                                                  &gNfcf.CR.greedyF.pollCollision ) );
+            
+            gNfcf.CR.state = RFAL_NFCF_CR_PARSE;
+            return ERR_BUSY;
+
+            
+        /*******************************************************************************/
+        case RFAL_NFCF_CR_PARSE:
+            
+            ret = rfalGetFeliCaPollStatus();
+            if( ret == ERR_BUSY )
+            {
+                return ret;
+            }
+            
+            if( ret == ERR_NONE )
+            {
+                /* Activity 2.1  9.3.6.5 - Symbol 4 Update device list */
+                rfalNfcfComputeValidSENF( gNfcf.CR.nfcfDevList, gNfcf.CR.devCnt, gNfcf.CR.devLimit, false, &gNfcf.CR.nfcDepFound );
+            }
+            
+            /*******************************************************************************/
+            /* Activity 2.1  9.3.6.6 - Symbol 5  Check if any device supports NFC DEP       */
+            if( gNfcf.CR.nfcDepFound && (gNfcf.CR.compMode == RFAL_COMPLIANCE_MODE_NFC) )
+            {
+                /* Send another poll request with RC = System Code */
+                gNfcf.CR.state = RFAL_NFCF_CR_POLL_SC;
+                
+                /* Set compliance mode to invalid (non NFC) to poll for NFC-DEP devices only once */
+                gNfcf.CR.compMode = RFAL_COMPLIANCE_MODE_EMV; 
+                return ERR_BUSY;
+            }
+            
+            break;
+            
+        /*******************************************************************************/
+        default:
+            /* MISRA 16.4: no empty default statement (a comment being enough) */
+            break;
+        
     }
     
     return ERR_NONE;
+    
 }
 
 /*******************************************************************************/
@@ -364,7 +467,7 @@ ReturnCode rfalNfcfPollerCheck( const uint8_t* nfcid2, const rfalNfcfServBlockLi
     for( i = 0; i < servBlock->numBlock; i++)
     {
         txBuf[msgIt++] = servBlock->blockList[i].conf;                                    /* Block list element conf (Flag|Access|Service) */
-        if( (servBlock->blockList[i].conf & 0x80U) != 0U )                                /* Check if 2 or 3 byte block list element       */
+        if( (servBlock->blockList[i].conf & RFAL_NFCF_BLOCKLISTELEM_LEN_BIT) != 0U )      /* Check if 2 or 3 byte block list element       */
         {
             txBuf[msgIt++] = (uint8_t)(servBlock->blockList[i].blockNum & 0xFFU);         /* 1byte Block Num */
         }
@@ -431,9 +534,10 @@ ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockL
         return ERR_PARAM;
     }
     
-    /* Calculate required txBuffer lenth */
-    auxLen = (uint16_t)( RFAL_NFCF_CMD_LEN + RFAL_NFCF_NFCID2_LEN + ( servBlock->numServ * sizeof(rfalNfcfServ) ) + 
-              (servBlock->numBlock * sizeof(rfalNfcfBlockListElem)) + (uint16_t)((uint16_t)servBlock->numBlock * RFAL_NFCF_BLOCK_LEN) );
+    /* Calculate required txBuffer lenth      T3T 1.0  Table 9 */
+    auxLen = (uint16_t)( RFAL_NFCF_CMD_LEN + RFAL_NFCF_NFCID2_LEN + RFAL_NFCF_NOS_LEN + ( servBlock->numServ * sizeof(rfalNfcfServ) ) + 
+              RFAL_NFCF_NOB_LEN + (uint16_t)((uint16_t)servBlock->numBlock * RFAL_NFCF_BLOCKLISTELEM_MAX_LEN) + (uint16_t)((uint16_t)servBlock->numBlock * RFAL_NFCF_BLOCK_LEN) );
+    
     
     /* Check whether the provided buffer is sufficient for this request */
     if( txBufLen < auxLen )
@@ -462,7 +566,7 @@ ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockL
     for( i = 0; i < servBlock->numBlock; i++)
     {
         txBuf[msgIt++] = servBlock->blockList[i].conf;                                    /* Block list element conf (Flag|Access|Service) */
-        if( (servBlock->blockList[i].conf & 0x80U) != 0U )                                /* Check if 2 or 3 byte block list element       */
+        if( (servBlock->blockList[i].conf & RFAL_NFCF_BLOCKLISTELEM_LEN_BIT) != 0U )      /* Check if 2 or 3 byte block list element       */
         {
             txBuf[msgIt++] = (uint8_t)(servBlock->blockList[i].blockNum & 0xFFU);         /* 1byte Block Num */
         }

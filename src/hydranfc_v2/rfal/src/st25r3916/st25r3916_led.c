@@ -1,14 +1,8 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
-  *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *       www.st.com/myliberty
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
   * Unless required by applicable law or agreed to in writing, software
   * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +15,10 @@
 ******************************************************************************/
 
 
+
 /*
  *      PROJECT:   ST25R3916 firmware
- *      Revision:
+ *      Revision: 
  *      LANGUAGE:  ISO C99
  */
 
@@ -80,43 +75,27 @@ void st25r3916ledInit( void )
 {
     /* Initialize LEDs if existing and defined */
     platformLedsInitialize();
-
+    
     st25r3916ledRxOff();
     st25r3916ledFieldOff();
 }
 
-//#include "hydranfc_v2_nfc_mode.h"
 
 /*******************************************************************************/
 void st25r3916ledEvtIrq( uint32_t irqs )
 {
-	// todo may want to blink LEDs for rx tx etc
-
-//    if( (irqs & (ST25R3916_IRQ_MASK_RXS) ) != 0U )
-//    {
-//    	D1_ON;
-//    }
-//    if( (irqs & (ST25R3916_IRQ_MASK_RXE) ) != 0U )
-//    {
-//    	D1_OFF;
-//    }
-//    if( (irqs & (ST25R3916_IRQ_MASK_TXE) ) != 0U )
-//    {
-//    	D3_OFF;
-//    }
-
     if( (irqs & (ST25R3916_IRQ_MASK_TXE | ST25R3916_IRQ_MASK_CAT) ) != 0U )
     {
         st25r3916ledFieldOn();
     }
-
+    
     if( (irqs & (ST25R3916_IRQ_MASK_RXS | ST25R3916_IRQ_MASK_NFCT) ) != 0U )
     {
         st25r3916ledRxOn();
     }
-
-    if( (irqs & (ST25R3916_IRQ_MASK_RXE  | ST25R3916_IRQ_MASK_NRE    | ST25R3916_IRQ_MASK_RX_REST | ST25R3916_IRQ_MASK_RXE_PTA |
-                 ST25R3916_IRQ_MASK_WU_A | ST25R3916_IRQ_MASK_WU_A_X | ST25R3916_IRQ_MASK_WU_F    | ST25R3916_IRQ_MASK_RFU2)   ) != 0U )
+    
+    if( (irqs & (ST25R3916_IRQ_MASK_RXE  | ST25R3916_IRQ_MASK_NRE    | ST25R3916_IRQ_MASK_RX_REST | ST25R3916_IRQ_MASK_RXE_PTA |                                                 
+                 ST25R3916_IRQ_MASK_WU_A | ST25R3916_IRQ_MASK_WU_A_X | ST25R3916_IRQ_MASK_WU_F    | ST25R3916_IRQ_MASK_RFU2)   ) != 0U ) 
     {
         st25r3916ledRxOff();
     }
@@ -144,7 +123,7 @@ void st25r3916ledEvtWrReg( uint8_t reg, uint8_t val )
 void st25r3916ledEvtWrMultiReg( uint8_t reg, const uint8_t* vals, uint8_t len )
 {
     uint8_t i;
-
+    
     for(i=0; i<(len); i++)
     {
         st25r3916ledEvtWrReg( (reg+i), vals[i] );
@@ -159,12 +138,12 @@ void st25r3916ledEvtCmd( uint8_t cmd )
     {
         st25r3916ledFieldOff();
     }
-
+    
     if( cmd == ST25R3916_CMD_UNMASK_RECEIVE_DATA )
     {
         st25r3916ledRxOff();
     }
-
+    
     if( cmd == ST25R3916_CMD_SET_DEFAULT )
     {
         st25r3916ledFieldOff();

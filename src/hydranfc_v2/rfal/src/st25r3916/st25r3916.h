@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 
 /*
@@ -172,6 +167,9 @@ struct st25r3916StreamConfig {
 
 /*! Checks if the Oscillator is enabled  */
 #define st25r3916IsOscOn()            st25r3916CheckReg( ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_en, ST25R3916_REG_OP_CONTROL_en )
+
+/*! Checks if the AAT is enabled  */
+#define st25r3916IsAATOn()            st25r3916CheckReg( ST25R3916_REG_IO_CONF2, ST25R3916_REG_IO_CONF2_aat_en, ST25R3916_REG_IO_CONF2_aat_en )
 
 /*
 ******************************************************************************
@@ -570,14 +568,14 @@ ReturnCode st25r3916StreamConfigure( const struct st25r3916StreamConfig *config 
  *
  *  \param[in]  cmd   : direct command to execute
  *  \param[in]  resReg: address of the register containing the result
- *  \param[in]  tout  : time in milliseconds to wait before reading the result
+ *  \param[in]  tOut  : time in milliseconds to wait before reading the result
  *  \param[out] result: result
  *
  *  \return ERR_NONE  : No error
  *  
  *****************************************************************************
  */
-ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uint8_t tout, uint8_t* result );
+ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uint8_t tOut, uint8_t* result );
 
 /*! 
  *****************************************************************************

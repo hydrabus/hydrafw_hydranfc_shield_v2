@@ -602,7 +602,7 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			}
 		}
 
-		rfalSetErrorHandling(RFAL_ERRORHANDLING_NFC);
+		rfalSetErrorHandling(RFAL_ERRORHANDLING_EMD);
 
 		rfalFieldOff();
 		rfalFieldOnAndStartGT();

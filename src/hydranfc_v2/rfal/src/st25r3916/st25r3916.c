@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 
 /*
@@ -30,7 +25,6 @@
 /*! \file
  *
  *  \author Gustavo Patricio
- *  \author B.VERNOUX fixed ST25R3916_TEST_TMR_TOUT_8FC
  *
  *  \brief ST25R3916 high level interface
  *
@@ -49,6 +43,16 @@
 #include "utils.h"
 
 
+
+/*
+ ******************************************************************************
+ * ENABLE SWITCH
+ ******************************************************************************
+ */
+ 
+#ifndef ST25R3916
+#error "RFAL: Missing ST25R device selection. Please globally define ST25R3916."
+#endif /* ST25R3916 */
 
 /*
 ******************************************************************************
@@ -71,8 +75,7 @@
 #define ST25R3916_TEST_WU_TOUT                    12U     /*!< Timeout used on WU timer during self test                           */
 #define ST25R3916_TEST_TMR_TOUT                   20U     /*!< Timeout used during self test                                       */
 #define ST25R3916_TEST_TMR_TOUT_DELTA             2U      /*!< Timeout used during self test                                       */
-//#define ST25R3916_TEST_TMR_TOUT_8FC               (ST25R3916_TEST_TMR_TOUT * 16950U) /*!< Timeout in 8/fc  <= Bug exceed max value 65536 (shall be set to 20ms) */
-#define ST25R3916_TEST_TMR_TOUT_8FC               (ST25R3916_TEST_TMR_TOUT * 1695U) /*!< Timeout in 8/fc  <= Fix BVE 18 June 2020 */
+#define ST25R3916_TEST_TMR_TOUT_8FC               (ST25R3916_TEST_TMR_TOUT * 1695U)  /*!< Timeout in 8/fc                          */
 
 /*
 ******************************************************************************
@@ -100,7 +103,7 @@ static uint32_t gST25R3916NRT_64fcs;
  ******************************************************************************
  */
 
-ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uint8_t tout, uint8_t* result )
+ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uint8_t tOut, uint8_t* result )
 {
     /* Clear and enable Direct Command interrupt */
     st25r3916GetInterrupt( ST25R3916_IRQ_MASK_DCT );
@@ -108,7 +111,7 @@ ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uin
 
     st25r3916ExecuteCommand( cmd );
 
-    st25r3916WaitForInterruptsTimed( ST25R3916_IRQ_MASK_DCT, tout );
+    st25r3916WaitForInterruptsTimed( ST25R3916_IRQ_MASK_DCT, tOut );
     st25r3916DisableInterrupts( ST25R3916_IRQ_MASK_DCT );
 
     /* After execution read out the result if the pointer is not NULL */
@@ -131,6 +134,11 @@ ReturnCode st25r3916Initialize( void )
 {
     uint16_t vdd_mV;
     ReturnCode ret;
+    
+#ifndef RFAL_USE_I2C
+    /* Ensure a defined chip select state */
+    platformSpiDeselect();
+#endif /* RFAL_USE_I2C */
 
     /* Set default state on the ST25R3916 */
     st25r3916ExecuteCommand( ST25R3916_CMD_SET_DEFAULT );
@@ -346,7 +354,7 @@ ReturnCode st25r3916AdjustRegulators( uint16_t* result_mV )
     {
         if( st25r3916CheckReg( ST25R3916_REG_IO_CONF2, ST25R3916_REG_IO_CONF2_sup3V, ST25R3916_REG_IO_CONF2_sup3V )  )
         {
-            result = MIN( result, (uint8_t)(result-5U) );/* In 3.3V mode [0,4] are not used                       */
+            result -= ((result>4U) ? (5U) : 0U);          /* In 3.3V mode [0,4] are not used                       */
             *result_mV = 2400U;                          /* Minimum regulated voltage 2.4V in case of 3.3V supply */
         }
         else

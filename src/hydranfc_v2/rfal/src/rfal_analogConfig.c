@@ -1,18 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -20,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 /*
  *      PROJECT:   ST25R391x firmware
@@ -30,7 +24,6 @@
 /*! \file rfal_analogConfig.c
  *
  *  \author bkam
- *  \author B.VERNOUX fixed rfalAnalogConfigInitialize() when RFAL_ANALOG_CONFIG_CUSTOM is defined
  *
  *  \brief Funcitons to manage and set analog settings.
  *
@@ -50,7 +43,7 @@
 
 /* Check whether the Default Analog settings are to be used or custom ones */
 #ifdef RFAL_ANALOG_CONFIG_CUSTOM
-    extern const uint8_t* rfalAnalogConfigCustomSettings;
+    extern const uint8_t  rfalAnalogConfigCustomSettings[];
     extern const uint16_t rfalAnalogConfigCustomSettingsLength;
 #else
     #include "rfal_analogConfigTbl.h"
@@ -129,7 +122,7 @@ void rfalAnalogConfigInitialize( void )
     gRfalAnalogConfigMgmt.currentAnalogConfigTbl = rfalAnalogConfigCustomSettings;
     gRfalAnalogConfigMgmt.configTblSize          = rfalAnalogConfigCustomSettingsLength;
 #else  
-    gRfalAnalogConfigMgmt.currentAnalogConfigTbl = (const uint8_t *)&rfalAnalogConfigDefaultSettings;
+    gRfalAnalogConfigMgmt.currentAnalogConfigTbl = rfalAnalogConfigDefaultSettings;
     gRfalAnalogConfigMgmt.configTblSize          = sizeof(rfalAnalogConfigDefaultSettings);
 #endif
   
@@ -196,7 +189,7 @@ ReturnCode rfalAnalogConfigListWrite( uint8_t more, const rfalAnalogConfig *conf
     
     /* Check validity of the Configuration ID. */
     if ( (RFAL_ANALOG_CONFIG_TECH_RFU <= RFAL_ANALOG_CONFIG_ID_GET_TECH(configId))
-       ||((RFAL_ANALOG_CONFIG_BITRATE_6780 < RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId)) && (RFAL_ANALOG_CONFIG_BITRATE_1OF4 > RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId)))
+       ||((RFAL_ANALOG_CONFIG_BITRATE_6780 < RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId)) && (RFAL_ANALOG_CONFIG_BITRATE_53 > RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId)))
        ||(RFAL_ANALOG_CONFIG_BITRATE_1OF256 < RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId))
        )
     {

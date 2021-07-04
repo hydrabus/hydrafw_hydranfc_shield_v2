@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 /*
  *      PROJECT:   ST25R391x firmware
@@ -92,15 +87,15 @@
 * LOCAL VARIABLES
 ******************************************************************************
 */
-static iso15693PhyConfig_t iso15693PhyConfig; /*!< current phy configuration */
+static rfalIso15693PhyConfig_t gIso15693PhyConfig; /*!< current phy configuration */
 
 /*
 ******************************************************************************
 * LOCAL FUNCTION PROTOTYPES
 ******************************************************************************
 */
-static ReturnCode iso15693PhyVCDCode1Of4(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen);
-static ReturnCode iso15693PhyVCDCode1Of256(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen);
+static ReturnCode rfalIso15693PhyVCDCode1Of4(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen);
+static ReturnCode rfalIso15693PhyVCDCode1Of256(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen);
 
 
 
@@ -109,9 +104,9 @@ static ReturnCode iso15693PhyVCDCode1Of256(const uint8_t data, uint8_t* outbuffe
 * GLOBAL FUNCTIONS
 ******************************************************************************
 */
-ReturnCode iso15693PhyConfigure(const iso15693PhyConfig_t* config, const struct iso15693StreamConfig ** needed_stream_config  )
+ReturnCode rfalIso15693PhyConfigure(const rfalIso15693PhyConfig_t* config, const struct iso15693StreamConfig ** needed_stream_config  )
 {
-    static struct iso15693StreamConfig stream_config = {                                       /* MISRA 8.9 */
+    static struct iso15693StreamConfig auxConfig = {                                       /* MISRA 8.9 */
         .useBPSK = 0,              /* 0: subcarrier, 1:BPSK */
         .din = 5,                  /* 2^5*fc = 423750 Hz: divider for the in subcarrier frequency */
         .dout = 7,                 /*!< 2^7*fc = 105937 : divider for the in subcarrier frequency */
@@ -120,30 +115,30 @@ ReturnCode iso15693PhyConfigure(const iso15693PhyConfig_t* config, const struct 
     
     
     /* make a copy of the configuration */
-    ST_MEMCPY( (uint8_t*)&iso15693PhyConfig, (const uint8_t*)config, sizeof(iso15693PhyConfig_t));
+    ST_MEMCPY( (uint8_t*)&gIso15693PhyConfig, (const uint8_t*)config, sizeof(rfalIso15693PhyConfig_t));
     
     if ( config->speedMode <= 3U)
     { /* If valid speed mode adjust report period accordingly */
-        stream_config.report_period_length = (3U - (uint8_t)config->speedMode);
+        auxConfig.report_period_length = (3U - (uint8_t)config->speedMode);
     }
     else
     { /* If invalid default to normal (high) speed */
-        stream_config.report_period_length = 3;
+        auxConfig.report_period_length = 3;
     }
 
-    *needed_stream_config = &stream_config;
+    *needed_stream_config = &auxConfig;
 
     return ERR_NONE;
 }
 
-ReturnCode iso15693PhyGetConfiguration(iso15693PhyConfig_t* config)
+ReturnCode rfalIso15693PhyGetConfiguration(rfalIso15693PhyConfig_t* config)
 {
-    ST_MEMCPY(config, &iso15693PhyConfig, sizeof(iso15693PhyConfig_t));
+    ST_MEMCPY(config, &gIso15693PhyConfig, sizeof(rfalIso15693PhyConfig_t));
 
     return ERR_NONE;
 }
 
-ReturnCode iso15693VCDCode(uint8_t* buffer, uint16_t length, bool sendCrc, bool sendFlags, bool picopassMode,
+ReturnCode rfalIso15693VCDCode(uint8_t* buffer, uint16_t length, bool sendCrc, bool sendFlags, bool picopassMode,
                    uint16_t *subbit_total_length, uint16_t *offset,
                    uint8_t* outbuf, uint16_t outBufSize, uint16_t* actOutBufSize)
 {
@@ -160,11 +155,11 @@ ReturnCode iso15693VCDCode(uint8_t* buffer, uint16_t length, bool sendCrc, bool 
 
     *actOutBufSize = 0;
 
-    if (ISO15693_VCD_CODING_1_4 == iso15693PhyConfig.coding)
+    if (ISO15693_VCD_CODING_1_4 == gIso15693PhyConfig.coding)
     {
         sof = ISO15693_DAT_SOF_1_4;
         eof = ISO15693_DAT_EOF_1_4;
-        txFunc = iso15693PhyVCDCode1Of4;
+        txFunc = rfalIso15693PhyVCDCode1Of4;
         *subbit_total_length = (
                 ( 1U  /* SOF */
                   + ((length + (uint16_t)crc_len) * 4U)
@@ -178,7 +173,7 @@ ReturnCode iso15693VCDCode(uint8_t* buffer, uint16_t length, bool sendCrc, bool 
     {
         sof = ISO15693_DAT_SOF_1_256;
         eof = ISO15693_DAT_EOF_1_256;
-        txFunc = iso15693PhyVCDCode1Of256;
+        txFunc = rfalIso15693PhyVCDCode1Of256;
         *subbit_total_length = (
                 ( 1U  /* SOF */
                   + ((length + (uint16_t)crc_len) * 64U) 
@@ -243,7 +238,7 @@ ReturnCode iso15693VCDCode(uint8_t* buffer, uint16_t length, bool sendCrc, bool 
     while ((err == ERR_NONE) && sendCrc && (*offset < (length + 2U)))
     {
         uint16_t filled_size;
-        if (0U==crc)
+        if ((0U==crc) && (length != 0U))
         {
             crc = rfalCrcCalculateCcitt( (uint16_t) ((picopassMode) ? 0xE012U : 0xFFFFU),        /* In PicoPass Mode a different Preset Value is used   */
                                                     ((picopassMode) ? (buffer + 1U) : buffer),   /* CMD byte is not taken into account in PicoPass mode */
@@ -282,14 +277,14 @@ ReturnCode iso15693VCDCode(uint8_t* buffer, uint16_t length, bool sendCrc, bool 
     return err;
 }
 
-ReturnCode iso15693VICCDecode(const uint8_t *inBuf,
-                      uint16_t inBufLen,
-                      uint8_t* outBuf,
-                      uint16_t outBufLen,
-                      uint16_t* outBufPos,
-                      uint16_t* bitsBeforeCol,
-                      uint16_t ignoreBits,
-                      bool picopassMode )
+ReturnCode rfalIso15693VICCDecode(const uint8_t *inBuf,
+                                  uint16_t inBufLen,
+                                  uint8_t* outBuf,
+                                  uint16_t outBufLen,
+                                  uint16_t* outBufPos,
+                                  uint16_t* bitsBeforeCol,
+                                  uint16_t ignoreBits,
+                                  bool picopassMode )
 {
     ReturnCode err = ERR_NONE;
     uint16_t crc;
@@ -430,7 +425,7 @@ ReturnCode iso15693VICCDecode(const uint8_t *inBuf,
  *
  *****************************************************************************
  */
-static ReturnCode iso15693PhyVCDCode1Of4(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen)
+static ReturnCode rfalIso15693PhyVCDCode1Of4(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen)
 {
     uint8_t tmp;
     ReturnCode err = ERR_NONE;
@@ -488,7 +483,7 @@ static ReturnCode iso15693PhyVCDCode1Of4(const uint8_t data, uint8_t* outbuffer,
  *
  *****************************************************************************
  */
-static ReturnCode iso15693PhyVCDCode1Of256(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen)
+static ReturnCode rfalIso15693PhyVCDCode1Of256(const uint8_t data, uint8_t* outbuffer, uint16_t maxOutBufLen, uint16_t* outBufLen)
 {
     uint8_t tmp;
     ReturnCode err = ERR_NONE;
@@ -524,7 +519,7 @@ static ReturnCode iso15693PhyVCDCode1Of256(const uint8_t data, uint8_t* outbuffe
         }
         outbuf++;
         (*outBufLen)++;
-        tmp -= 4U;
+        tmp -= 4U;     /*  PRQA S 2911 # CERT INT30 - Intentional underflow, part of the coding */
     }
 
     return err;

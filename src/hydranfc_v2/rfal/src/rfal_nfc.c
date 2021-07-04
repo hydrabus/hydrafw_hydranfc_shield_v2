@@ -1,32 +1,18 @@
-/**
-  ******************************************************************************
+
+/******************************************************************************
+  * @attention
   *
-  * COPYRIGHT(c) 2020 STMicroelectronics
+  * COPYRIGHT 2020 STMicroelectronics, all rights reserved
   *
-  * Redistribution and use in source and binary forms, with or without modification,
-  * are permitted provided that the following conditions are met:
-  *   1. Redistributions of source code must retain the above copyright notice,
-  *      this list of conditions and the following disclaimer.
-  *   2. Redistributions in binary form must reproduce the above copyright notice,
-  *      this list of conditions and the following disclaimer in the documentation
-  *      and/or other materials provided with the distribution.
-  *   3. Neither the name of STMicroelectronics nor the names of its contributors
-  *      may be used to endorse or promote products derived from this software
-  *      without specific prior written permission.
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
+  * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
+  * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
   *
-  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  ******************************************************************************
-  */
+******************************************************************************/
 
 /*! \file rfal_nfc.c
  *
@@ -68,9 +54,15 @@
 ******************************************************************************
 */
 
-#define rfalNfcNfcNotify( st )         if( gNfcDev.disc.notifyCb != NULL )  gNfcDev.disc.notifyCb( st )
-
-
+#define rfalNfcNfcNotify( st )                         if( gNfcDev.disc.notifyCb != NULL )  gNfcDev.disc.notifyCb( (st) )
+    
+#define rfalNfcpCbPollerInitialize()                   ((gNfcDev.disc.propNfc.rfalNfcpPollerInitialize != NULL) ? gNfcDev.disc.propNfc.rfalNfcpPollerInitialize() : ERR_NOTSUPP )
+#define rfalNfcpCbPollerTechnologyDetection()          ((gNfcDev.disc.propNfc.rfalNfcpPollerTechnologyDetection != NULL) ? gNfcDev.disc.propNfc.rfalNfcpPollerTechnologyDetection() : ERR_TIMEOUT )
+#define rfalNfcpCbPollerStartCollisionResolution()     ((gNfcDev.disc.propNfc.rfalNfcpPollerStartCollisionResolution != NULL) ? gNfcDev.disc.propNfc.rfalNfcpPollerStartCollisionResolution() : ERR_NOTSUPP )
+#define rfalNfcpCbPollerGetCollisionResolutionStatus() ((gNfcDev.disc.propNfc.rfalNfcpPollerGetCollisionResolutionStatus != NULL) ? gNfcDev.disc.propNfc.rfalNfcpPollerGetCollisionResolutionStatus() : ERR_NOTSUPP )
+#define rfalNfcpCbStartActivation()                    ((gNfcDev.disc.propNfc.rfalNfcpStartActivation != NULL) ? gNfcDev.disc.propNfc.rfalNfcpStartActivation() : ERR_NOTSUPP )
+#define rfalNfcpCbGetActivationStatus()                ((gNfcDev.disc.propNfc.rfalNfcpGetActivationStatus != NULL) ? gNfcDev.disc.propNfc.rfalNfcpGetActivationStatus() : ERR_NOTSUPP )
+    
 /*
 ******************************************************************************
 * GLOBAL TYPES
@@ -88,6 +80,7 @@ typedef struct{
     rfalNfcState            state;              /* Main state                                      */
     uint16_t                techsFound;         /* Technologies found bitmask                      */
     uint16_t                techs2do;           /* Technologies still to be performed              */
+    uint16_t                techDctCnt;         /* Technologies detection counter (before WU)      */
     rfalBitRate             ap2pBR;             /* Bit rate to poll for AP2P                       */
     uint8_t                 selDevIdx;          /* Selected device index                           */
     rfalNfcDevice           *activeDev;         /* Active device pointer                           */
@@ -152,8 +145,8 @@ ReturnCode rfalNfcInitialize( void )
     
     rfalAnalogConfigInitialize();              /* Initialize RFAL's Analog Configs */
     EXIT_ON_ERR( err, rfalInitialize() );      /* Initialize RFAL */
-
-    gNfcDev.state = RFAL_NFC_STATE_IDLE;         /* Go to initialized */
+    
+    gNfcDev.state = RFAL_NFC_STATE_IDLE;       /* Go to initialized */
     return ERR_NONE;
 }
 
@@ -192,6 +185,7 @@ ReturnCode rfalNfcDiscover( const rfalNfcDiscoverParam *disParams )
     /* Initialize context for discovery */
     gNfcDev.activeDev       = NULL;
     gNfcDev.techsFound      = RFAL_NFC_TECH_NONE;
+    gNfcDev.techDctCnt      = 0;
     gNfcDev.devCnt          = 0;
     gNfcDev.discRestart     = true;
     gNfcDev.isTechInit      = false;
@@ -338,7 +332,7 @@ void rfalNfcWorker( void )
         
         #if RFAL_FEATURE_WAKEUP_MODE    
             /* Check if Low power Wake-Up is to be performed */
-            if( gNfcDev.disc.wakeupEnabled )
+            if( gNfcDev.disc.wakeupEnabled && ((gNfcDev.techDctCnt == 0U) || (gNfcDev.techDctCnt >= gNfcDev.disc.wakeupNPolls)) )
             {
                 /* Initialize Low power Wake-up mode and wait */
                 err = rfalWakeUpModeStart( (gNfcDev.disc.wakeupConfigDefault ? NULL : &gNfcDev.disc.wakeupConfig) );
@@ -348,6 +342,8 @@ void rfalNfcWorker( void )
                     rfalNfcNfcNotify( gNfcDev.state );                                /* Notify caller that WU was started */
                 }
             }
+            gNfcDev.techDctCnt++;
+            
         #endif /* RFAL_FEATURE_WAKEUP_MODE */
             break;
         
@@ -359,7 +355,8 @@ void rfalNfcWorker( void )
             if( rfalWakeUpModeHasWoke() )
             {
                 rfalWakeUpModeStop();                                                 /* Disable Wake-up mode           */
-                gNfcDev.state = RFAL_NFC_STATE_POLL_TECHDETECT;                       /* Go to Technology detection     */
+                gNfcDev.state      = RFAL_NFC_STATE_POLL_TECHDETECT;                  /* Go to Technology detection     */
+                gNfcDev.techDctCnt = 1;                                               /* Tech Detect counter (1 woke)   */
                 
                 rfalNfcNfcNotify( gNfcDev.state );                                    /* Notify caller that WU has woke */
             }
@@ -529,6 +526,10 @@ void rfalNfcWorker( void )
                     gNfcDev.state = RFAL_NFC_STATE_ACTIVATED;                         /* Device has been properly activated */
                     rfalNfcNfcNotify( gNfcDev.state );                                /* Inform upper layer that a device has been activated */
                 }
+                else if( !platformTimerIsExpired( gNfcDev.discTmr ) && (err == ERR_LINK_LOSS) && (gNfcDev.state == RFAL_NFC_STATE_LISTEN_ACTIVATION) )
+                {
+                    break;                                                            /* Field|Link broken during activation, keep in Listen the remaining total duration */
+                }
                 else
                 {
                     rfalListenStop();
@@ -586,6 +587,8 @@ ReturnCode rfalNfcDataExchangeStart( uint8_t *txData, uint16_t txDataLen, uint8_
             case RFAL_NFC_INTERFACE_RF:
     
                 rfalCreateByteFlagsTxRxContext( ctx, (uint8_t*)txData, txDataLen, gNfcDev.rxBuf.rfBuf, sizeof(gNfcDev.rxBuf.rfBuf), &gNfcDev.rxLen, RFAL_TXRX_FLAGS_DEFAULT, fwt );
+                ctx.txBufLen = txDataLen;    /* RF interface uses number of bits */
+            
                 *rxData = (uint8_t*)gNfcDev.rxBuf.rfBuf;
                 *rvdLen = (uint16_t*)&gNfcDev.rxLen;
                 err = rfalStartTransceive( &ctx );
@@ -595,7 +598,7 @@ ReturnCode rfalNfcDataExchangeStart( uint8_t *txData, uint16_t txDataLen, uint8_
             /*******************************************************************************/
             case RFAL_NFC_INTERFACE_ISODEP:
             {
-                rfalIsoDepApduTxRxParam isoDepTxRx;
+                rfalIsoDepApduTxRxParam rfalIsoDepTxRx;
                 
                 if( txDataLen > sizeof(gNfcDev.txBuf.isoDepBuf.apdu) )
                 {
@@ -607,22 +610,22 @@ ReturnCode rfalNfcDataExchangeStart( uint8_t *txData, uint16_t txDataLen, uint8_
                     ST_MEMCPY( (uint8_t*)gNfcDev.txBuf.isoDepBuf.apdu, txData, txDataLen );
                 }
                 
-                isoDepTxRx.DID          = RFAL_ISODEP_NO_DID;
-                isoDepTxRx.ourFSx       = RFAL_ISODEP_FSX_KEEP;
-                isoDepTxRx.FSx          = gNfcDev.activeDev->proto.isoDep.info.FSx;
-                isoDepTxRx.dFWT         = gNfcDev.activeDev->proto.isoDep.info.dFWT;
-                isoDepTxRx.FWT          = gNfcDev.activeDev->proto.isoDep.info.FWT;
-                isoDepTxRx.txBuf        = &gNfcDev.txBuf.isoDepBuf;
-                isoDepTxRx.txBufLen     = txDataLen;
-                isoDepTxRx.rxBuf        = &gNfcDev.rxBuf.isoDepBuf;
-                isoDepTxRx.rxLen        = &gNfcDev.rxLen;
-                isoDepTxRx.tmpBuf       = &gNfcDev.tmpBuf.isoDepBuf;
-                *rxData                 = (uint8_t*)gNfcDev.rxBuf.isoDepBuf.apdu;
-                *rvdLen                 = (uint16_t*)&gNfcDev.rxLen;
+                rfalIsoDepTxRx.DID       = RFAL_ISODEP_NO_DID;
+                rfalIsoDepTxRx.ourFSx    = RFAL_ISODEP_FSX_KEEP;
+                rfalIsoDepTxRx.FSx       = gNfcDev.activeDev->proto.isoDep.info.FSx;
+                rfalIsoDepTxRx.dFWT      = gNfcDev.activeDev->proto.isoDep.info.dFWT;
+                rfalIsoDepTxRx.FWT       = gNfcDev.activeDev->proto.isoDep.info.FWT;
+                rfalIsoDepTxRx.txBuf     = &gNfcDev.txBuf.isoDepBuf;
+                rfalIsoDepTxRx.txBufLen  = txDataLen;
+                rfalIsoDepTxRx.rxBuf     = &gNfcDev.rxBuf.isoDepBuf;
+                rfalIsoDepTxRx.rxLen     = &gNfcDev.rxLen;
+                rfalIsoDepTxRx.tmpBuf    = &gNfcDev.tmpBuf.isoDepBuf;
+                *rxData                  = (uint8_t*)gNfcDev.rxBuf.isoDepBuf.apdu;
+                *rvdLen                  = (uint16_t*)&gNfcDev.rxLen;
                 
                 /*******************************************************************************/
                 /* Trigger a RFAL ISO-DEP Transceive                                           */
-                err = rfalIsoDepStartApduTransceive( isoDepTxRx );
+                err = rfalIsoDepStartApduTransceive( rfalIsoDepTxRx );
                 break;
             }
         #endif /* RFAL_FEATURE_ISO_DEP */
@@ -631,7 +634,7 @@ ReturnCode rfalNfcDataExchangeStart( uint8_t *txData, uint16_t txDataLen, uint8_
             /*******************************************************************************/
             case RFAL_NFC_INTERFACE_NFCDEP:
             {
-                rfalNfcDepPduTxRxParam nfcDepTxRx;
+                rfalNfcDepPduTxRxParam rfalNfcDepTxRx;
                 
                 if( txDataLen > sizeof(gNfcDev.txBuf.nfcDepBuf.pdu) )
                 {
@@ -643,23 +646,23 @@ ReturnCode rfalNfcDataExchangeStart( uint8_t *txData, uint16_t txDataLen, uint8_
                     ST_MEMCPY( (uint8_t*)gNfcDev.txBuf.nfcDepBuf.pdu, txData, txDataLen );
                 }
                 
-                nfcDepTxRx.DID          = RFAL_NFCDEP_DID_KEEP;
-                nfcDepTxRx.FSx          = rfalNfcIsRemDevListener(gNfcDev.activeDev->type) ?
-                                              rfalNfcDepLR2FS( (uint8_t)rfalNfcDepPP2LR( gNfcDev.activeDev->proto.nfcDep.activation.Target.ATR_RES.PPt ) ) :
-                                              rfalNfcDepLR2FS( (uint8_t)rfalNfcDepPP2LR( gNfcDev.activeDev->proto.nfcDep.activation.Initiator.ATR_REQ.PPi ) );
-                nfcDepTxRx.dFWT         = gNfcDev.activeDev->proto.nfcDep.info.dFWT;
-                nfcDepTxRx.FWT          = gNfcDev.activeDev->proto.nfcDep.info.FWT;
-                nfcDepTxRx.txBuf        = &gNfcDev.txBuf.nfcDepBuf;
-                nfcDepTxRx.txBufLen     = txDataLen;
-                nfcDepTxRx.rxBuf        = &gNfcDev.rxBuf.nfcDepBuf;
-                nfcDepTxRx.rxLen        = &gNfcDev.rxLen;
-                nfcDepTxRx.tmpBuf       = &gNfcDev.tmpBuf.nfcDepBuf;
-                *rxData                 = (uint8_t*)gNfcDev.rxBuf.nfcDepBuf.pdu;
-                *rvdLen                 = (uint16_t*)&gNfcDev.rxLen;
+                rfalNfcDepTxRx.DID       = RFAL_NFCDEP_DID_KEEP;
+                rfalNfcDepTxRx.FSx       = rfalNfcIsRemDevListener(gNfcDev.activeDev->type) ?
+                                           rfalNfcDepLR2FS( (uint8_t)rfalNfcDepPP2LR( gNfcDev.activeDev->proto.nfcDep.activation.Target.ATR_RES.PPt ) ) :
+                                           rfalNfcDepLR2FS( (uint8_t)rfalNfcDepPP2LR( gNfcDev.activeDev->proto.nfcDep.activation.Initiator.ATR_REQ.PPi ) );
+                rfalNfcDepTxRx.dFWT      = gNfcDev.activeDev->proto.nfcDep.info.dFWT;
+                rfalNfcDepTxRx.FWT       = gNfcDev.activeDev->proto.nfcDep.info.FWT;
+                rfalNfcDepTxRx.txBuf     = &gNfcDev.txBuf.nfcDepBuf;
+                rfalNfcDepTxRx.txBufLen  = txDataLen;
+                rfalNfcDepTxRx.rxBuf     = &gNfcDev.rxBuf.nfcDepBuf;
+                rfalNfcDepTxRx.rxLen     = &gNfcDev.rxLen;
+                rfalNfcDepTxRx.tmpBuf    = &gNfcDev.tmpBuf.nfcDepBuf;
+                *rxData                  = (uint8_t*)gNfcDev.rxBuf.nfcDepBuf.pdu;
+                *rvdLen                  = (uint16_t*)&gNfcDev.rxLen;
                 
                 /*******************************************************************************/
                 /* Trigger a RFAL NFC-DEP Transceive                                           */
-                err = rfalNfcDepStartPduTransceive( nfcDepTxRx );                          
+                err = rfalNfcDepStartPduTransceive( rfalNfcDepTxRx );                          
                 break;
             }
         #endif /* RFAL_FEATURE_NFC_DEP */
@@ -801,9 +804,9 @@ static ReturnCode rfalNfcPollTechDetetection( void )
         if( !gNfcDev.isTechInit )
         {
             EXIT_ON_ERR( err, rfalSetMode( RFAL_MODE_POLL_ACTIVE_P2P, gNfcDev.disc.ap2pBR, gNfcDev.disc.ap2pBR ) );
-            rfalSetErrorHandling( RFAL_ERRORHANDLING_NFC );
+            rfalSetErrorHandling( RFAL_ERRORHANDLING_NONE );
             rfalSetFDTListen( RFAL_FDT_LISTEN_AP2P_POLLER );
-            rfalSetFDTPoll( RFAL_TIMING_NONE );
+            rfalSetFDTPoll( RFAL_FDT_POLL_AP2P_POLLER );
             rfalSetGT( RFAL_GT_AP2P_ADJUSTED );
             EXIT_ON_ERR( err, rfalFieldOnAndStartGT() );                                     /* Turns the Field On and starts GT timer */
             gNfcDev.isTechInit = true;
@@ -914,19 +917,33 @@ static ReturnCode rfalNfcPollTechDetetection( void )
         {
             EXIT_ON_ERR( err, rfalNfcfPollerInitialize( gNfcDev.disc.nfcfBR ) );     /* Initialize RFAL for NFC-F */
             EXIT_ON_ERR( err, rfalFieldOnAndStartGT() );                             /* As field is already On only starts GT timer */
-            gNfcDev.isTechInit = true;
+            
+            gNfcDev.isTechInit    = true;
+            gNfcDev.isOperOngoing = false;                                           /* No operation currently ongoing  */
         }
 
         if( rfalIsGTExpired() )                                                      /* Wait until Guard Time is fulfilled */
         {
-            err = rfalNfcfPollerCheckPresence();                                     /* Poll for NFC-F devices */
-            if( err == ERR_NONE )
+            
+            if( !gNfcDev.isOperOngoing )
             {
-                gNfcDev.techsFound |= RFAL_NFC_POLL_TECH_F;
+                rfalNfcfPollerStartCheckPresence();
+             
+                gNfcDev.isOperOngoing = true;
+                return ERR_BUSY;
             }
             
-            gNfcDev.isTechInit = false;
-            gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_F;
+            err = rfalNfcfPollerGetCheckPresenceStatus();                             /* Poll for NFC-F devices */
+            if( err != ERR_BUSY )
+            {
+                if( err == ERR_NONE )
+                {
+                    gNfcDev.techsFound |= RFAL_NFC_POLL_TECH_F;
+                }
+                
+                gNfcDev.isTechInit = false;
+                gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_F;
+            }
         }
         
         return ERR_BUSY;
@@ -1000,6 +1017,33 @@ static ReturnCode rfalNfcPollTechDetetection( void )
     #endif /* RFAL_FEATURE_ST25TB */
     }
     
+    /*******************************************************************************/
+    /* Passive Proprietary Technology                                              */
+    /*******************************************************************************/  
+    if( ((gNfcDev.disc.techs2Find & RFAL_NFC_POLL_TECH_PROP) != 0U) && ((gNfcDev.techs2do & RFAL_NFC_POLL_TECH_PROP) != 0U) )
+    {
+        if( !gNfcDev.isTechInit )
+        {
+            EXIT_ON_ERR( err, rfalNfcpCbPollerInitialize() );           /* Initialize RFAL for Proprietary NFC */
+            EXIT_ON_ERR( err, rfalFieldOnAndStartGT() );                              /* As field may already be On only starts GT timer */
+            gNfcDev.isTechInit = true;
+        }
+     
+        if( rfalIsGTExpired() )                                                       /* Wait until Guard Time is fulfilled */
+        {
+            err = rfalNfcpCbPollerTechnologyDetection();                  /* Poll for devices */
+            if( err == ERR_NONE )
+            {
+                gNfcDev.techsFound |= RFAL_NFC_POLL_TECH_PROP;
+            }
+            
+            gNfcDev.isTechInit = false;
+            gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_PROP;
+        }
+        
+        return ERR_BUSY;
+    }
+    
     return ERR_NONE;
 }
 
@@ -1016,7 +1060,7 @@ static ReturnCode rfalNfcPollTechDetetection( void )
  * 
  ******************************************************************************
  */
-static ReturnCode rfalNfcPollCollResolution(void)
+static ReturnCode rfalNfcPollCollResolution( void )
 {
     uint8_t    i;
     static uint8_t    devCnt;
@@ -1093,13 +1137,15 @@ static ReturnCode rfalNfcPollCollResolution(void)
 #if RFAL_FEATURE_NFCB
     if( ((gNfcDev.techsFound & RFAL_NFC_POLL_TECH_B) != 0U) && ((gNfcDev.techs2do & RFAL_NFC_POLL_TECH_B) != 0U) )   /* If a NFC-B device was found/detected, perform Collision Resolution */
     {
-        rfalNfcbListenDevice nfcbDevList[RFAL_NFC_MAX_DEVICES];
+        static rfalNfcbListenDevice nfcbDevList[RFAL_NFC_MAX_DEVICES];
         
         if( !gNfcDev.isTechInit )
         {
             EXIT_ON_ERR( err, rfalNfcbPollerInitialize());                            /* Initialize RFAL for NFC-B */
             EXIT_ON_ERR( err, rfalFieldOnAndStartGT() );                              /* Ensure GT again as other technologies have also been polled */
-            gNfcDev.isTechInit = true;
+            
+            gNfcDev.isTechInit    = true;
+            gNfcDev.isOperOngoing = false;                                             /* No operation currently ongoing  */
         }
         
         if( !rfalIsGTExpired() )
@@ -1107,19 +1153,28 @@ static ReturnCode rfalNfcPollCollResolution(void)
             return ERR_BUSY;
         }
         
-        devCnt             = 0;
-        gNfcDev.isTechInit = false;
-        gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_B;
-        
-        
-        err = rfalNfcbPollerCollisionResolution( gNfcDev.disc.compMode, (gNfcDev.disc.devLimit - gNfcDev.devCnt), nfcbDevList, &devCnt );
-        if( (err == ERR_NONE) && (devCnt != 0U) )
+        if( !gNfcDev.isOperOngoing )
         {
-            for( i=0; i<devCnt; i++ )                                                 /* Copy devices found form local Nfcb list into global device list */
+            EXIT_ON_ERR( err, rfalNfcbPollerStartCollisionResolution( gNfcDev.disc.compMode, (gNfcDev.disc.devLimit - gNfcDev.devCnt), nfcbDevList, &devCnt ) );
+         
+            gNfcDev.isOperOngoing = true;
+            return ERR_BUSY;
+        }
+        
+        err = rfalNfcbPollerGetCollisionResolutionStatus();
+        if( err != ERR_BUSY )
+        {
+            gNfcDev.isTechInit = false;
+            gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_B;
+            
+            if( (err == ERR_NONE) && (devCnt != 0U) )
             {
-                gNfcDev.devList[gNfcDev.devCnt].type     = RFAL_NFC_LISTEN_TYPE_NFCB;
-                gNfcDev.devList[gNfcDev.devCnt].dev.nfcb = nfcbDevList[i];
-                gNfcDev.devCnt++;
+                for( i=0; i<devCnt; i++ )                                                 /* Copy devices found form local Nfcb list into global device list */
+                {
+                    gNfcDev.devList[gNfcDev.devCnt].type     = RFAL_NFC_LISTEN_TYPE_NFCB;
+                    gNfcDev.devList[gNfcDev.devCnt].dev.nfcb = nfcbDevList[i];
+                    gNfcDev.devCnt++;
+                }
             }
         }
         
@@ -1133,13 +1188,15 @@ static ReturnCode rfalNfcPollCollResolution(void)
 #if RFAL_FEATURE_NFCF
     if( ((gNfcDev.techsFound & RFAL_NFC_POLL_TECH_F) != 0U) && ((gNfcDev.techs2do & RFAL_NFC_POLL_TECH_F) != 0U) )  /* If a NFC-F device was found/detected, perform Collision Resolution */
     {
-        rfalNfcfListenDevice nfcfDevList[RFAL_NFC_MAX_DEVICES];
+        static rfalNfcfListenDevice nfcfDevList[RFAL_NFC_MAX_DEVICES];
         
         if( !gNfcDev.isTechInit )
         {
             EXIT_ON_ERR( err, rfalNfcfPollerInitialize( gNfcDev.disc.nfcfBR ));       /* Initialize RFAL for NFC-F */
             EXIT_ON_ERR( err, rfalFieldOnAndStartGT() );                              /* Ensure GT again as other technologies have also been polled */
-            gNfcDev.isTechInit = true;
+            
+            gNfcDev.isTechInit    = true;
+            gNfcDev.isOperOngoing = false;                                             /* No operation currently ongoing  */
         }
         
         if( !rfalIsGTExpired() )
@@ -1147,19 +1204,28 @@ static ReturnCode rfalNfcPollCollResolution(void)
             return ERR_BUSY;
         }
         
-        devCnt             = 0;
-        gNfcDev.isTechInit = false;
-        gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_F;
-        
-        
-        err = rfalNfcfPollerCollisionResolution( gNfcDev.disc.compMode, (gNfcDev.disc.devLimit - gNfcDev.devCnt), nfcfDevList, &devCnt );
-        if( (err == ERR_NONE) && (devCnt != 0U) )
+        if( !gNfcDev.isOperOngoing )
         {
-            for( i=0; i<devCnt; i++ )                                                 /* Copy devices found form local Nfcf list into global device list */
+            EXIT_ON_ERR( err, rfalNfcfPollerStartCollisionResolution( gNfcDev.disc.compMode, (gNfcDev.disc.devLimit - gNfcDev.devCnt), nfcfDevList, &devCnt ) );
+         
+            gNfcDev.isOperOngoing = true;
+            return ERR_BUSY;
+        }
+        
+        err = rfalNfcfPollerGetCollisionResolutionStatus();
+        if( err != ERR_BUSY )
+        {
+            gNfcDev.isTechInit = false;
+            gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_F;
+            
+            if( (err == ERR_NONE) && (devCnt != 0U) )
             {
-                gNfcDev.devList[gNfcDev.devCnt].type     = RFAL_NFC_LISTEN_TYPE_NFCF;
-                gNfcDev.devList[gNfcDev.devCnt].dev.nfcf = nfcfDevList[i];
-                gNfcDev.devCnt++;
+                for( i=0; i<devCnt; i++ )                                                 /* Copy devices found form local Nfcf list into global device list */
+                {
+                    gNfcDev.devList[gNfcDev.devCnt].type     = RFAL_NFC_LISTEN_TYPE_NFCF;
+                    gNfcDev.devList[gNfcDev.devCnt].dev.nfcf = nfcfDevList[i];
+                    gNfcDev.devCnt++;
+                }
             }
         }
         
@@ -1247,6 +1313,50 @@ static ReturnCode rfalNfcPollCollResolution(void)
     }
 #endif /* RFAL_FEATURE_ST25TB */
     
+    
+    /*******************************************************************************/
+    /* Proprietary NFC Collision Resolution                                        */
+    /*******************************************************************************/
+    if( ((gNfcDev.techsFound & RFAL_NFC_POLL_TECH_PROP) != 0U) && ((gNfcDev.techs2do & RFAL_NFC_POLL_TECH_PROP) != 0U) )   /* If a device was found/detected, perform Collision Resolution */
+    {
+        if( !gNfcDev.isTechInit )
+        {
+            EXIT_ON_ERR( err, rfalNfcpCbPollerInitialize() );                            /* Initialize RFAL for NFC-A */
+            EXIT_ON_ERR( err, rfalFieldOnAndStartGT() );                               /* Turns the Field On and starts GT timer */
+            
+            gNfcDev.isTechInit    = true;                                              /* Technology has been initialized */
+            gNfcDev.isOperOngoing = false;                                             /* No operation currently ongoing  */
+        }
+        
+        if( !rfalIsGTExpired() )
+        {
+            return ERR_BUSY;
+        }
+        
+        if( !gNfcDev.isOperOngoing )
+        {
+            EXIT_ON_ERR( err, rfalNfcpCbPollerStartCollisionResolution() );
+         
+            gNfcDev.isOperOngoing = true;
+            return ERR_BUSY;
+        }
+        
+        err = rfalNfcpCbPollerGetCollisionResolutionStatus();
+        if( err != ERR_BUSY )
+        {
+            gNfcDev.isTechInit = false;
+            gNfcDev.techs2do  &= ~RFAL_NFC_POLL_TECH_PROP;
+            
+            if( err == ERR_NONE )
+            {
+                gNfcDev.devCnt = 1;                                                   /* Device list held by caller */
+                gNfcDev.devList[0].type = RFAL_NFC_LISTEN_TYPE_PROP;
+            }
+        }
+        return ERR_BUSY;
+    }
+
+    
     return ERR_NONE;                                                                  /* All technologies have been performed */
 }
 
@@ -1268,12 +1378,15 @@ static ReturnCode rfalNfcPollCollResolution(void)
  */
 static ReturnCode rfalNfcPollActivation( uint8_t devIt )
 {
-    ReturnCode err;
+    ReturnCode                  err;
+    rfalNfcaListenDeviceType    nfcaType;
     
-    err = ERR_NONE;
+    err      = ERR_NONE;
+    nfcaType = RFAL_NFCA_T1T;
     
     /* Supress warning when specific RFAL features have been disabled */
     NO_WARNING(err);
+    NO_WARNING(nfcaType);
     
     if( devIt > gNfcDev.devCnt )
     {
@@ -1335,9 +1448,16 @@ static ReturnCode rfalNfcPollActivation( uint8_t devIt )
             gNfcDev.devList[devIt].nfcid    = gNfcDev.devList[devIt].dev.nfca.nfcId1;
             gNfcDev.devList[devIt].nfcidLen = gNfcDev.devList[devIt].dev.nfca.nfcId1Len;
             
+            /* If device supports multiple technologies assign protocol requested */
+            nfcaType = gNfcDev.devList[devIt].dev.nfca.type;
+            if( nfcaType == RFAL_NFCA_T4T_NFCDEP )
+            {
+                nfcaType = ( (gNfcDev.disc.p2pNfcaPrio) ? RFAL_NFCA_NFCDEP : RFAL_NFCA_T4T);
+            }
+            
             /*******************************************************************************/
             /* Perform protocol specific activation                                        */
-            switch( gNfcDev.devList[devIt].dev.nfca.type )
+            switch( nfcaType )
             {
                 /*******************************************************************************/
                 case RFAL_NFCA_T1T:
@@ -1365,8 +1485,8 @@ static ReturnCode rfalNfcPollActivation( uint8_t devIt )
                     if( !gNfcDev.isOperOngoing )
                     {
                         /* Perform ISO-DEP (ISO14443-4) activation: RATS and PPS if supported */
-                        rfalIsoDepInitialize();                    
-                        EXIT_ON_ERR( err, rfalIsoDepPollAStartActivation( (rfalIsoDepFSxI)RFAL_ISODEP_FSDI_DEFAULT, RFAL_ISODEP_NO_DID, gNfcDev.disc.maxBR, &gNfcDev.devList[devIt].proto.isoDep ) );
+                        rfalIsoDepInitialize();
+                        EXIT_ON_ERR( err, rfalIsoDepPollAStartActivation( gNfcDev.disc.isoDepFS, RFAL_ISODEP_NO_DID, gNfcDev.disc.maxBR, &gNfcDev.devList[devIt].proto.isoDep ) );
                         
                         gNfcDev.isOperOngoing = true;
                         return ERR_BUSY;
@@ -1384,10 +1504,7 @@ static ReturnCode rfalNfcPollActivation( uint8_t devIt )
                 #endif /* RFAL_FEATURE_ISO_DEP_POLL */
                     break;
                     
-                  
-                  
                 /*******************************************************************************/
-                case RFAL_NFCA_T4T_NFCDEP:                                            /* Device supports both T4T and NFC-DEP */
                 case RFAL_NFCA_NFCDEP:                                                /* Device supports NFC-DEP */
                 
                 #if RFAL_FEATURE_NFC_DEP
@@ -1404,6 +1521,7 @@ static ReturnCode rfalNfcPollActivation( uint8_t devIt )
                     break;
                 
                 /*******************************************************************************/
+                case RFAL_NFCA_T4T_NFCDEP:                                            /* Multiple proto resolved based on NFCA P2P Prio config */
                 default:
                     return ERR_WRONG_STATE;
             }
@@ -1446,7 +1564,7 @@ static ReturnCode rfalNfcPollActivation( uint8_t devIt )
                 {
                     rfalIsoDepInitialize();
                     /* Perform ISO-DEP (ISO14443-4) activation: ATTRIB    */
-                    EXIT_ON_ERR( err, rfalIsoDepPollBStartActivation( (rfalIsoDepFSxI)RFAL_ISODEP_FSDI_DEFAULT, RFAL_ISODEP_NO_DID, gNfcDev.disc.maxBR, 0x00, &gNfcDev.devList[devIt].dev.nfcb, NULL, 0, &gNfcDev.devList[devIt].proto.isoDep ) );
+                    EXIT_ON_ERR( err, rfalIsoDepPollBStartActivation( gNfcDev.disc.isoDepFS, RFAL_ISODEP_NO_DID, gNfcDev.disc.maxBR, 0x00, &gNfcDev.devList[devIt].dev.nfcb, NULL, 0, &gNfcDev.devList[devIt].proto.isoDep ) );
                     
                     gNfcDev.isOperOngoing = true;
                     return ERR_BUSY;
@@ -1539,6 +1657,43 @@ static ReturnCode rfalNfcPollActivation( uint8_t devIt )
             break;
     #endif /* RFAL_FEATURE_ST25TB */
         
+        
+        /*******************************************************************************/
+        /* Passive Proprietary NFC Activation                                          */
+        /*******************************************************************************/
+        case RFAL_NFC_LISTEN_TYPE_PROP:
+            
+            if( !gNfcDev.isTechInit )
+            {
+                gNfcDev.isTechInit    = true;
+                gNfcDev.isOperOngoing = false;
+                return ERR_BUSY;
+            }
+            
+
+            if( !gNfcDev.isOperOngoing )
+            {
+                /* Start activation  */
+                EXIT_ON_ERR( err, rfalNfcpCbStartActivation() );
+                
+                gNfcDev.isOperOngoing = true;
+                return ERR_BUSY;
+            }
+            
+            err = rfalNfcpCbGetActivationStatus();
+            if( err != ERR_NONE )
+            {
+                return err;
+            }
+
+            /* Clear NFCID */
+            gNfcDev.devList[devIt].nfcid = NULL;
+            gNfcDev.devList[devIt].nfcidLen = 0;
+            
+            gNfcDev.devList[devIt].rfInterface =  RFAL_NFC_INTERFACE_RF;
+            break;
+         
+         
         /*******************************************************************************/
         default:
             return ERR_WRONG_STATE;
@@ -1657,7 +1812,8 @@ static ReturnCode rfalNfcListenActivation( void )
                 gNfcDev.devList->nfcid       = NULL;
                 gNfcDev.devList->nfcidLen    = 0;
             }
-            return ret;
+            return ( (ret == ERR_LINK_LOSS) ? ERR_PROTO : ret);                       /* Link loss during protocol activation, reMap error */
+            
     #endif /* RFAL_FEATURE_ISO_DEP_LISTEN */
         
         /*******************************************************************************/
@@ -1701,6 +1857,7 @@ static ReturnCode rfalNfcListenActivation( void )
             if( ret == ERR_NONE )
             {
                 gNfcDev.devList->rfInterface = RFAL_NFC_INTERFACE_NFCDEP;
+                gNfcDev.devList->nfcid       = gNfcDev.devList->proto.nfcDep.activation.Initiator.ATR_REQ.NFCID3;
                 gNfcDev.devList->nfcidLen    = RFAL_NFCDEP_NFCID3_LEN;
             }
             return ret;
@@ -1721,6 +1878,7 @@ static ReturnCode rfalNfcListenActivation( void )
                     {
                         gNfcDev.devList->type = RFAL_NFC_POLL_TYPE_AP2P;
                         rfalSetMode( (RFAL_MODE_LISTEN_ACTIVE_P2P), bitRate, bitRate );
+                        rfalSetFDTListen( RFAL_FDT_LISTEN_AP2P_LISTENER );
                         EXIT_ON_ERR( ret, rfalNfcNfcDepActivate( gNfcDev.devList, RFAL_NFCDEP_COMM_ACTIVE, &gNfcDev.rxBuf.rfBuf[hdrLen], (rfalConvBitsToBytes(gNfcDev.rxLen) - hdrLen) ) );
                     }
                     else
@@ -1798,7 +1956,7 @@ static ReturnCode rfalNfcNfcDepActivate( rfalNfcDevice *device, rfalNfcDepCommMo
         initParam.BR        = RFAL_NFCDEP_Bx_NO_HIGH_BR;
         initParam.DID       = RFAL_NFCDEP_DID_NO;
         initParam.NAD       = RFAL_NFCDEP_NAD_NO;
-        initParam.LR        = RFAL_NFCDEP_LR_254;
+        initParam.LR        = gNfcDev.disc.nfcDepLR;
         initParam.GB        = gNfcDev.disc.GB;
         initParam.GBLen     = gNfcDev.disc.GBLen;
         initParam.commMode  = commMode;
@@ -1820,7 +1978,7 @@ static ReturnCode rfalNfcNfcDepActivate( rfalNfcDevice *device, rfalNfcDepCommMo
         targetParam.bst       = RFAL_NFCDEP_Bx_NO_HIGH_BR;
         targetParam.brt       = RFAL_NFCDEP_Bx_NO_HIGH_BR;
         targetParam.to        = RFAL_NFCDEP_WT_TRG_MAX_L13; /* [LLCP] 1.3 6.2.1 */ 
-        targetParam.ppt       = rfalNfcDepLR2PP(RFAL_NFCDEP_LR_254);
+        targetParam.ppt       = rfalNfcDepLR2PP(gNfcDev.disc.nfcDepLR);
         if( gNfcDev.disc.GBLen >= RFAL_NFCDEP_GB_MAX_LEN )
         {
             return ERR_PARAM;
@@ -1924,3 +2082,4 @@ static ReturnCode rfalNfcDeactivation( void )
     gNfcDev.activeDev = NULL;
     return ERR_NONE;
 }
+

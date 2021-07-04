@@ -1,19 +1,14 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
-  * Copyright (C) 2020 Benjamin VERNOUX
-  *  Based on en.STSW-ST25RFAL002 V2.2.0 / 22-May-2020 https://www.st.com/en/embedded-software/stsw-st25rfal002.html
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
+  * Copyright (C) 2020-2021 Benjamin VERNOUX
+  *  Based on rfal_analogConfigTbl.h from en.STSW-ST25RFAL002 
+  *  V2.4.0 / 14-Jun-2021 https://www.st.com/en/embedded-software/stsw-st25rfal002.html
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -188,7 +183,7 @@
 
 /*! Macro for Configuration Setting with fourteen register-mask-value sets:
  *  - Configuration ID[2], Number of Register sets to follow[1], Register[2], Mask[1], Value[1], Register[2], Mask[1], Value[1], Register[2]... */
-#define MODE_ENTRY_14_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14, R15, M15, V15)  \
+#define MODE_ENTRY_14_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13)  \
     (uint8_t)((uint16_t)(MODE) >> 8), (uint8_t)((MODE) & 0xFFU),14, (uint8_t)((uint16_t)(R0) >> 8), (uint8_t)((R0) & 0xFFU), (uint8_t)(M0), (uint8_t)(V0) \
                                  , (uint8_t)((uint16_t)(R1) >> 8), (uint8_t)((R1) & 0xFFU), (uint8_t)(M1), (uint8_t)(V1) \
                                  , (uint8_t)((uint16_t)(R2) >> 8), (uint8_t)((R2) & 0xFFU), (uint8_t)(M2), (uint8_t)(V2) \
@@ -206,7 +201,7 @@
                                  
 /*! Macro for Configuration Setting with fifteen register-mask-value sets:
  *  - Configuration ID[2], Number of Register sets to follow[1], Register[2], Mask[1], Value[1], Register[2], Mask[1], Value[1], Register[2]... */
-#define MODE_ENTRY_15_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14, R15, M15, V15)  \
+#define MODE_ENTRY_15_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14)  \
     (uint8_t)((uint16_t)(MODE) >> 8), (uint8_t)((MODE) & 0xFFU),15, (uint8_t)((uint16_t)(R0) >> 8), (uint8_t)((R0) & 0xFFU), (uint8_t)(M0), (uint8_t)(V0) \
                                  , (uint8_t)((uint16_t)(R1) >> 8), (uint8_t)((R1) & 0xFFU), (uint8_t)(M1), (uint8_t)(V1) \
                                  , (uint8_t)((uint16_t)(R2) >> 8), (uint8_t)((R2) & 0xFFU), (uint8_t)(M2), (uint8_t)(V2) \
@@ -263,6 +258,126 @@
                                  , (uint8_t)((uint16_t)(R14) >> 8), (uint8_t)((R14) & 0xFFU), (uint8_t)(M14), (uint8_t)(V14) \
                                  , (uint8_t)((uint16_t)(R15) >> 8), (uint8_t)((R15) & 0xFFU), (uint8_t)(M15), (uint8_t)(V15) \
                                  , (uint8_t)((uint16_t)(R16) >> 8), (uint8_t)((R16) & 0xFFU), (uint8_t)(M16), (uint8_t)(V16)
+
+/*! Macro for Configuration Setting with seventeen register-mask-value sets:
+ *  - Configuration ID[2], Number of Register sets to follow[1], Register[2], Mask[1], Value[1], Register[2], Mask[1], Value[1], Register[2]... */
+#define MODE_ENTRY_18_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14, R15, M15, V15, R16, M16, V16, R17, M17, V17)  \
+    (uint8_t)((uint16_t)(MODE) >> 8), (uint8_t)((MODE) & 0xFFU),18, (uint8_t)((uint16_t)(R0) >> 8), (uint8_t)((R0) & 0xFFU), (uint8_t)(M0), (uint8_t)(V0) \
+                                 , (uint8_t)((uint16_t)(R1) >> 8), (uint8_t)((R1) & 0xFFU), (uint8_t)(M1), (uint8_t)(V1) \
+                                 , (uint8_t)((uint16_t)(R2) >> 8), (uint8_t)((R2) & 0xFFU), (uint8_t)(M2), (uint8_t)(V2) \
+                                 , (uint8_t)((uint16_t)(R3) >> 8), (uint8_t)((R3) & 0xFFU), (uint8_t)(M3), (uint8_t)(V3) \
+                                 , (uint8_t)((uint16_t)(R4) >> 8), (uint8_t)((R4) & 0xFFU), (uint8_t)(M4), (uint8_t)(V4) \
+                                 , (uint8_t)((uint16_t)(R5) >> 8), (uint8_t)((R5) & 0xFFU), (uint8_t)(M5), (uint8_t)(V5) \
+                                 , (uint8_t)((uint16_t)(R6) >> 8), (uint8_t)((R6) & 0xFFU), (uint8_t)(M6), (uint8_t)(V6) \
+                                 , (uint8_t)((uint16_t)(R7) >> 8), (uint8_t)((R7) & 0xFFU), (uint8_t)(M7), (uint8_t)(V7) \
+                                 , (uint8_t)((uint16_t)(R8) >> 8), (uint8_t)((R8) & 0xFFU), (uint8_t)(M8), (uint8_t)(V8) \
+                                 , (uint8_t)((uint16_t)(R9) >> 8), (uint8_t)((R9) & 0xFFU), (uint8_t)(M9), (uint8_t)(V9) \
+                                 , (uint8_t)((uint16_t)(R10) >> 8), (uint8_t)((R10) & 0xFFU), (uint8_t)(M10), (uint8_t)(V10) \
+                                 , (uint8_t)((uint16_t)(R11) >> 8), (uint8_t)((R11) & 0xFFU), (uint8_t)(M11), (uint8_t)(V11) \
+                                 , (uint8_t)((uint16_t)(R12) >> 8), (uint8_t)((R12) & 0xFFU), (uint8_t)(M12), (uint8_t)(V12) \
+                                 , (uint8_t)((uint16_t)(R13) >> 8), (uint8_t)((R13) & 0xFFU), (uint8_t)(M13), (uint8_t)(V13) \
+                                 , (uint8_t)((uint16_t)(R14) >> 8), (uint8_t)((R14) & 0xFFU), (uint8_t)(M14), (uint8_t)(V14) \
+                                 , (uint8_t)((uint16_t)(R15) >> 8), (uint8_t)((R15) & 0xFFU), (uint8_t)(M15), (uint8_t)(V15) \
+                                 , (uint8_t)((uint16_t)(R16) >> 8), (uint8_t)((R16) & 0xFFU), (uint8_t)(M16), (uint8_t)(V16) \
+                                 , (uint8_t)((uint16_t)(R17) >> 8), (uint8_t)((R17) & 0xFFU), (uint8_t)(M17), (uint8_t)(V17) 
+                                 
+/*! Macro for Configuration Setting with seventeen register-mask-value sets:
+ *  - Configuration ID[2], Number of Register sets to follow[1], Register[2], Mask[1], Value[1], Register[2], Mask[1], Value[1], Register[2]... */
+#define MODE_ENTRY_19_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14, R15, M15, V15, R16, M16, V16, R17, M17, V17, R18, M18, V18)  \
+    (uint8_t)((uint16_t)(MODE) >> 8), (uint8_t)((MODE) & 0xFFU),19, (uint8_t)((uint16_t)(R0) >> 8), (uint8_t)((R0) & 0xFFU), (uint8_t)(M0), (uint8_t)(V0) \
+                                 , (uint8_t)((uint16_t)(R1) >> 8), (uint8_t)((R1) & 0xFFU), (uint8_t)(M1), (uint8_t)(V1) \
+                                 , (uint8_t)((uint16_t)(R2) >> 8), (uint8_t)((R2) & 0xFFU), (uint8_t)(M2), (uint8_t)(V2) \
+                                 , (uint8_t)((uint16_t)(R3) >> 8), (uint8_t)((R3) & 0xFFU), (uint8_t)(M3), (uint8_t)(V3) \
+                                 , (uint8_t)((uint16_t)(R4) >> 8), (uint8_t)((R4) & 0xFFU), (uint8_t)(M4), (uint8_t)(V4) \
+                                 , (uint8_t)((uint16_t)(R5) >> 8), (uint8_t)((R5) & 0xFFU), (uint8_t)(M5), (uint8_t)(V5) \
+                                 , (uint8_t)((uint16_t)(R6) >> 8), (uint8_t)((R6) & 0xFFU), (uint8_t)(M6), (uint8_t)(V6) \
+                                 , (uint8_t)((uint16_t)(R7) >> 8), (uint8_t)((R7) & 0xFFU), (uint8_t)(M7), (uint8_t)(V7) \
+                                 , (uint8_t)((uint16_t)(R8) >> 8), (uint8_t)((R8) & 0xFFU), (uint8_t)(M8), (uint8_t)(V8) \
+                                 , (uint8_t)((uint16_t)(R9) >> 8), (uint8_t)((R9) & 0xFFU), (uint8_t)(M9), (uint8_t)(V9) \
+                                 , (uint8_t)((uint16_t)(R10) >> 8), (uint8_t)((R10) & 0xFFU), (uint8_t)(M10), (uint8_t)(V10) \
+                                 , (uint8_t)((uint16_t)(R11) >> 8), (uint8_t)((R11) & 0xFFU), (uint8_t)(M11), (uint8_t)(V11) \
+                                 , (uint8_t)((uint16_t)(R12) >> 8), (uint8_t)((R12) & 0xFFU), (uint8_t)(M12), (uint8_t)(V12) \
+                                 , (uint8_t)((uint16_t)(R13) >> 8), (uint8_t)((R13) & 0xFFU), (uint8_t)(M13), (uint8_t)(V13) \
+                                 , (uint8_t)((uint16_t)(R14) >> 8), (uint8_t)((R14) & 0xFFU), (uint8_t)(M14), (uint8_t)(V14) \
+                                 , (uint8_t)((uint16_t)(R15) >> 8), (uint8_t)((R15) & 0xFFU), (uint8_t)(M15), (uint8_t)(V15) \
+                                 , (uint8_t)((uint16_t)(R16) >> 8), (uint8_t)((R16) & 0xFFU), (uint8_t)(M16), (uint8_t)(V16) \
+                                 , (uint8_t)((uint16_t)(R17) >> 8), (uint8_t)((R17) & 0xFFU), (uint8_t)(M17), (uint8_t)(V17) \
+                                 , (uint8_t)((uint16_t)(R18) >> 8), (uint8_t)((R18) & 0xFFU), (uint8_t)(M18), (uint8_t)(V18) 
+                                 
+/*! Macro for Configuration Setting with seventeen register-mask-value sets:
+ *  - Configuration ID[2], Number of Register sets to follow[1], Register[2], Mask[1], Value[1], Register[2], Mask[1], Value[1], Register[2]... */
+#define MODE_ENTRY_20_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14, R15, M15, V15, R16, M16, V16, R17, M17, V17, R18, M18, V18, R19, M19, V19)  \
+    (uint8_t)((uint16_t)(MODE) >> 8), (uint8_t)((MODE) & 0xFFU),20, (uint8_t)((uint16_t)(R0) >> 8), (uint8_t)((R0) & 0xFFU), (uint8_t)(M0), (uint8_t)(V0) \
+                                 , (uint8_t)((uint16_t)(R1) >> 8), (uint8_t)((R1) & 0xFFU), (uint8_t)(M1), (uint8_t)(V1) \
+                                 , (uint8_t)((uint16_t)(R2) >> 8), (uint8_t)((R2) & 0xFFU), (uint8_t)(M2), (uint8_t)(V2) \
+                                 , (uint8_t)((uint16_t)(R3) >> 8), (uint8_t)((R3) & 0xFFU), (uint8_t)(M3), (uint8_t)(V3) \
+                                 , (uint8_t)((uint16_t)(R4) >> 8), (uint8_t)((R4) & 0xFFU), (uint8_t)(M4), (uint8_t)(V4) \
+                                 , (uint8_t)((uint16_t)(R5) >> 8), (uint8_t)((R5) & 0xFFU), (uint8_t)(M5), (uint8_t)(V5) \
+                                 , (uint8_t)((uint16_t)(R6) >> 8), (uint8_t)((R6) & 0xFFU), (uint8_t)(M6), (uint8_t)(V6) \
+                                 , (uint8_t)((uint16_t)(R7) >> 8), (uint8_t)((R7) & 0xFFU), (uint8_t)(M7), (uint8_t)(V7) \
+                                 , (uint8_t)((uint16_t)(R8) >> 8), (uint8_t)((R8) & 0xFFU), (uint8_t)(M8), (uint8_t)(V8) \
+                                 , (uint8_t)((uint16_t)(R9) >> 8), (uint8_t)((R9) & 0xFFU), (uint8_t)(M9), (uint8_t)(V9) \
+                                 , (uint8_t)((uint16_t)(R10) >> 8), (uint8_t)((R10) & 0xFFU), (uint8_t)(M10), (uint8_t)(V10) \
+                                 , (uint8_t)((uint16_t)(R11) >> 8), (uint8_t)((R11) & 0xFFU), (uint8_t)(M11), (uint8_t)(V11) \
+                                 , (uint8_t)((uint16_t)(R12) >> 8), (uint8_t)((R12) & 0xFFU), (uint8_t)(M12), (uint8_t)(V12) \
+                                 , (uint8_t)((uint16_t)(R13) >> 8), (uint8_t)((R13) & 0xFFU), (uint8_t)(M13), (uint8_t)(V13) \
+                                 , (uint8_t)((uint16_t)(R14) >> 8), (uint8_t)((R14) & 0xFFU), (uint8_t)(M14), (uint8_t)(V14) \
+                                 , (uint8_t)((uint16_t)(R15) >> 8), (uint8_t)((R15) & 0xFFU), (uint8_t)(M15), (uint8_t)(V15) \
+                                 , (uint8_t)((uint16_t)(R16) >> 8), (uint8_t)((R16) & 0xFFU), (uint8_t)(M16), (uint8_t)(V16) \
+                                 , (uint8_t)((uint16_t)(R17) >> 8), (uint8_t)((R17) & 0xFFU), (uint8_t)(M17), (uint8_t)(V17) \
+                                 , (uint8_t)((uint16_t)(R18) >> 8), (uint8_t)((R18) & 0xFFU), (uint8_t)(M18), (uint8_t)(V18) \
+                                 , (uint8_t)((uint16_t)(R19) >> 8), (uint8_t)((R19) & 0xFFU), (uint8_t)(M19), (uint8_t)(V19)
+                                 
+/*! Macro for Configuration Setting with seventeen register-mask-value sets:
+ *  - Configuration ID[2], Number of Register sets to follow[1], Register[2], Mask[1], Value[1], Register[2], Mask[1], Value[1], Register[2]... */
+#define MODE_ENTRY_21_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14, R15, M15, V15, R16, M16, V16, R17, M17, V17, R18, M18, V18, R19, M19, V19, R20, M20, V20)  \
+    (uint8_t)((uint16_t)(MODE) >> 8), (uint8_t)((MODE) & 0xFFU),21, (uint8_t)((uint16_t)(R0) >> 8), (uint8_t)((R0) & 0xFFU), (uint8_t)(M0), (uint8_t)(V0) \
+                                 , (uint8_t)((uint16_t)(R1) >> 8), (uint8_t)((R1) & 0xFFU), (uint8_t)(M1), (uint8_t)(V1) \
+                                 , (uint8_t)((uint16_t)(R2) >> 8), (uint8_t)((R2) & 0xFFU), (uint8_t)(M2), (uint8_t)(V2) \
+                                 , (uint8_t)((uint16_t)(R3) >> 8), (uint8_t)((R3) & 0xFFU), (uint8_t)(M3), (uint8_t)(V3) \
+                                 , (uint8_t)((uint16_t)(R4) >> 8), (uint8_t)((R4) & 0xFFU), (uint8_t)(M4), (uint8_t)(V4) \
+                                 , (uint8_t)((uint16_t)(R5) >> 8), (uint8_t)((R5) & 0xFFU), (uint8_t)(M5), (uint8_t)(V5) \
+                                 , (uint8_t)((uint16_t)(R6) >> 8), (uint8_t)((R6) & 0xFFU), (uint8_t)(M6), (uint8_t)(V6) \
+                                 , (uint8_t)((uint16_t)(R7) >> 8), (uint8_t)((R7) & 0xFFU), (uint8_t)(M7), (uint8_t)(V7) \
+                                 , (uint8_t)((uint16_t)(R8) >> 8), (uint8_t)((R8) & 0xFFU), (uint8_t)(M8), (uint8_t)(V8) \
+                                 , (uint8_t)((uint16_t)(R9) >> 8), (uint8_t)((R9) & 0xFFU), (uint8_t)(M9), (uint8_t)(V9) \
+                                 , (uint8_t)((uint16_t)(R10) >> 8), (uint8_t)((R10) & 0xFFU), (uint8_t)(M10), (uint8_t)(V10) \
+                                 , (uint8_t)((uint16_t)(R11) >> 8), (uint8_t)((R11) & 0xFFU), (uint8_t)(M11), (uint8_t)(V11) \
+                                 , (uint8_t)((uint16_t)(R12) >> 8), (uint8_t)((R12) & 0xFFU), (uint8_t)(M12), (uint8_t)(V12) \
+                                 , (uint8_t)((uint16_t)(R13) >> 8), (uint8_t)((R13) & 0xFFU), (uint8_t)(M13), (uint8_t)(V13) \
+                                 , (uint8_t)((uint16_t)(R14) >> 8), (uint8_t)((R14) & 0xFFU), (uint8_t)(M14), (uint8_t)(V14) \
+                                 , (uint8_t)((uint16_t)(R15) >> 8), (uint8_t)((R15) & 0xFFU), (uint8_t)(M15), (uint8_t)(V15) \
+                                 , (uint8_t)((uint16_t)(R16) >> 8), (uint8_t)((R16) & 0xFFU), (uint8_t)(M16), (uint8_t)(V16) \
+                                 , (uint8_t)((uint16_t)(R17) >> 8), (uint8_t)((R17) & 0xFFU), (uint8_t)(M17), (uint8_t)(V17) \
+                                 , (uint8_t)((uint16_t)(R18) >> 8), (uint8_t)((R18) & 0xFFU), (uint8_t)(M18), (uint8_t)(V18) \
+                                 , (uint8_t)((uint16_t)(R19) >> 8), (uint8_t)((R19) & 0xFFU), (uint8_t)(M19), (uint8_t)(V19) \
+                                 , (uint8_t)((uint16_t)(R20) >> 8), (uint8_t)((R20) & 0xFFU), (uint8_t)(M20), (uint8_t)(V20) 
+                                 
+/*! Macro for Configuration Setting with seventeen register-mask-value sets:
+ *  - Configuration ID[2], Number of Register sets to follow[1], Register[2], Mask[1], Value[1], Register[2], Mask[1], Value[1], Register[2]... */
+#define MODE_ENTRY_22_REG(MODE, R0, M0, V0, R1, M1, V1, R2, M2, V2, R3, M3, V3, R4, M4, V4, R5, M5, V5, R6, M6, V6, R7, M7, V7, R8, M8, V8, R9, M9, V9, R10, M10, V10, R11, M11, V11, R12, M12, V12, R13, M13, V13, R14, M14, V14, R15, M15, V15, R16, M16, V16, R17, M17, V17, R18, M18, V18, R19, M19, V19, R20, M20, V20, R21, M21, V21)  \
+    (uint8_t)((uint16_t)(MODE) >> 8), (uint8_t)((MODE) & 0xFFU),22, (uint8_t)((uint16_t)(R0) >> 8), (uint8_t)((R0) & 0xFFU), (uint8_t)(M0), (uint8_t)(V0) \
+                                 , (uint8_t)((uint16_t)(R1) >> 8), (uint8_t)((R1) & 0xFFU), (uint8_t)(M1), (uint8_t)(V1) \
+                                 , (uint8_t)((uint16_t)(R2) >> 8), (uint8_t)((R2) & 0xFFU), (uint8_t)(M2), (uint8_t)(V2) \
+                                 , (uint8_t)((uint16_t)(R3) >> 8), (uint8_t)((R3) & 0xFFU), (uint8_t)(M3), (uint8_t)(V3) \
+                                 , (uint8_t)((uint16_t)(R4) >> 8), (uint8_t)((R4) & 0xFFU), (uint8_t)(M4), (uint8_t)(V4) \
+                                 , (uint8_t)((uint16_t)(R5) >> 8), (uint8_t)((R5) & 0xFFU), (uint8_t)(M5), (uint8_t)(V5) \
+                                 , (uint8_t)((uint16_t)(R6) >> 8), (uint8_t)((R6) & 0xFFU), (uint8_t)(M6), (uint8_t)(V6) \
+                                 , (uint8_t)((uint16_t)(R7) >> 8), (uint8_t)((R7) & 0xFFU), (uint8_t)(M7), (uint8_t)(V7) \
+                                 , (uint8_t)((uint16_t)(R8) >> 8), (uint8_t)((R8) & 0xFFU), (uint8_t)(M8), (uint8_t)(V8) \
+                                 , (uint8_t)((uint16_t)(R9) >> 8), (uint8_t)((R9) & 0xFFU), (uint8_t)(M9), (uint8_t)(V9) \
+                                 , (uint8_t)((uint16_t)(R10) >> 8), (uint8_t)((R10) & 0xFFU), (uint8_t)(M10), (uint8_t)(V10) \
+                                 , (uint8_t)((uint16_t)(R11) >> 8), (uint8_t)((R11) & 0xFFU), (uint8_t)(M11), (uint8_t)(V11) \
+                                 , (uint8_t)((uint16_t)(R12) >> 8), (uint8_t)((R12) & 0xFFU), (uint8_t)(M12), (uint8_t)(V12) \
+                                 , (uint8_t)((uint16_t)(R13) >> 8), (uint8_t)((R13) & 0xFFU), (uint8_t)(M13), (uint8_t)(V13) \
+                                 , (uint8_t)((uint16_t)(R14) >> 8), (uint8_t)((R14) & 0xFFU), (uint8_t)(M14), (uint8_t)(V14) \
+                                 , (uint8_t)((uint16_t)(R15) >> 8), (uint8_t)((R15) & 0xFFU), (uint8_t)(M15), (uint8_t)(V15) \
+                                 , (uint8_t)((uint16_t)(R16) >> 8), (uint8_t)((R16) & 0xFFU), (uint8_t)(M16), (uint8_t)(V16) \
+                                 , (uint8_t)((uint16_t)(R17) >> 8), (uint8_t)((R17) & 0xFFU), (uint8_t)(M17), (uint8_t)(V17) \
+                                 , (uint8_t)((uint16_t)(R18) >> 8), (uint8_t)((R18) & 0xFFU), (uint8_t)(M18), (uint8_t)(V18) \
+                                 , (uint8_t)((uint16_t)(R19) >> 8), (uint8_t)((R19) & 0xFFU), (uint8_t)(M19), (uint8_t)(V19) \
+                                 , (uint8_t)((uint16_t)(R20) >> 8), (uint8_t)((R20) & 0xFFU), (uint8_t)(M20), (uint8_t)(V20) \
+                                 , (uint8_t)((uint16_t)(R21) >> 8), (uint8_t)((R21) & 0xFFU), (uint8_t)(M21), (uint8_t)(V21)
 /*
  ******************************************************************************
  * GLOBAL DATA TYPES
@@ -270,7 +385,7 @@
  */
 /* PRQA S 3406 1 # MISRA 8.6 - Externally generated table included by the library */   /*  PRQA S 1514 1 # MISRA 8.9 - Externally generated table included by the library */
 /* Benjamin VERNOUX Modified default Antenna Tuning (ST25R3916_REG_ANT_TUNE_A=0x49 & ST25R3916_REG_ANT_TUNE_B=0x45) for HydraNFC Shield V2 */
-const uint8_t rfalAnalogConfigCustom[] = {
+const uint8_t rfalAnalogConfigCustomSettings[] = {
     
     /****** Default Analog Configuration for Chip-Specific Reset ******/
     MODE_ENTRY_17_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_INIT)
@@ -583,6 +698,4 @@ const uint8_t rfalAnalogConfigCustom[] = {
 
 };
 
-const uint8_t* rfalAnalogConfigCustomSettings = rfalAnalogConfigCustom;
-const uint16_t rfalAnalogConfigCustomSettingsLength = sizeof(rfalAnalogConfigCustom);
-
+const uint16_t rfalAnalogConfigCustomSettingsLength = sizeof(rfalAnalogConfigCustomSettings);

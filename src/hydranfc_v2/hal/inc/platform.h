@@ -1,7 +1,7 @@
 /*
  * HydraBus/HydraNFC v2
  *
- * Copyright (C) 2020 Benjamin VERNOUX
+ * Copyright (C) 2020-2021 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H
 
-/* Platform definitions for ST25RFAL002 V2.2.0 / 22-May-2020 */
+/* Platform definitions for ST25RFAL002 V2.4.0 / 14-Jun-2021 */
 
 /*
 ******************************************************************************
@@ -61,6 +61,8 @@ void _Error_Handler(char *, int);
 * GLOBAL DEFINES
 ******************************************************************************
 */
+#define ST25R3916 /* Required by RFAL src/st25r3916/st25r3916.c */
+
 #define ST25R391X_SPI_DEVICE	BSP_DEV_SPI2
 
 #define ST25R_COM_SINGLETXRX /*!< Use single Transceive */
@@ -154,9 +156,9 @@ extern uint8_t globalCommProtectCnt; /* Global Protection Counter provided per p
 * RFAL FEATURES CONFIGURATION
 ******************************************************************************
 */
-#define RFAL_FEATURE_LISTEN_MODE            true /*!< Enable/Disable RFAL support for Listen Mode */
-#define RFAL_FEATURE_WAKEUP_MODE            true /*!< Enable/Disable RFAL support for the Wake-Up mode */
+#define RFAL_FEATURE_DYNAMIC_ANALOG_CONFIG  true /*!< Enable/Disable Analog Configs to be dynamically updated (RAM) */
 #define RFAL_FEATURE_LOWPOWER_MODE          false /*!< Enable/Disable RFAL support for the Low Power mode */
+
 #define RFAL_FEATURE_NFCA                   true /*!< Enable/Disable RFAL support for NFC-A (ISO14443A) */
 #define RFAL_FEATURE_NFCB                   true /*!< Enable/Disable RFAL support for NFC-B (ISO14443B) */
 #define RFAL_FEATURE_NFCF                   true /*!< Enable/Disable RFAL support for NFC-F (FeliCa) */
@@ -166,12 +168,13 @@ extern uint8_t globalCommProtectCnt; /* Global Protection Counter provided per p
 #define RFAL_FEATURE_T4T                    true /*!< Enable/Disable RFAL support for T4T */
 #define RFAL_FEATURE_ST25TB                 true /*!< Enable/Disable RFAL support for ST25TB */
 #define RFAL_FEATURE_ST25xV                 true /*!< Enable/Disable RFAL support for ST25TV/ST25DV */
-#define RFAL_FEATURE_DYNAMIC_ANALOG_CONFIG  true /*!< Enable/Disable Analog Configs to be dynamically updated (RAM) */
-#define RFAL_FEATURE_DPO                    true /*!< Enable/Disable RFAL Dynamic Power Output support */
 #define RFAL_FEATURE_ISO_DEP                true /*!< Enable/Disable RFAL support for ISO-DEP (ISO14443-4) */
 #define RFAL_FEATURE_ISO_DEP_POLL           true /*!< Enable/Disable RFAL support for Poller mode (PCD) ISO-DEP (ISO14443-4) */
 #define RFAL_FEATURE_ISO_DEP_LISTEN         true /*!< Enable/Disable RFAL support for Listen mode (PICC) ISO-DEP (ISO14443-4) */
 #define RFAL_FEATURE_NFC_DEP                true /*!< Enable/Disable RFAL support for NFC-DEP (NFCIP1/P2P) */
+#define RFAL_FEATURE_LISTEN_MODE            true /*!< Enable/Disable RFAL support for Listen Mode */
+#define RFAL_FEATURE_WAKEUP_MODE            true /*!< Enable/Disable RFAL support for the Wake-Up mode */
+#define RFAL_FEATURE_DPO                    true /*!< Enable/Disable RFAL Dynamic Power Output support */
 
 #define RFAL_FEATURE_ISO_DEP_IBLOCK_MAX_LEN 256U /*!< ISO-DEP I-Block max length. Please use values as defined by rfalIsoDepFSx */
 #define RFAL_FEATURE_NFC_DEP_BLOCK_MAX_LEN  254U /*!< NFC-DEP Block/Payload length. Allowed values: 64, 128, 192, 254 */

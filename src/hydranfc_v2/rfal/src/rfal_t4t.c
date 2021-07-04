@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2018 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 /*
  *      PROJECT:   ST25R391x firmware
@@ -197,6 +192,11 @@ ReturnCode rfalT4TPollerParseRAPDU( rfalT4tRApduParam *apduParam )
 ReturnCode rfalT4TPollerComposeSelectAppl( rfalIsoDepApduBufFormat *cApduBuf, const uint8_t* aid, uint8_t aidLen, uint16_t *cApduLen )
 {   
     rfalT4tCApduParam cAPDU;
+    
+    if( cApduBuf == NULL )
+    {
+        return ERR_PARAM;
+    }
 
     /* CLA INS P1  P2   Lc  Data   Le  */
     /* 00h A4h 00h 00h  07h AID    00h */
@@ -211,7 +211,7 @@ ReturnCode rfalT4TPollerComposeSelectAppl( rfalIsoDepApduBufFormat *cApduBuf, co
     cAPDU.cApduBuf = cApduBuf;
     cAPDU.cApduLen = cApduLen;
     
-    if( aidLen > 0U )
+    if( (aid != NULL) && (aidLen > 0U) )
     {
         ST_MEMCPY( cAPDU.cApduBuf->apdu, aid, aidLen );
     }
@@ -224,6 +224,11 @@ ReturnCode rfalT4TPollerComposeSelectAppl( rfalIsoDepApduBufFormat *cApduBuf, co
 ReturnCode rfalT4TPollerComposeSelectFile( rfalIsoDepApduBufFormat *cApduBuf, const uint8_t* fid, uint8_t fidLen, uint16_t *cApduLen )
 {   
     rfalT4tCApduParam cAPDU;
+    
+    if( cApduBuf == NULL )
+    {
+        return ERR_PARAM;
+    }
 
     /* CLA INS P1  P2   Lc  Data   Le  */
     /* 00h A4h 00h 0Ch  02h FID    -   */    
@@ -238,7 +243,7 @@ ReturnCode rfalT4TPollerComposeSelectFile( rfalIsoDepApduBufFormat *cApduBuf, co
     cAPDU.cApduBuf = cApduBuf;
     cAPDU.cApduLen = cApduLen;
     
-    if( fidLen > 0U )
+    if( (fid != NULL) && (fidLen > 0U) )
     {
         ST_MEMCPY( cAPDU.cApduBuf->apdu, fid, fidLen );
     }
@@ -251,6 +256,11 @@ ReturnCode rfalT4TPollerComposeSelectFile( rfalIsoDepApduBufFormat *cApduBuf, co
 ReturnCode rfalT4TPollerComposeSelectFileV1Mapping( rfalIsoDepApduBufFormat *cApduBuf, const uint8_t* fid, uint8_t fidLen, uint16_t *cApduLen )
 {   
     rfalT4tCApduParam cAPDU;
+    
+    if( cApduBuf == NULL )
+    {
+        return ERR_PARAM;
+    }
     
     /* CLA INS P1  P2   Lc  Data   Le  */
     /* 00h A4h 00h 00h  02h FID    -   */      
@@ -265,7 +275,7 @@ ReturnCode rfalT4TPollerComposeSelectFileV1Mapping( rfalIsoDepApduBufFormat *cAp
     cAPDU.cApduBuf = cApduBuf;
     cAPDU.cApduLen = cApduLen;
     
-    if( fidLen > 0U )
+    if( (fid != NULL) && (fidLen > 0U) )
     {
         ST_MEMCPY( cAPDU.cApduBuf->apdu, fid, fidLen );
     }
@@ -278,6 +288,8 @@ ReturnCode rfalT4TPollerComposeSelectFileV1Mapping( rfalIsoDepApduBufFormat *cAp
 ReturnCode rfalT4TPollerComposeReadData( rfalIsoDepApduBufFormat *cApduBuf, uint16_t offset, uint8_t expLen, uint16_t *cApduLen )
 {    
     rfalT4tCApduParam cAPDU;
+
+    ST_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
   
     /* CLA INS P1  P2   Lc  Data   Le  */
     /* 00h B0h [Offset] -   -      len */     
@@ -291,7 +303,7 @@ ReturnCode rfalT4TPollerComposeReadData( rfalIsoDepApduBufFormat *cApduBuf, uint
     cAPDU.cApduBuf = cApduBuf;
     cAPDU.cApduLen = cApduLen;
     
-    return rfalT4TPollerComposeCAPDU( &cAPDU );
+    return rfalT4TPollerComposeCAPDU( &cAPDU ); 
 }
 
 
@@ -330,6 +342,13 @@ ReturnCode rfalT4TPollerComposeReadDataODO( rfalIsoDepApduBufFormat *cApduBuf, u
 ReturnCode rfalT4TPollerComposeWriteData( rfalIsoDepApduBufFormat *cApduBuf, uint16_t offset, const uint8_t* data, uint8_t dataLen, uint16_t *cApduLen )
 {    
     rfalT4tCApduParam cAPDU;
+    
+    if( cApduBuf == NULL )
+    {
+        return ERR_PARAM;
+    }
+
+    ST_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
 
 
     /* CLA INS P1  P2   Lc  Data   Le  */
@@ -344,7 +363,7 @@ ReturnCode rfalT4TPollerComposeWriteData( rfalIsoDepApduBufFormat *cApduBuf, uin
     cAPDU.cApduBuf = cApduBuf;
     cAPDU.cApduLen = cApduLen;
     
-    if( dataLen > 0U )
+    if( (data != NULL) && (dataLen > 0U) )
     {
         ST_MEMCPY( cAPDU.cApduBuf->apdu, data, dataLen );
     }
@@ -357,6 +376,13 @@ ReturnCode rfalT4TPollerComposeWriteDataODO( rfalIsoDepApduBufFormat *cApduBuf, 
 {    
     rfalT4tCApduParam cAPDU;
     uint8_t           dataIt;
+    
+    if( cApduBuf == NULL )
+    {
+        return ERR_PARAM;
+    }
+
+    ST_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
         
     /* CLA INS P1  P2   Lc  Data                     Le  */
     /* 00h D7h 00h 00h  len 54 03 xxyyzz 53 Ld data  -   */
@@ -384,7 +410,7 @@ ReturnCode rfalT4TPollerComposeWriteDataODO( rfalIsoDepApduBufFormat *cApduBuf, 
         return (ERR_NOMEM);
     }
     
-    if( dataLen > 0U )
+    if( (data != NULL) && (dataLen > 0U) )
     {
         ST_MEMCPY( &cAPDU.cApduBuf->apdu[dataIt], data, dataLen );
     }

@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 
 /*
@@ -88,7 +83,26 @@ typedef struct{
 } rfalTxRx;
 
 
-/*! Struct that holds all context for the Listen Mode                                             */
+/*! Struct that holds certain WU mode information to be retrieved by rfalWakeUpModeGetInfo        */
+typedef struct{                                                                                   
+    bool                 irqWut;     /*!< Wake-Up Timer IRQ received (cleared upon read)          */
+
+    struct{
+        uint8_t          lastMeas;   /*!< Value of the latest measurement                         */
+        bool             irqWu;      /*!< Amplitude WU IRQ received (cleared upon read)           */
+    }indAmp;                         /*!< Inductive Amplitude                                     */
+    struct{                                                                                       
+        uint8_t          lastMeas;   /*!< Value of the latest measurement                         */
+        bool             irqWu;      /*!< Phase WU IRQ received (cleared upon read)               */
+    }indPha;                         /*!< Inductive Phase                                         */
+    struct{                                                                                       
+        uint8_t          lastMeas;   /*!< Value of the latest measurement                         */
+        bool             irqWu;      /*!< Capacitive WU IRQ received (cleared upon read)          */
+    }cap;                            /*!< Capacitance                                             */
+}rfalWakeUpData;
+
+
+/*! Local struct that holds context for the Wake-Up Mode                                          */
 typedef struct{
     rfalLmState             state;       /*!< Current Listen Mode state                           */
     uint32_t                mdMask;      /*!< Listen Mode mask used                               */
@@ -104,13 +118,15 @@ typedef struct{
 } rfalLm;
 
 
-/*! Struct that holds all context for the Wake-Up Mode                                             */
+/*! Struct that holds all context for the Wake-Up Mode                                            */
 typedef struct{
-    rfalWumState            state;       /*!< Current Wake-Up Mode state                           */
-    rfalWakeUpConfig        cfg;         /*!< Current Wake-Up Mode context                         */     
+    rfalWumState            state;       /*!< Current Wake-Up Mode state                          */
+    rfalWakeUpConfig        cfg;         /*!< Current Wake-Up Mode config                         */
+    rfalWakeUpData          info;        /*!< Current Wake-Up Mode info                           */
 } rfalWum;
 
-/*! Struct that holds all context for the Low Power Mode                                             */
+
+/*! Struct that holds all context for the Low Power Mode                                          */
 typedef struct{
     bool                    isRunning;
 } rfalLpm;
@@ -128,7 +144,8 @@ typedef struct{
 /*! Struct that holds the software timers                               */
 typedef struct{
     uint32_t                GT;          /*!< RFAL's GT timer           */
-    uint32_t                RXE;         /*!< Timer between RXS and RXE */
+    uint32_t                RXE;         /*!< Timer between RXS - RXE   */
+    uint32_t                PPON2;       /*!< Timer between TXE - PPON2 */
     uint32_t                txRx;        /*!< Transceive sanity timer   */
 } rfalTimers;
 
@@ -137,6 +154,7 @@ typedef struct{
 typedef struct{
     rfalPreTxRxCallback     preTxRx;     /*!< RFAL's Pre TxRx callback  */
     rfalPostTxRxCallback    postTxRx;    /*!< RFAL's Post TxRx callback */
+    rfalSyncTxRxCallback    syncTxRx;    /*!< RFAL's Sync TxRx callback */
 } rfalCallbacks;
 
 
@@ -158,8 +176,16 @@ typedef struct{
 
 
 /*! Struct that holds NFC-F data - Used only inside rfalFelicaPoll() (static to avoid adding it into stack) */
-typedef struct{    
-    rfalFeliCaPollRes pollResponses[RFAL_FELICA_POLL_MAX_SLOTS];   /* FeliCa Poll response container for 16 slots */
+typedef struct{
+    uint16_t           actLen;
+    rfalFeliCaPollRes* pollResList;
+    uint8_t            pollResListSize;
+    uint8_t            devDetected;
+    uint8_t            colDetected;
+    uint8_t            *devicesDetected;
+    uint8_t            *collisionsDetected;
+    rfalEHandling      curHandling;
+    rfalFeliCaPollRes  pollResponses[RFAL_FELICA_POLL_MAX_SLOTS];   /* FeliCa Poll response container for 16 slots */
 } rfalNfcfWorkingData;
 
 
@@ -269,10 +295,10 @@ typedef union{  /*  PRQA S 0750 # MISRA 19.2 - Both members are of the same type
 
 #define RFAL_OBSMODE_DISABLE            0x00U                                         /*!< Observation Mode disabled                                                       */
 
-#define RFAL_RX_INCOMPLETE_MAXLEN       (uint8_t)1U                                   /*!< Threshold value where incoming rx may be considered as incomplete               */
+#define RFAL_RX_INC_BYTE_LEN            (uint8_t)1U                                   /*!< Threshold where incoming rx shall be considered incomplete byte NFC - T2T       */
 #define RFAL_EMVCO_RX_MAXLEN            (uint8_t)4U                                   /*!< Maximum value where EMVCo to apply special error handling                       */
 
-#define RFAL_NORXE_TOUT                 50U                                           /*!< Timeout to be used on a potential missing RXE - Silicon ST25R3916 Errata #TBD   */
+#define RFAL_NORXE_TOUT                 50U                                           /*!< Timeout to be used on a potential missing RXE - Silicon ST25R3916 Errata #2.1.2 */
 
 #define RFAL_ISO14443A_SDD_RES_LEN      5U                                            /*!< SDD_RES | Anticollision (UID CLn) length  -  rfalNfcaSddRes                     */
 #define RFAL_ISO14443A_CRC_INTVAL       0x6363                                        /*!< ISO14443 CRC Initial Value|Register                                             */
@@ -297,10 +323,10 @@ typedef union{  /*  PRQA S 0750 # MISRA 19.2 - Both members are of the same type
 #define RFAL_LM_GT                      rfalConvUsTo1fc(100U)                         /*!< Listen Mode Guard Time enforced (GT - Passive; TIRFG - Active)                  */
 #define RFAL_FDT_POLL_ADJUSTMENT        rfalConvUsTo1fc(80U)                          /*!< FDT Poll adjustment: Time between the expiration of GPT to the actual Tx        */
 #define RFAL_FDT_LISTEN_MRT_ADJUSTMENT  64U                                           /*!< MRT jitter adjustment: timeout will be between [ tout ; tout + 64 cycles ]      */
-#define RFAL_AP2P_FIELDOFF_TRFW         rfalConv8fcTo1fc(64U)                         /*!< Time after TXE and Field Off in AP2P Trfw: 37.76us -> 64  (8/fc)                */
+#define RFAL_AP2P_FIELDOFF_TCMDOFF      1356U                                         /*!< Time after TXE and Field Off t,CMD,OFF     Activity 2.1  3.2.1.3 & C            */
 
 #ifndef RFAL_ST25R3916_AAT_SETTLE
-    #define RFAL_ST25R3916_AAT_SETTLE   5U                                            /*!< Time in ms required for AAT pins and Osc to settle after en bit set */
+    #define RFAL_ST25R3916_AAT_SETTLE   5U                                            /*!< Time in ms required for AAT pins and Osc to settle after en bit set             */
 #endif /* RFAL_ST25R3916_AAT_SETTLE */
 
 
@@ -405,6 +431,10 @@ typedef union{  /*  PRQA S 0750 # MISRA 19.2 - Both members are of the same type
 #define rfalConvBR2ACBR( b )                     (((rfalAdjACBR((b)))<<RFAL_ANALOG_CONFIG_BITRATE_SHIFT) & RFAL_ANALOG_CONFIG_BITRATE_MASK) /*!< Converts ST25R391x Bit rate to Analog Configuration bit rate id */
 
 #define rfalConvTDFormat( v )                    ((uint16_t)(v) << 8U) /*!< Converts a uint8_t to the format used in SW Tag Detection */
+#define rfalAddFracTDFormat( fd )                ((((uint16_t)(fd)) & 0x03U) * 64U)
+
+
+#define rfalRunBlocking( e, fn )                 do{ (e)=(fn); rfalWorker(); }while( (e) == ERR_BUSY )                                      /*!< Macro used for the blocking operations      */
 
 /*
  ******************************************************************************
@@ -500,12 +530,16 @@ ReturnCode rfalInitialize( void )
     rfalTimerDestroy( gRFAL.tmr.GT );
     rfalTimerDestroy( gRFAL.tmr.txRx );
     rfalTimerDestroy( gRFAL.tmr.RXE );
+    rfalTimerDestroy( gRFAL.tmr.PPON2 );
     gRFAL.tmr.GT             = RFAL_TIMING_NONE;
     gRFAL.tmr.txRx           = RFAL_TIMING_NONE;
     gRFAL.tmr.RXE            = RFAL_TIMING_NONE;
+    gRFAL.tmr.PPON2          = RFAL_TIMING_NONE;
+    
     
     gRFAL.callbacks.preTxRx  = NULL;
     gRFAL.callbacks.postTxRx = NULL;
+    gRFAL.callbacks.syncTxRx = NULL;
     
 #if RFAL_FEATURE_NFCV    
     /* Initialize NFC-V Data */
@@ -589,6 +623,13 @@ void rfalSetPreTxRxCallback( rfalPreTxRxCallback pFunc )
 
 
 /*******************************************************************************/
+void rfalSetSyncTxRxCallback( rfalSyncTxRxCallback pFunc )
+{
+    gRFAL.callbacks.syncTxRx = pFunc;
+}
+
+
+/*******************************************************************************/
 void rfalSetPostTxRxCallback( rfalPostTxRxCallback pFunc )
 {
     gRFAL.callbacks.postTxRx = pFunc;
@@ -610,10 +651,10 @@ ReturnCode rfalDeinitialize( void )
 
 
 /*******************************************************************************/
-void rfalSetObsvMode( uint8_t txMode, uint8_t rxMode )
+void rfalSetObsvMode( uint32_t txMode, uint32_t rxMode )
 {
-    gRFAL.conf.obsvModeTx = txMode;
-    gRFAL.conf.obsvModeRx = rxMode;
+    gRFAL.conf.obsvModeTx = (uint8_t)txMode;
+    gRFAL.conf.obsvModeRx = (uint8_t)rxMode;
 }
 
 
@@ -798,15 +839,14 @@ ReturnCode rfalSetMode( rfalMode mode, rfalBitRate txBR, rfalBitRate rxBR )
             
             /* Set NFCIP1 active communication Initiator mode and Automatic Response RF Collision Avoidance to always after EOF */
             st25r3916WriteRegister( ST25R3916_REG_MODE, (ST25R3916_REG_MODE_targ_init | ST25R3916_REG_MODE_om_nfc | ST25R3916_REG_MODE_nfc_ar_eof) );
-            
+        
             /* External Field Detector enabled as Automatics on rfalInitialize() */ 
             
             /* Set NRT to start at end of TX (own) field */
             st25r3916ChangeRegisterBits( ST25R3916_REG_TIMER_EMV_CONTROL, ST25R3916_REG_TIMER_EMV_CONTROL_nrt_nfc, ST25R3916_REG_TIMER_EMV_CONTROL_nrt_nfc_off );
             
-            /* Set GPT to start after end of TX, as GPT is used in active communication mode to timeout the field switching off */
-            /* The field is turned off 37.76us after the end of the transmission  Trfw                                          */
-            st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( RFAL_AP2P_FIELDOFF_TRFW ), ST25R3916_REG_TIMER_EMV_CONTROL_gptc_etx_nfc );
+            /* Set GPT to start after end of TX, as GPT is used in active communication mode to timeout the field switching off after TXE */
+            st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( RFAL_AP2P_FIELDOFF_TCMDOFF ), ST25R3916_REG_TIMER_EMV_CONTROL_gptc_etx_nfc );
             
             /* Set PPon2 timer with the max time between our field Off and other peer field On : Tadt + (n x Trfw)    */
             st25r3916WriteRegister( ST25R3916_REG_PPON2, (uint8_t)rfalConv1fcTo64fc( RFAL_AP2P_FIELDON_TADTTRFW ) );
@@ -830,9 +870,8 @@ ReturnCode rfalSetMode( rfalMode mode, rfalBitRate txBR, rfalBitRate rxBR )
             /* Set NRT to start at end of TX (own) field */
             st25r3916ChangeRegisterBits( ST25R3916_REG_TIMER_EMV_CONTROL, ST25R3916_REG_TIMER_EMV_CONTROL_nrt_nfc, ST25R3916_REG_TIMER_EMV_CONTROL_nrt_nfc_off );
             
-            /* Set GPT to start after end of TX, as GPT is used in active communication mode to timeout the field switching off */
-            /* The field is turned off 37.76us after the end of the transmission  Trfw                                          */
-            st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( RFAL_AP2P_FIELDOFF_TRFW ), ST25R3916_REG_TIMER_EMV_CONTROL_gptc_etx_nfc );
+            /* Set GPT to start after end of TX, as GPT is used in active communication mode to timeout the field switching off after TXE */
+            st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( RFAL_AP2P_FIELDOFF_TCMDOFF ), ST25R3916_REG_TIMER_EMV_CONTROL_gptc_etx_nfc );
             
             /* Set PPon2 timer with the max time between our field Off and other peer field On : Tadt + (n x Trfw)    */
             st25r3916WriteRegister( ST25R3916_REG_PPON2, (uint8_t)rfalConv1fcTo64fc( RFAL_AP2P_FIELDON_TADTTRFW ) );
@@ -966,13 +1005,14 @@ ReturnCode rfalSetBitRate( rfalBitRate txBR, rfalBitRate rxBR )
                 }
         
                 {
-                    const struct iso15693StreamConfig *isoStreamConfig;
-                    struct st25r3916StreamConfig      streamConf;
-                    iso15693PhyConfig_t                config;
+                    const struct iso15693StreamConfig *rfalIso15693StreamConfig;
+                    struct st25r3916StreamConfig      st25rStreamConf;
+                    rfalIso15693PhyConfig_t           config;
                     
-                    config.coding     = (( gRFAL.txBR == RFAL_BR_1p66  ) ? ISO15693_VCD_CODING_1_256 : ISO15693_VCD_CODING_1_4);
-                    switch (gRFAL.rxBR){
-                        case RFAL_BR_52p97:
+                    config.coding = ( (gRFAL.txBR == RFAL_BR_1p66) ? ISO15693_VCD_CODING_1_256 : ISO15693_VCD_CODING_1_4 );
+                    switch( gRFAL.rxBR )
+                    {
+                        case RFAL_BR_52p97:                        /*  PRQA S 2880 # MISRA 2.1 - Inconsistently marked as unreachable code */
                             config.speedMode = 1;
                             break;
                         default:
@@ -980,14 +1020,14 @@ ReturnCode rfalSetBitRate( rfalBitRate txBR, rfalBitRate rxBR )
                             break;
                     }
                     
-                    iso15693PhyConfigure(&config, &isoStreamConfig);
+                    rfalIso15693PhyConfigure(&config, &rfalIso15693StreamConfig);
                     
                     /* MISRA 11.3 - Cannot point directly into different object type, copy to local var */
-                    streamConf.din                  = isoStreamConfig->din;
-                    streamConf.dout                 = isoStreamConfig->dout;
-                    streamConf.report_period_length = isoStreamConfig->report_period_length;
-                    streamConf.useBPSK              = isoStreamConfig->useBPSK;
-                    st25r3916StreamConfigure(&streamConf);
+                    st25rStreamConf.din                  = rfalIso15693StreamConfig->din;
+                    st25rStreamConf.dout                 = rfalIso15693StreamConfig->dout;
+                    st25rStreamConf.report_period_length = rfalIso15693StreamConfig->report_period_length;
+                    st25rStreamConf.useBPSK              = rfalIso15693StreamConfig->useBPSK;
+                    st25r3916StreamConfigure(&st25rStreamConf);
                 }
     
                 /* Set Analog configurations for this bit rate */
@@ -1076,12 +1116,11 @@ void rfalSetErrorHandling( rfalEHandling eHandling )
 {
     switch(eHandling)
     {
-        case RFAL_ERRORHANDLING_NFC:
         case RFAL_ERRORHANDLING_NONE:
             st25r3916ClrRegisterBits( ST25R3916_REG_EMD_SUP_CONF, ST25R3916_REG_EMD_SUP_CONF_emd_emv );
             break;
             
-        case RFAL_ERRORHANDLING_EMVCO:
+        case RFAL_ERRORHANDLING_EMD:
             /* MISRA 16.4: no empty default statement (in case RFAL_SW_EMD is defined) */
 #ifndef RFAL_SW_EMD
             st25r3916ModifyRegister( ST25R3916_REG_EMD_SUP_CONF, 
@@ -1192,7 +1231,7 @@ ReturnCode rfalFieldOnAndStartGT( void )
         /* n * TRFW timing shall vary  Activity 2.1  3.3.1.1 */
         gRFAL.timings.nTRFW = rfalGennTRFW( gRFAL.timings.nTRFW );
         
-        gRFAL.field = st25r3916IsTxEnabled(); //(ret == ERR_NONE);
+        gRFAL.field = st25r3916IsTxEnabled();
         
         /* Only turn on Receiver and Transmitter if field was successfully turned On */
         if(gRFAL.field)
@@ -1245,7 +1284,7 @@ ReturnCode rfalStartTransceive( const rfalTransceiveContext *ctx )
     }
     
     /* Ensure that RFAL is already Initialized and the mode has been set */
-    if( (gRFAL.state >= RFAL_STATE_MODE_SET) /*&& (gRFAL.TxRx.state == RFAL_TXRX_STATE_INIT )*/ )
+    if( gRFAL.state >= RFAL_STATE_MODE_SET )
     {
         /*******************************************************************************/
         /* Check whether the field is already On, otherwise no TXE will be received  */
@@ -1434,7 +1473,7 @@ ReturnCode rfalTransceiveBlockingRx( void )
         rfalWorker();
         ret = rfalGetTransceiveStatus();
     }
-    while( rfalIsTransceiveInRx() && (ret == ERR_BUSY) );    
+    while( rfalIsTransceiveInRx() || (ret == ERR_BUSY) );    
         
     return ret;
 }
@@ -1525,13 +1564,16 @@ ReturnCode rfalGetTransceiveRSSI( uint16_t *rssi )
     if( isSumMode )
     {
         /*******************************************************************************/
-        /* Using SQRT from math.h and float. If due to compiler, resources or performance 
-         * issue this cannot be used, other approaches can be foreseen with less accuracy:
-         *    Use a simpler sqrt algorithm 
-         *    *rssi = MAX( amRSSI, pmRSSI );
-         *    *rssi = ( (amRSSI + pmRSSI) / 2);
-         */
+        /* Usage of SQRT from math.h and float. Due to compiler, resources or          *
+         * performance issues sqrt is not enabled by default. Using a less accuracy    *
+         * accurate aproach such as: average, max value, etc                           */
+
+    #ifdef RFAL_ACCURATE_RSSI
         *rssi = (uint16_t) sqrt( ((double)amRSSI*(double)amRSSI) + ((double)pmRSSI*(double)pmRSSI) );               /*  PRQA S 5209 # MISRA 4.9 - External function (sqrt()) requires double */
+    #else
+        *rssi = ( (amRSSI + pmRSSI) / 2U);
+    #endif
+        
     }
     else
     {
@@ -1587,12 +1629,12 @@ static void rfalErrorHandling( void )
     /*******************************************************************************/
     /* EMVCo                                                                       */
     /*******************************************************************************/
-    if( gRFAL.conf.eHandling == RFAL_ERRORHANDLING_EMVCO )
+    if( gRFAL.conf.eHandling == RFAL_ERRORHANDLING_EMD )
     {
         bool    rxHasIncParError;
 
         /*******************************************************************************/
-        /* EMD Handling - NFC Forum Digital 1.1  4.1.1.1 ; EMVCo v2.5  4.9.2           */
+        /* EMD Handling - Digital 2.1  4.1.1.1 ; EMVCo 3.0  4.9.2 ; ISO 14443-3  8.3   */
         /* ReEnable the receiver on frames with a length < 4 bytes, upon:              */
         /*   - Collision or Framing error detected                                     */
         /*   - Residual bits are detected (hard framing error)                         */
@@ -1655,7 +1697,7 @@ static void rfalErrorHandling( void )
         /*******************************************************************************/
         if( (gRFAL.TxRx.status == ERR_PAR) || (gRFAL.TxRx.status == ERR_CRC) )
         {
-            if( rfalFIFOStatusIsIncompleteByte() )
+            if( rfalFIFOStatusIsIncompleteByte() && (fifoBytesToRead == RFAL_RX_INC_BYTE_LEN) )
             {
                 st25r3916ReadFifo( (uint8_t*)(gRFAL.TxRx.ctx.rxBuf), fifoBytesToRead );
                 if( (gRFAL.TxRx.ctx.rxRcvdLen) != NULL )
@@ -1693,8 +1735,10 @@ static void rfalCleanupTransceive( void )
     /*******************************************************************************/
     rfalTimerDestroy( gRFAL.tmr.txRx );
     rfalTimerDestroy( gRFAL.tmr.RXE );
-    gRFAL.tmr.txRx = RFAL_TIMING_NONE; 
-    gRFAL.tmr.RXE  = RFAL_TIMING_NONE;
+    rfalTimerDestroy( gRFAL.tmr.PPON2 );
+    gRFAL.tmr.txRx   = RFAL_TIMING_NONE;
+    gRFAL.tmr.RXE    = RFAL_TIMING_NONE;
+    gRFAL.tmr.PPON2  = RFAL_TIMING_NONE;
     /*******************************************************************************/
     
     
@@ -1735,13 +1779,24 @@ static void rfalPrepareTransceive( void )
     /*******************************************************************************/
     /* FDT Poll                                                                    */
     /*******************************************************************************/
-    if( rfalIsModePassiveComm( gRFAL.mode ) )  /* Passive Comms */
+    
+    
+    if( gRFAL.timings.FDTPoll != RFAL_TIMING_NONE )
     {
         /* In Passive communications General Purpose Timer is used to measure FDT Poll */
-        if( gRFAL.timings.FDTPoll != RFAL_TIMING_NONE )
+        if( rfalIsModePassiveComm( gRFAL.mode ) )  /* Passive Comms */
         {
             /* Configure GPT to start at RX end */
-            st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( MIN( gRFAL.timings.FDTPoll, (gRFAL.timings.FDTPoll - RFAL_FDT_POLL_ADJUSTMENT) ) ), ST25R3916_REG_TIMER_EMV_CONTROL_gptc_erx );
+            st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( ((gRFAL.timings.FDTPoll < RFAL_FDT_POLL_ADJUSTMENT) ? gRFAL.timings.FDTPoll : (gRFAL.timings.FDTPoll - RFAL_FDT_POLL_ADJUSTMENT)) ), ST25R3916_REG_TIMER_EMV_CONTROL_gptc_erx );
+        }
+        /* In Active Poller mode GT PPON1 is used to ensure FDT Poll */
+        else if( gRFAL.mode == RFAL_MODE_POLL_ACTIVE_P2P )
+        {
+            st25r3916WriteRegister( ST25R3916_REG_FIELD_ON_GT, (uint8_t)rfalConv1fcTo2018fc(gRFAL.timings.FDTPoll) );
+        }
+        else
+        {
+            /* MISRA 15.7 - Empty else */
         }
     }
     
@@ -1804,7 +1859,7 @@ static void rfalPrepareTransceive( void )
     /*******************************************************************************/
     /* EMVCo NRT mode                                                              */
     /*******************************************************************************/
-    if( gRFAL.conf.eHandling == RFAL_ERRORHANDLING_EMVCO )
+    if( gRFAL.conf.eHandling == RFAL_ERRORHANDLING_EMD )
     {
         st25r3916SetRegisterBits( ST25R3916_REG_TIMER_EMV_CONTROL, ST25R3916_REG_TIMER_EMV_CONTROL_nrt_emv );
         maskInterrupts |= ST25R3916_IRQ_MASK_RX_REST;
@@ -1821,7 +1876,7 @@ static void rfalPrepareTransceive( void )
         maskInterrupts |= ( ST25R3916_IRQ_MASK_EOF | ST25R3916_IRQ_MASK_WU_F );      /* Enable external Field interrupts to detect Link Loss and SENF_REQ auto responses */
     }
     
-    /* In Active comms enable also External Field interrupts and set RF Collsion Avoindance */
+    /* In Active comms enable also External Field interrupts and set RF Collsion Avoidance */
     if( rfalIsModeActiveComm( gRFAL.mode ) )
     {
         maskInterrupts |= ( ST25R3916_IRQ_MASK_EOF  | ST25R3916_IRQ_MASK_EON  | ST25R3916_IRQ_MASK_PPON2 | ST25R3916_IRQ_MASK_CAT | ST25R3916_IRQ_MASK_CAC );
@@ -1863,8 +1918,11 @@ static void rfalTransceiveTx( void )
     irqs = ST25R3916_IRQ_MASK_NONE;
     
     if( gRFAL.TxRx.state != gRFAL.TxRx.lastState )
-    {        
-        /* rfalLogD( "RFAL: lastSt: %d curSt: %d \r\n", gRFAL.TxRx.lastState, gRFAL.TxRx.state ); */
+    {
+        #if 0 /* Debug purposes */
+            rfalLogD( "RFAL: lastSt: %d curSt: %d \r\n", gRFAL.TxRx.lastState, gRFAL.TxRx.state );
+        #endif
+
         gRFAL.TxRx.lastState = gRFAL.TxRx.state;
     }
     
@@ -1906,12 +1964,12 @@ static void rfalTransceiveTx( void )
                 }
             }
             
-            gRFAL.TxRx.state = RFAL_TXRX_STATE_TX_TRANSMIT;
+            gRFAL.TxRx.state = RFAL_TXRX_STATE_TX_PREP_TX;
             /* fall through */
             
         
         /*******************************************************************************/
-        case RFAL_TXRX_STATE_TX_TRANSMIT:   /*  PRQA S 2003 # MISRA 16.3 - Intentional fall through */
+        case RFAL_TXRX_STATE_TX_PREP_TX:   /*  PRQA S 2003 # MISRA 16.3 - Intentional fall through */
             
             /* Clear FIFO, Clear and Enable the Interrupts */
             rfalPrepareTransceive( );
@@ -1931,7 +1989,7 @@ static void rfalTransceiveTx( void )
 #endif
                 /* Calculate the bytes needed to be Written into FIFO (a incomplete byte will be added as 1byte) */
                 gRFAL.nfcvData.nfcvOffset = 0;
-                ret = iso15693VCDCode(gRFAL.TxRx.ctx.txBuf, rfalConvBitsToBytes(gRFAL.TxRx.ctx.txBufLen), (((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL) != 0U)?false:true),(((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_NFCV_FLAG_MANUAL) != 0U)?false:true), (RFAL_MODE_POLL_PICOPASS == gRFAL.mode),
+                ret = rfalIso15693VCDCode(gRFAL.TxRx.ctx.txBuf, rfalConvBitsToBytes(gRFAL.TxRx.ctx.txBufLen), (((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL) != 0U)?false:true),(((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_NFCV_FLAG_MANUAL) != 0U)?false:true), (RFAL_MODE_POLL_PICOPASS == gRFAL.mode),
                           &gRFAL.fifo.bytesTotal, &gRFAL.nfcvData.nfcvOffset, gRFAL.nfcvData.codingBuffer, MIN( (uint16_t)ST25R3916_FIFO_DEPTH, (uint16_t)sizeof(gRFAL.nfcvData.codingBuffer) ), &gRFAL.fifo.bytesWritten);
 
                 if( (ret != ERR_NONE) && (ret != ERR_AGAIN) )
@@ -1974,6 +2032,25 @@ static void rfalTransceiveTx( void )
                 {
                     gRFAL.TxRx.status = ERR_LINK_LOSS;
                     gRFAL.TxRx.state  = RFAL_TXRX_STATE_TX_FAIL;
+                    break;
+                }
+            }
+            
+            gRFAL.TxRx.state = RFAL_TXRX_STATE_TX_TRANSMIT;
+            /* fall through */
+            
+        
+        /*******************************************************************************/
+        case RFAL_TXRX_STATE_TX_TRANSMIT:   /*  PRQA S 2003 # MISRA 16.3 - Intentional fall through */            
+
+            /*******************************************************************************/
+            /* Execute Sync Transceive Callback                                             */
+            /*******************************************************************************/
+            if( gRFAL.callbacks.syncTxRx != NULL )
+            {
+                /* If set, wait for sync callback to signal sync/trigger transmission */
+                if( !gRFAL.callbacks.syncTxRx() )
+                {
                     break;
                 }
             }
@@ -2031,7 +2108,7 @@ static void rfalTransceiveTx( void )
                 tmp    = 0;
 
                 /* Calculate the bytes needed to be Written into FIFO (a incomplete byte will be added as 1byte) */
-                ret = iso15693VCDCode(gRFAL.TxRx.ctx.txBuf, rfalConvBitsToBytes(gRFAL.TxRx.ctx.txBufLen), (((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL) != 0U)?false:true),(((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_NFCV_FLAG_MANUAL) != 0U)?false:true), (RFAL_MODE_POLL_PICOPASS == gRFAL.mode),
+                ret = rfalIso15693VCDCode(gRFAL.TxRx.ctx.txBuf, rfalConvBitsToBytes(gRFAL.TxRx.ctx.txBufLen), (((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_CRC_TX_MANUAL) != 0U)?false:true),(((gRFAL.nfcvData.origCtx.flags & (uint32_t)RFAL_TXRX_FLAGS_NFCV_FLAG_MANUAL) != 0U)?false:true), (RFAL_MODE_POLL_PICOPASS == gRFAL.mode),
                           &gRFAL.fifo.bytesTotal, &gRFAL.nfcvData.nfcvOffset, gRFAL.nfcvData.codingBuffer, maxLen, &tmp);
 
                 if( (ret != ERR_NONE) && (ret != ERR_AGAIN) )
@@ -2149,8 +2226,11 @@ static void rfalTransceiveRx( void )
     irqs = ST25R3916_IRQ_MASK_NONE;
     
     if( gRFAL.TxRx.state != gRFAL.TxRx.lastState )
-    {        
-        /* rfalLogD( "RFAL: lastSt: %d curSt: %d \r\n", gRFAL.TxRx.lastState, gRFAL.TxRx.state ); */
+    {
+        #if 0 /* Debug purposes */
+            rfalLogD( "RFAL: lastSt: %d curSt: %d \r\n", gRFAL.TxRx.lastState, gRFAL.TxRx.state );
+        #endif
+
         gRFAL.TxRx.lastState = gRFAL.TxRx.state;
     }
     
@@ -2166,6 +2246,11 @@ static void rfalTransceiveRx( void )
             {
                 *gRFAL.TxRx.ctx.rxRcvdLen = 0;
             }
+            
+            /*******************************************************************************/
+            /* REMARK: Silicon workaround ST25R3916 Errata #2.1.3                          */
+            rfalTimerStart( gRFAL.tmr.PPON2, 10U );
+            /*******************************************************************************/
            
             gRFAL.TxRx.state = ( rfalIsModeActiveComm( gRFAL.mode ) ? RFAL_TXRX_STATE_RX_WAIT_EON : RFAL_TXRX_STATE_RX_WAIT_RXS );
             break;
@@ -2201,7 +2286,7 @@ static void rfalTransceiveRx( void )
             if( (irqs & ST25R3916_IRQ_MASK_RXS) != 0U )
             {
                 /*******************************************************************************/
-                /* REMARK: Silicon workaround ST25R3916 Errata #TBD                            */
+                /* REMARK: Silicon workaround ST25R3916 Errata #2.1.2                          */
                 /* Rarely on corrupted frames I_rxs gets signaled but I_rxe is not signaled    */
                 /* Use a SW timer to handle an eventual missing RXE                            */
                 rfalTimerStart( gRFAL.tmr.RXE, RFAL_NORXE_TOUT );
@@ -2227,7 +2312,7 @@ static void rfalTransceiveRx( void )
             
         
             /*******************************************************************************/
-            /* REMARK: Silicon workaround ST25R3916 Errata #TBD                            */
+            /* REMARK: Silicon workaround ST25R3916 Errata #2.1.2                          */
             /* ST25R396 may indicate RXS without RXE afterwards, this happens rarely on    */
             /* corrupted frames.                                                           */
             /* SW timer is used to timeout upon a missing RXE                              */
@@ -2310,7 +2395,8 @@ static void rfalTransceiveRx( void )
                 break;
             }
             /* Discard Soft Framing errors in AP2P and CE */
-            else if( rfalIsModePassivePoll( gRFAL.mode ) && ((irqs & ST25R3916_IRQ_MASK_ERR2) != 0U) )
+            /* Discard Soft Framing errors in CTS as Correlator does not support no_eof */
+            else if( rfalIsModePassivePoll( gRFAL.mode ) && ((irqs & ST25R3916_IRQ_MASK_ERR2) != 0U) && (gRFAL.mode != RFAL_MODE_POLL_B_CTS) )
             {
                 gRFAL.TxRx.status = ERR_FRAMING;
                 gRFAL.TxRx.state  = RFAL_TXRX_STATE_RX_READ_DATA;
@@ -2449,7 +2535,7 @@ static void rfalTransceiveRx( void )
                 ReturnCode ret;
                 uint16_t offset = 0; /* REMARK offset not currently used */
 
-                ret = iso15693VICCDecode(gRFAL.TxRx.ctx.rxBuf, gRFAL.fifo.bytesTotal,
+                ret = rfalIso15693VICCDecode(gRFAL.TxRx.ctx.rxBuf, gRFAL.fifo.bytesTotal,
                         gRFAL.nfcvData.origCtx.rxBuf, rfalConvBitsToBytes(gRFAL.nfcvData.origCtx.rxBufLen), &offset, gRFAL.nfcvData.origCtx.rxRcvdLen, gRFAL.nfcvData.ignoreBits, (RFAL_MODE_POLL_PICOPASS == gRFAL.mode));
                 
                 if( ((ERR_NONE == ret) || (ERR_CRC == ret))
@@ -2472,17 +2558,18 @@ static void rfalTransceiveRx( void )
             }
         #endif /* RFAL_FEATURE_NFCV */
             
+            
+            if( rfalIsModeActiveComm( gRFAL.mode ) )
+            {
+                gRFAL.TxRx.state = RFAL_TXRX_STATE_RX_WAIT_EOF;
+                break;
+            }
+            
             /*******************************************************************************/
             /* If an error as been marked/detected don't fall into to RX_DONE  */
             if( gRFAL.TxRx.status != ERR_BUSY )
             {
                 gRFAL.TxRx.state = RFAL_TXRX_STATE_RX_FAIL;
-                break;
-            }
-            
-            if( rfalIsModeActiveComm( gRFAL.mode ) )
-            {
-                gRFAL.TxRx.state = RFAL_TXRX_STATE_RX_WAIT_EOF;
                 break;
             }
             
@@ -2509,7 +2596,7 @@ static void rfalTransceiveRx( void )
         case RFAL_TXRX_STATE_RX_READ_FIFO:
             
             /*******************************************************************************/
-            /* REMARK: Silicon workaround ST25R3916 Errata #TBD                            */
+            /* REMARK: Silicon workaround ST25R3916 Errata #2.1.2                          */
             /* Rarely on corrupted frames I_rxs gets signaled but I_rxe is not signaled    */
             /* Use a SW timer to handle an eventual missing RXE                            */
             rfalTimerStart( gRFAL.tmr.RXE, RFAL_NORXE_TOUT );
@@ -2554,8 +2641,11 @@ static void rfalTransceiveRx( void )
             {                
                 gRFAL.TxRx.status = ERR_SYSTEM;
             }
-             
-            /*rfalLogD( "RFAL: curSt: %d  Error: %d \r\n", gRFAL.TxRx.state, gRFAL.TxRx.status );*/
+
+            #if 0 /* Debug purposes */ 
+                rfalLogD( "RFAL: curSt: %d  Error: %d \r\n", gRFAL.TxRx.state, gRFAL.TxRx.status );
+            #endif
+
             gRFAL.TxRx.state = RFAL_TXRX_STATE_IDLE;
             break;
         
@@ -2563,6 +2653,17 @@ static void rfalTransceiveRx( void )
         /*******************************************************************************/    
         case RFAL_TXRX_STATE_RX_WAIT_EON:
             
+        
+            /*******************************************************************************/
+            /* REMARK: Silicon workaround ST25R3916 Errata #2.1.3                          */
+            if( rfalTimerisExpired( gRFAL.tmr.PPON2 ) )
+            {
+                gRFAL.TxRx.status = ERR_LINK_LOSS;
+                gRFAL.TxRx.state  = RFAL_TXRX_STATE_RX_FAIL;
+            }
+            /*******************************************************************************/
+        
+        
             irqs = st25r3916GetInterrupt( (ST25R3916_IRQ_MASK_EON | ST25R3916_IRQ_MASK_NRE | ST25R3916_IRQ_MASK_PPON2) );
             if( irqs == ST25R3916_IRQ_MASK_NONE )
             {    
@@ -2598,7 +2699,8 @@ static void rfalTransceiveRx( void )
             
             if( (irqs & ST25R3916_IRQ_MASK_CAT) != 0U )
             {
-               gRFAL.TxRx.state = RFAL_TXRX_STATE_RX_DONE;
+                /* Check if an error has been marked/detected before */
+                gRFAL.TxRx.state = (( gRFAL.TxRx.status != ERR_BUSY ) ? RFAL_TXRX_STATE_RX_FAIL : RFAL_TXRX_STATE_RX_DONE);
             }
             else if( (irqs & ST25R3916_IRQ_MASK_CAC) != 0U )
             {
@@ -2751,7 +2853,7 @@ ReturnCode rfalISO14443ATransceiveShortFrame( rfal14443AShortFrameCmd txCmd, uin
     if( gRFAL.timings.FDTPoll != RFAL_TIMING_NONE )
     {
         /* Configure GPT to start at RX end */
-        st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( MIN( gRFAL.timings.FDTPoll, (gRFAL.timings.FDTPoll - RFAL_FDT_POLL_ADJUSTMENT) ) ) , ST25R3916_REG_TIMER_EMV_CONTROL_gptc_erx );
+        st25r3916SetStartGPTimer( (uint16_t)rfalConv1fcTo8fc( ((gRFAL.timings.FDTPoll < RFAL_FDT_POLL_ADJUSTMENT) ? gRFAL.timings.FDTPoll : (gRFAL.timings.FDTPoll - RFAL_FDT_POLL_ADJUSTMENT)) ) , ST25R3916_REG_TIMER_EMV_CONTROL_gptc_erx );
     }
     
     /*******************************************************************************/
@@ -3008,17 +3110,25 @@ ReturnCode rfalISO15693TransceiveEOF( uint8_t *rxBuf, uint8_t rxBufLen, uint16_t
 
 #if RFAL_FEATURE_NFCF
 
+
 /*******************************************************************************/
 ReturnCode rfalFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t reqCode, rfalFeliCaPollRes* pollResList, uint8_t pollResListSize, uint8_t *devicesDetected, uint8_t *collisionsDetected )
 {
+    ReturnCode ret;
+
+    EXIT_ON_ERR( ret, rfalStartFeliCaPoll( slots, sysCode, reqCode, pollResList, pollResListSize, devicesDetected, collisionsDetected ) );
+    rfalRunBlocking( ret, rfalGetFeliCaPollStatus() );
+    
+    return ret;
+}
+
+
+/*******************************************************************************/
+ReturnCode rfalStartFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t reqCode, rfalFeliCaPollRes* pollResList, uint8_t pollResListSize, uint8_t *devicesDetected, uint8_t *collisionsDetected )
+{
     ReturnCode        ret;
     uint8_t           frame[RFAL_FELICA_POLL_REQ_LEN - RFAL_FELICA_LEN_LEN];  // LEN is added by ST25R391x automatically
-    uint16_t          actLen;
     uint8_t           frameIdx;
-    uint8_t           devDetected;
-    uint8_t           colDetected;
-    rfalEHandling     curHandling;
-    uint8_t           nbSlots;
     
     /* Check if RFAL is properly initialized */
     if( (gRFAL.state < RFAL_STATE_MODE_SET) || ( gRFAL.mode != RFAL_MODE_POLL_NFCF ) )
@@ -3026,10 +3136,9 @@ ReturnCode rfalFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t 
         return ERR_WRONG_STATE;
     }
     
-    frameIdx    = 0;
-    colDetected = 0;
-    devDetected = 0;
-    nbSlots     = (uint8_t)slots;
+    frameIdx                   = 0;
+    gRFAL.nfcfData.colDetected = 0;
+    gRFAL.nfcfData.devDetected = 0;
     
     /*******************************************************************************/
     /* Compute SENSF_REQ frame */
@@ -3037,100 +3146,116 @@ ReturnCode rfalFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t 
     frame[frameIdx++] = (uint8_t)(sysCode >> 8);     /* System Code (SC)                    */
     frame[frameIdx++] = (uint8_t)(sysCode & 0xFFU);  /* System Code (SC)                    */
     frame[frameIdx++] = reqCode;                     /* Communication Parameter Request (RC)*/
-    frame[frameIdx++] = nbSlots;                     /* TimeSlot (TSN)                      */
+    frame[frameIdx++] = (uint8_t)slots;              /* TimeSlot (TSN)                      */
     
     
     /*******************************************************************************/
-    /* NRT should not stop on reception - Use EMVCo mode to run NRT in nrt_emv     *
-     * ERRORHANDLING_EMVCO has no special handling for NFC-F mode                  */
-    curHandling = gRFAL.conf.eHandling;
-    rfalSetErrorHandling( RFAL_ERRORHANDLING_EMVCO );
+    /* NRT should not stop on reception - Fake EMD which uses NRT in nrt_emv       *
+     * RFAL_ERRORHANDLING_EMD has no special handling for NFC-F mode               */
+    gRFAL.nfcfData.curHandling = gRFAL.conf.eHandling;
+    gRFAL.conf.eHandling       = RFAL_ERRORHANDLING_EMD;
     
     /*******************************************************************************/
     /* Run transceive blocking, 
      * Calculate Total Response Time in(64/fc): 
      *                       512 PICC process time + (n * 256 Time Slot duration)  */       
-    ret = rfalTransceiveBlockingTx( frame, 
+    EXIT_ON_ERR( ret, rfalTransceiveBlockingTx( frame, 
                                     (uint16_t)frameIdx, 
                                     (uint8_t*)gRFAL.nfcfData.pollResponses,
                                     RFAL_FELICA_POLL_RES_LEN, 
-                                    &actLen,
+                                    &gRFAL.nfcfData.actLen,
                                     (RFAL_TXRX_FLAGS_DEFAULT),
-                                    rfalConv64fcTo1fc( RFAL_FELICA_POLL_DELAY_TIME + (RFAL_FELICA_POLL_SLOT_TIME * ((uint32_t)nbSlots + 1U)) ) );
-    
-    /*******************************************************************************/
-    /* If Tx OK, Wait for all responses, store them as soon as they appear         */
-    if( ret == ERR_NONE )
-    {
-        bool timeout;
+                                    rfalConv64fcTo1fc( RFAL_FELICA_POLL_DELAY_TIME + (RFAL_FELICA_POLL_SLOT_TIME * ((uint32_t)slots + 1U)) ) ) );
+                                    
+   /* Store context */
+   gRFAL.nfcfData.pollResList        = pollResList;
+   gRFAL.nfcfData.pollResListSize    = pollResListSize;
+   gRFAL.nfcfData.devicesDetected    = devicesDetected;
+   gRFAL.nfcfData.collisionsDetected = collisionsDetected;
+   
+   return ERR_NONE;
+}
 
-        do 
-        {
-            ret = rfalTransceiveBlockingRx();
-            if( ret == ERR_TIMEOUT )
-            {
-                /* Upon timeout the full Poll Delay + (Slot time)*(nbSlots) has expired */
-                timeout = true;
-            }
-            else
-            {
-                /* Reception done, reEnabled Rx for following Slot */
-                st25r3916ExecuteCommand( ST25R3916_CMD_UNMASK_RECEIVE_DATA );
-                st25r3916ExecuteCommand( ST25R3916_CMD_RESET_RXGAIN );
-                
-                /* If the reception was OK, new device found */
-                if( ret == ERR_NONE )
-                {
-                   devDetected++;
-                   
-                   /* Overwrite the Transceive context for the next reception */
-                   gRFAL.TxRx.ctx.rxBuf = (uint8_t*)gRFAL.nfcfData.pollResponses[devDetected];
-                }
-                /* If the reception was not OK, mark as collision */
-                else
-                {
-                    colDetected++;
-                }
-                
-                /* Check whether NRT has expired meanwhile  */
-                timeout = st25r3916CheckReg( ST25R3916_REG_NFCIP1_BIT_RATE, ST25R3916_REG_NFCIP1_BIT_RATE_nrt_on, 0x00 );
-                if( !timeout )
-                {
-                    /* Jump again into transceive Rx state for the following reception */
-                    gRFAL.TxRx.status = ERR_BUSY;
-                    gRFAL.state       = RFAL_STATE_TXRX;
-                    gRFAL.TxRx.state  = RFAL_TXRX_STATE_RX_IDLE;
-                }
-            }
-        }while( ((nbSlots--) != 0U) && !timeout );
+
+/*******************************************************************************/
+ReturnCode rfalGetFeliCaPollStatus( void )
+{
+    ReturnCode ret;
+    
+    /* Check if RFAL is properly initialized */
+    if( (gRFAL.state != RFAL_STATE_TXRX) || ( gRFAL.mode != RFAL_MODE_POLL_NFCF ) )
+    {
+        return ERR_WRONG_STATE;
     }
     
+    ret = rfalGetTransceiveStatus();
+    
+    /* Wait until transceive has terminated */
+    if( ret == ERR_BUSY )
+    {
+        return ret;
+    }
+    
+    /* Upon timeout the full Poll Delay + (Slot time)*(nbSlots) has expired */
+    if( ret != ERR_TIMEOUT )  
+    {
+        /* Reception done, reEnabled Rx for following Slot */
+        st25r3916ExecuteCommand( ST25R3916_CMD_UNMASK_RECEIVE_DATA );
+        st25r3916ExecuteCommand( ST25R3916_CMD_RESET_RXGAIN );
+        
+        /* If the reception was OK, new device found */
+        if( ret == ERR_NONE )
+        {
+           gRFAL.nfcfData.devDetected++;
+           
+           /* Overwrite the Transceive context for the next reception */
+           gRFAL.TxRx.ctx.rxBuf = (uint8_t*)gRFAL.nfcfData.pollResponses[gRFAL.nfcfData.devDetected];
+        }
+        /* If the reception was not OK, mark as collision */
+        else
+        {
+            gRFAL.nfcfData.colDetected++;
+        }
+        
+        /* Check whether that NRT has not expired meanwhile */
+        if( st25r3916CheckReg( ST25R3916_REG_NFCIP1_BIT_RATE, ST25R3916_REG_NFCIP1_BIT_RATE_nrt_on, ST25R3916_REG_NFCIP1_BIT_RATE_nrt_on ) )
+        {
+            /* Jump again into transceive Rx state for the following reception */
+            gRFAL.TxRx.status = ERR_BUSY;
+            gRFAL.state       = RFAL_STATE_TXRX;
+            gRFAL.TxRx.state  = RFAL_TXRX_STATE_RX_IDLE;
+            return ERR_BUSY;
+        }
+    }
+
+    
     /*******************************************************************************/
-    /* Restore NRT to normal mode - back to previous error handling */
-    rfalSetErrorHandling( curHandling );
+    /* Back to previous error handling (restore NRT to normal mode)                */
+    gRFAL.conf.eHandling = gRFAL.nfcfData.curHandling;
     
     /*******************************************************************************/
     /* Assign output parameters if requested                                       */
-    
-    if( (pollResList != NULL) && (pollResListSize > 0U) && (devDetected > 0U) )
+    if( (gRFAL.nfcfData.pollResList != NULL) && (gRFAL.nfcfData.pollResListSize > 0U) && (gRFAL.nfcfData.devDetected > 0U) )
     {
-        ST_MEMCPY( pollResList, gRFAL.nfcfData.pollResponses, (RFAL_FELICA_POLL_RES_LEN * (uint32_t)MIN(pollResListSize, devDetected) ) );
+        ST_MEMCPY( gRFAL.nfcfData.pollResList, gRFAL.nfcfData.pollResponses, (RFAL_FELICA_POLL_RES_LEN * (uint32_t)MIN(gRFAL.nfcfData.pollResListSize, gRFAL.nfcfData.devDetected) ) );
     }
     
-    if( devicesDetected != NULL )
+    if( gRFAL.nfcfData.devicesDetected != NULL )
     {
-        *devicesDetected = devDetected;
+        *gRFAL.nfcfData.devicesDetected = gRFAL.nfcfData.devDetected;
     }
     
-    if( collisionsDetected != NULL )
+    if( gRFAL.nfcfData.collisionsDetected != NULL )
     {
-        *collisionsDetected = colDetected;
+        *gRFAL.nfcfData.collisionsDetected = gRFAL.nfcfData.colDetected;
     }
     
-    return (( (colDetected != 0U) || (devDetected != 0U)) ? ERR_NONE : ret);
+    return (( (gRFAL.nfcfData.colDetected != 0U) || (gRFAL.nfcfData.devDetected != 0U)) ? ERR_NONE : ret);
 }
 
 #endif /* RFAL_FEATURE_NFCF */
+
+
 
 
 /*****************************************************************************
@@ -3322,7 +3447,7 @@ ReturnCode rfalListenStart( uint32_t lmMask, const rfalLmConfPA *confA, const rf
     {
         gRFAL.state     = RFAL_STATE_LM;
         gRFAL.Lm.mdMask = lmMask;
-
+        
         gRFAL.Lm.rxBuf    = rxBuf;
         gRFAL.Lm.rxBufLen = rxBufLen;
         gRFAL.Lm.rxLen    = rxLen;
@@ -3348,7 +3473,7 @@ ReturnCode rfalListenStart( uint32_t lmMask, const rfalLmConfPA *confA, const rf
         
         /* Set Analog configurations for generic Listen mode */
         /* Not on SetState(POWER OFF) as otherwise would be applied on every Field Event */
-        rfalSetAnalogConfig( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_LISTEN_ON) );        
+        rfalSetAnalogConfig( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_LISTEN_ON) );
         
         /* Initialize as POWER_OFF and set proper mode in RF Chip */
         rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
@@ -3420,7 +3545,13 @@ static ReturnCode rfalRunListenModeWorker( void )
                 gRFAL.Lm.brDetected = (rfalBitRate)(newBr); /* PRQA S 4342 # MISRA 10.5 - Guaranteed that no invalid enum values may be created. See also equalityGuard_RFAL_BR_106 ff.*/
             }
             
-            if( ((irqs & ST25R3916_IRQ_MASK_WU_F) != 0U) && (gRFAL.Lm.brDetected != RFAL_BR_KEEP) )
+            
+            /* If EOF has already been received processing of other events is neglectable */
+            if( ((irqs & ST25R3916_IRQ_MASK_EOF) != 0U) && (!gRFAL.Lm.dataFlag) )
+            {
+                rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
+            }
+            else if( ((irqs & ST25R3916_IRQ_MASK_WU_F) != 0U) && (gRFAL.Lm.brDetected != RFAL_BR_KEEP) )
             {
                 rfalListenSetState( RFAL_LM_STATE_READY_F );
             }
@@ -3436,6 +3567,17 @@ static ReturnCode rfalRunListenModeWorker( void )
                     break; /* A bad reception occurred, remain in same state */
                 }
                 
+                /*******************************************************************************/
+                /* REMARK: Silicon workaround ST25R3916 Errata #TBD                            */
+                /* In bitrate detection mode the automatic RF Collision Avoidance              */
+                /* may not be able to emit RF carrier depending on the pt_res setting          */
+                /* Preemptively enter AP2P before FIFO retrieval and protocol checking         */
+                if( (gRFAL.Lm.mdMask & RFAL_LM_MASK_ACTIVE_P2P) != 0U )
+                {
+                    st25r3916WriteRegister( ST25R3916_REG_MODE, (ST25R3916_REG_MODE_targ_targ | ST25R3916_REG_MODE_om_targ_nfcip | ST25R3916_REG_MODE_nfc_ar_eof) );
+                }
+                /*******************************************************************************/
+                
                 /* Retrieve received data */
                 *gRFAL.Lm.rxLen = st25r3916GetNumFIFOBytes();
                 st25r3916ReadFifo( gRFAL.Lm.rxBuf, MIN( *gRFAL.Lm.rxLen, rfalConvBitsToBytes(gRFAL.Lm.rxBufLen) ) );
@@ -3443,7 +3585,7 @@ static ReturnCode rfalRunListenModeWorker( void )
                 
                 /*******************************************************************************/
                 /* REMARK: Silicon workaround ST25R3916 Errata #TBD                            */
-                /* In bitrate detection mode CRC is now checked for NFC-A frames               */
+                /* In bitrate detection mode CRC is not checked for NFC-A frames               */
                 if( (*gRFAL.Lm.rxLen > RFAL_CRC_LEN) && (gRFAL.Lm.brDetected == RFAL_BR_106) )
                 {
                     if( rfalCrcCalculateCcitt( RFAL_ISO14443A_CRC_INTVAL, gRFAL.Lm.rxBuf, *gRFAL.Lm.rxLen ) != 0U )
@@ -3475,10 +3617,6 @@ static ReturnCode rfalRunListenModeWorker( void )
                     }
                 }
             }
-            else if( ((irqs & ST25R3916_IRQ_MASK_EOF) != 0U) && (!gRFAL.Lm.dataFlag) )
-            {
-                rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
-            }
             else
             {
                 /* MISRA 15.7 - Empty else */
@@ -3494,9 +3632,10 @@ static ReturnCode rfalRunListenModeWorker( void )
                     break;  /* No interrupt to process */
                 }
 
-                if( (irqs & ST25R3916_IRQ_MASK_WU_F) != 0U )
+                /* If EOF has already been received processing of other events is neglectable */
+                if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
                 {
-                    break;
+                    rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
                 }
                 else if( (irqs & ST25R3916_IRQ_MASK_RXE) != 0U )
                 {
@@ -3519,9 +3658,9 @@ static ReturnCode rfalRunListenModeWorker( void )
                     *gRFAL.Lm.rxLen  = (uint16_t)rfalConvBytesToBits( *gRFAL.Lm.rxLen );
                     gRFAL.Lm.dataFlag = true;
                 }
-                else if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
+                else if( (irqs & ST25R3916_IRQ_MASK_WU_F) != 0U )
                 {
-                    rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
+                    break;          /* Remain in same state */
                 }
                 else
                 {
@@ -3538,13 +3677,14 @@ static ReturnCode rfalRunListenModeWorker( void )
                     break;  /* No interrupt to process */
                 }
                 
-                if( (irqs & ST25R3916_IRQ_MASK_WU_A) != 0U )
-                {                    
-                    rfalListenSetState( RFAL_LM_STATE_ACTIVE_A );
-                }
-                else if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
+                /* If EOF has already been received processing of other events is neglectable */
+                if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
                 {
                     rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
+                }
+                else if( (irqs & ST25R3916_IRQ_MASK_WU_A) != 0U )
+                {                    
+                    rfalListenSetState( RFAL_LM_STATE_ACTIVE_A );
                 }
                 else
                 {
@@ -3562,7 +3702,12 @@ static ReturnCode rfalRunListenModeWorker( void )
                     break;  /* No interrupt to process */
                 }
 
-                if( (irqs & ST25R3916_IRQ_MASK_RXE) != 0U )
+                /* If EOF has already been received processing of other events is neglectable */
+                if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
+                {
+                    rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
+                }
+                else if( (irqs & ST25R3916_IRQ_MASK_RXE) != 0U )
                 {
                     /* Retrieve the error flags/irqs */
                     irqs |= st25r3916GetInterrupt( (ST25R3916_IRQ_MASK_PAR | ST25R3916_IRQ_MASK_CRC | ST25R3916_IRQ_MASK_ERR2 | ST25R3916_IRQ_MASK_ERR1) );
@@ -3598,10 +3743,6 @@ static ReturnCode rfalRunListenModeWorker( void )
                     *gRFAL.Lm.rxLen   = (uint16_t)rfalConvBytesToBits( *gRFAL.Lm.rxLen );
                     gRFAL.Lm.dataFlag = true;
                 }
-                else if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
-                {
-                    rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
-                }
                 else
                 {
                     /* MISRA 15.7 - Empty else */
@@ -3635,7 +3776,12 @@ static ReturnCode rfalRunListenModeWorker( void )
                     gRFAL.Lm.brDetected = (rfalBitRate)(newBr); /* PRQA S 4342 # MISRA 10.5 - Guaranteed that no invalid enum values may be created. See also equalityGuard_RFAL_BR_106 ff.*/
                 }
                 
-                if( ((irqs & ST25R3916_IRQ_MASK_WU_F) != 0U) && (gRFAL.Lm.brDetected != RFAL_BR_KEEP) )
+                /* If EOF has already been received processing of other events is neglectable */
+                if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
+                {
+                    rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
+                }
+                else if( ((irqs & ST25R3916_IRQ_MASK_WU_F) != 0U) && (gRFAL.Lm.brDetected != RFAL_BR_KEEP) )
                 {
                     rfalListenSetState( RFAL_LM_STATE_READY_F );
                 }
@@ -3659,10 +3805,6 @@ static ReturnCode rfalRunListenModeWorker( void )
                         }
                     }
                 }
-                else if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
-                {
-                    rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
-                }
                 else
                 {
                     /* MISRA 15.7 - Empty else */
@@ -3678,13 +3820,14 @@ static ReturnCode rfalRunListenModeWorker( void )
                     break;  /* No interrupt to process */
                 }
                 
-                if( (irqs & ST25R3916_IRQ_MASK_WU_A_X) != 0U )
-                {                    
-                    rfalListenSetState( RFAL_LM_STATE_ACTIVE_Ax );
-                }
-                else if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
+                /* If EOF has already been received processing of other events is neglectable */
+                if( (irqs & ST25R3916_IRQ_MASK_EOF) != 0U )
                 {
                     rfalListenSetState( RFAL_LM_STATE_POWER_OFF );
+                }
+                else if( (irqs & ST25R3916_IRQ_MASK_WU_A_X) != 0U )
+                {                    
+                    rfalListenSetState( RFAL_LM_STATE_ACTIVE_Ax );
                 }
                 else
                 {
@@ -3736,7 +3879,7 @@ ReturnCode rfalListenStop( void )
     st25r3916WriteRegister( ST25R3916_REG_MODE, (ST25R3916_REG_MODE_om_iso14443a | ST25R3916_REG_MODE_tr_am_ook | ST25R3916_REG_MODE_nfc_ar_off) );
     
     st25r3916DisableInterrupts( (ST25R3916_IRQ_MASK_RXE_PTA | ST25R3916_IRQ_MASK_WU_F | ST25R3916_IRQ_MASK_WU_A | ST25R3916_IRQ_MASK_WU_A_X | ST25R3916_IRQ_MASK_RFU2 | ST25R3916_IRQ_MASK_OSC ) );
-    st25r3916GetInterrupt( (ST25R3916_IRQ_MASK_RXE_PTA | ST25R3916_IRQ_MASK_WU_F | ST25R3916_IRQ_MASK_WU_A | ST25R3916_IRQ_MASK_WU_A_X | ST25R3916_IRQ_MASK_RFU2 ) );
+    st25r3916GetInterrupt( ( ST25R3916_IRQ_MASK_RXE_PTA | ST25R3916_IRQ_MASK_WU_F | ST25R3916_IRQ_MASK_WU_A | ST25R3916_IRQ_MASK_WU_A_X | ST25R3916_IRQ_MASK_RFU2 | ST25R3916_IRQ_MASK_TXE ) );
     
     /* Set Analog configurations for Listen Off event */
     rfalSetAnalogConfig( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_LISTEN_OFF) );
@@ -3812,13 +3955,17 @@ ReturnCode rfalListenSleepStart( rfalLmState sleepSt, uint8_t *rxBuf, uint16_t r
     /* Check whether the field was turn off right after the Sleep request */
     if( !rfalIsExtFieldOn() )
     {
-        /*rfalLogD( "RFAL: curState: %02X newState: %02X \r\n", gRFAL.Lm.state, RFAL_LM_STATE_NOT_INIT );*/
+        #if 0 /* Debug purposes */
+            rfalLogD( "RFAL: curState: %02X newState: %02X \r\n", gRFAL.Lm.state, RFAL_LM_STATE_NOT_INIT );
+        #endif
         
         rfalListenStop();
         return ERR_LINK_LOSS;
     }
     
-    /*rfalLogD( "RFAL: curState: %02X newState: %02X \r\n", gRFAL.Lm.state, sleepSt );*/
+    #if 0 /* Debug purposes */
+        rfalLogD( "RFAL: curState: %02X newState: %02X \r\n", gRFAL.Lm.state, sleepSt );
+    #endif
 
     /* Set the new Sleep State*/
     gRFAL.Lm.state    = sleepSt;
@@ -4139,26 +4286,31 @@ ReturnCode rfalWakeUpModeStart( const rfalWakeUpConfig *config )
     }
     
     
-    /* The Wake-Up procedure is explained in detail in Application Note: AN4985 */
+    /* The Wake-Up procedure is explained in detail in Application Note: AN5320 */
     
     if( config == NULL )
     {
         gRFAL.wum.cfg.period           = RFAL_WUM_PERIOD_200MS;
         gRFAL.wum.cfg.irqTout          = false;
+        gRFAL.wum.cfg.swTagDetect      = false;
         gRFAL.wum.cfg.indAmp.enabled   = true;
         gRFAL.wum.cfg.indPha.enabled   = false;
         gRFAL.wum.cfg.cap.enabled      = false;
         gRFAL.wum.cfg.indAmp.delta     = 2U;
+        gRFAL.wum.cfg.indAmp.fracDelta = 0U;
         gRFAL.wum.cfg.indAmp.reference = RFAL_WUM_REFERENCE_AUTO;
         gRFAL.wum.cfg.indAmp.autoAvg   = false;
         
         /*******************************************************************************/
         /* Check if AAT is enabled and if so make use of the SW Tag Detection          */
-        if( st25r3916CheckReg( ST25R3916_REG_IO_CONF2, ST25R3916_REG_IO_CONF2_aat_en, ST25R3916_REG_IO_CONF2_aat_en ) )
+        if( st25r3916IsAATOn() )
         {
-            gRFAL.wum.cfg.swTagDetect     = true;
-            gRFAL.wum.cfg.indAmp.autoAvg  = true;
-            gRFAL.wum.cfg.indAmp.aaWeight = RFAL_WUM_AA_WEIGHT_16;
+            /* Enable SW TD with delta of 1.5 and enable auto average */
+            gRFAL.wum.cfg.swTagDetect      = true;
+            gRFAL.wum.cfg.indAmp.delta     = 1U;
+            gRFAL.wum.cfg.indAmp.fracDelta = 2U;
+            gRFAL.wum.cfg.indAmp.autoAvg   = true;
+            gRFAL.wum.cfg.indAmp.aaWeight  = RFAL_WUM_AA_WEIGHT_16;
         }
     }
     else
@@ -4199,7 +4351,6 @@ ReturnCode rfalWakeUpModeStart( const rfalWakeUpConfig *config )
         irqs |= ST25R3916_IRQ_MASK_WT;
     }
        
-    
     /* Check if HW Wake-up is to be used or SW Tag detection */
     if( gRFAL.wum.cfg.swTagDetect )
     {
@@ -4289,7 +4440,7 @@ ReturnCode rfalWakeUpModeStart( const rfalWakeUpConfig *config )
             /* Only need to set the reference if not using Auto Average */
             if( !gRFAL.wum.cfg.cap.autoAvg || gRFAL.wum.cfg.swTagDetect )
             {
-                if( gRFAL.wum.cfg.indPha.reference == RFAL_WUM_REFERENCE_AUTO )
+                if( gRFAL.wum.cfg.cap.reference == RFAL_WUM_REFERENCE_AUTO )
                 {
                     st25r3916MeasureCapacitance( &aux );
                     gRFAL.wum.cfg.cap.reference = aux;
@@ -4328,6 +4479,113 @@ ReturnCode rfalWakeUpModeStart( const rfalWakeUpConfig *config )
 bool rfalWakeUpModeHasWoke( void )
 {   
     return (gRFAL.wum.state >= RFAL_WUM_STATE_ENABLED_WOKE);
+}
+
+
+/*******************************************************************************/
+ReturnCode rfalWakeUpModeGetInfo( bool force, rfalWakeUpInfo *info )
+{
+    uint8_t aux;
+    
+    /* Check if WU mode is running */
+    if( (gRFAL.state != RFAL_STATE_WUM) || (gRFAL.wum.state < RFAL_WUM_STATE_ENABLED) )
+    {
+        return ERR_WRONG_STATE;
+    }
+    
+    /* Check for valid parameters */
+    if( info == NULL )
+    {
+        return ERR_PARAM;
+    }
+    
+    /* Clear info structure */
+    ST_MEMSET( info, 0x00, sizeof(rfalWakeUpInfo) );
+    
+    /* Update general information */ 
+    info->irqWut          = gRFAL.wum.info.irqWut;
+    gRFAL.wum.info.irqWut = false;
+
+    /* WUT IRQ is signaled when WUT expires. Delay slightly for the actual measurement to be performed */
+    if ( info->irqWut && !gRFAL.wum.cfg.swTagDetect )
+    {
+        platformDelay( 1 );
+    }
+    
+    if( gRFAL.wum.cfg.indAmp.enabled )
+    {
+        /* Update measure and reference from current info */
+        info->indAmp.reference = gRFAL.wum.cfg.indAmp.reference;
+        info->indAmp.lastMeas  = gRFAL.wum.info.indAmp.lastMeas; /* For the case of swTagDetect==1 */
+
+        /* Only retrieve the reference from the device if needed */
+        if( (force || info->irqWut || gRFAL.wum.info.indAmp.irqWu) && !gRFAL.wum.cfg.swTagDetect )
+        {
+            if( gRFAL.wum.cfg.indAmp.autoAvg )
+            {
+                st25r3916ReadRegister( ST25R3916_REG_AMPLITUDE_MEASURE_AA_RESULT, &aux );
+                info->indAmp.reference = aux;
+                gRFAL.wum.cfg.indAmp.reference = aux; /* Store last value for subsequenct calls */
+            }
+            st25r3916ReadRegister( ST25R3916_REG_AMPLITUDE_MEASURE_RESULT, &info->indAmp.lastMeas );
+            gRFAL.wum.info.indAmp.lastMeas = info->indAmp.lastMeas; /* Store last value for subsequenct calls */
+        }
+        
+        /* Update IRQ information and clear flag upon retrieving */
+        info->indAmp.irqWu          = gRFAL.wum.info.indAmp.irqWu;
+        gRFAL.wum.info.indAmp.irqWu = false;
+    }
+    
+    if( gRFAL.wum.cfg.indPha.enabled )
+    {
+        /* Update measure and reference from current info */
+        info->indPha.reference = gRFAL.wum.cfg.indPha.reference;
+        info->indPha.lastMeas  = gRFAL.wum.info.indPha.lastMeas; /* For the case of swTagDetect==1 */
+
+        /* Only retrieve the reference from the device if needed */
+        if( (force ||  info->irqWut || gRFAL.wum.info.indPha.irqWu) && !gRFAL.wum.cfg.swTagDetect)
+        {
+            if( gRFAL.wum.cfg.indPha.autoAvg )
+            {
+                st25r3916ReadRegister( ST25R3916_REG_PHASE_MEASURE_AA_RESULT, &aux );
+                info->indPha.reference = aux;
+                gRFAL.wum.cfg.indPha.reference = aux; /* Store last value for subsequenct calls */
+            }
+            st25r3916ReadRegister( ST25R3916_REG_PHASE_MEASURE_RESULT, &info->indPha.lastMeas );
+            gRFAL.wum.info.indPha.lastMeas = info->indPha.lastMeas; /* Store last value for subsequenct calls */
+        }
+        
+        /* Update IRQ information and clear flag upon retrieving */
+        info->indPha.irqWu          = gRFAL.wum.info.indPha.irqWu;
+        gRFAL.wum.info.indPha.irqWu = false;
+    }
+    
+    if( gRFAL.wum.cfg.cap.enabled )
+    {
+        /* Update measure and reference from current info */
+        info->cap.reference = gRFAL.wum.cfg.cap.reference;
+        info->cap.lastMeas  = gRFAL.wum.info.cap.lastMeas;
+
+        /* Retrieve the measurement from the device if needed */
+        if( force || info->irqWut || gRFAL.wum.info.cap.irqWu )
+        {
+            /* Only retrieve the reference from the device if needed */
+            if( gRFAL.wum.cfg.cap.autoAvg )
+            {
+                st25r3916ReadRegister( ST25R3916_REG_CAPACITANCE_MEASURE_AA_RESULT, &aux );
+                info->cap.reference = aux;
+                gRFAL.wum.cfg.cap.reference = aux; /* Store last value for subsequenct calls */
+            }
+            st25r3916ReadRegister( ST25R3916_REG_CAPACITANCE_MEASURE_RESULT, &info->cap.lastMeas );
+            gRFAL.wum.info.cap.lastMeas = info->cap.lastMeas; /* Store last value for subsequenct calls */
+        }
+        
+        /* Update IRQ information and clear flag upon retrieving */
+        info->cap.irqWu          = gRFAL.wum.info.cap.irqWu;
+        gRFAL.wum.info.cap.irqWu = false;
+    }
+
+    return ERR_NONE;
 }
 
 
@@ -4374,6 +4632,7 @@ static void rfalRunWakeUpModeWorker( void )
     uint8_t  reg;
     uint16_t value;
     uint16_t delta;
+    bool     woke;
     
     if( gRFAL.state != RFAL_STATE_WUM )
     {
@@ -4395,27 +4654,31 @@ static void rfalRunWakeUpModeWorker( void )
             /* Check and mark which measurement(s) cause interrupt */
             if((irqs & ST25R3916_IRQ_MASK_WAM) != 0U)
             {
-                st25r3916ReadRegister( ST25R3916_REG_AMPLITUDE_MEASURE_RESULT, &reg );
+                gRFAL.wum.info.indAmp.irqWu = true;
                 gRFAL.wum.state = RFAL_WUM_STATE_ENABLED_WOKE;
             }
             
             if((irqs & ST25R3916_IRQ_MASK_WPH) != 0U)
             {
-                st25r3916ReadRegister( ST25R3916_REG_PHASE_MEASURE_RESULT, &reg );
+                gRFAL.wum.info.indPha.irqWu = true;
                 gRFAL.wum.state = RFAL_WUM_STATE_ENABLED_WOKE;
             }
             
             if((irqs & ST25R3916_IRQ_MASK_WCAP) != 0U)
             {
-                st25r3916ReadRegister( ST25R3916_REG_CAPACITANCE_MEASURE_RESULT, &reg );
-                gRFAL.wum.state = RFAL_WUM_STATE_ENABLED_WOKE;                
+                gRFAL.wum.info.cap.irqWu = true;
+                gRFAL.wum.state = RFAL_WUM_STATE_ENABLED_WOKE;
             }
             
             if((irqs & ST25R3916_IRQ_MASK_WT) != 0U)
             {
+                gRFAL.wum.info.irqWut = true;
+                
                 /*******************************************************************************/
                 if( gRFAL.wum.cfg.swTagDetect )
                 {
+                    woke = false;
+                    
                     /* Enable Ready mode and wait the settle time */
                     st25r3916ChangeRegisterBits( ST25R3916_REG_OP_CONTROL, (ST25R3916_REG_OP_CONTROL_en | ST25R3916_REG_OP_CONTROL_wu), ST25R3916_REG_OP_CONTROL_en );
                     platformDelay( RFAL_ST25R3916_AAT_SETTLE );
@@ -4427,9 +4690,13 @@ static void rfalRunWakeUpModeWorker( void )
                         /* Perform amplitude measurement */
                         st25r3916MeasureAmplitude( &reg );
                         
+                        /* Update last measurement info */
+                        gRFAL.wum.info.indAmp.lastMeas = reg;
+                        
                         /* Convert inputs to TD format */
                         value = rfalConvTDFormat( reg );
                         delta = rfalConvTDFormat( gRFAL.wum.cfg.indAmp.delta );
+                        delta |= rfalAddFracTDFormat( gRFAL.wum.cfg.indAmp.fracDelta );
                         
                         /* Set first measurement as reference */
                         if( gRFAL.wum.cfg.indAmp.reference == 0U )
@@ -4441,12 +4708,14 @@ static void rfalRunWakeUpModeWorker( void )
                         if( ( value >= (gRFAL.wum.cfg.indAmp.reference + delta) ) || 
                             ( value <= (gRFAL.wum.cfg.indAmp.reference - delta) )   )
                         {
+                            woke = true;
+                            gRFAL.wum.info.indAmp.irqWu = true;
                             gRFAL.wum.state = RFAL_WUM_STATE_ENABLED_WOKE;
-                            break;
+                            /* continue wake-up as for HW */
                         }
                         
                         /* Update moving reference if enabled */
-                        if( gRFAL.wum.cfg.indAmp.autoAvg )
+                        if( gRFAL.wum.cfg.indAmp.autoAvg && (gRFAL.wum.cfg.indAmp.aaInclMeas || !woke) )
                         {
                             gRFAL.wum.cfg.indAmp.reference = rfalWakeUpModeFilter( gRFAL.wum.cfg.indAmp.reference, value, (RFAL_WU_MIN_WEIGHT_VAL<<(uint8_t)gRFAL.wum.cfg.indAmp.aaWeight) );
                         }
@@ -4458,9 +4727,13 @@ static void rfalRunWakeUpModeWorker( void )
                         /* Perform Phase measurement */
                         st25r3916MeasurePhase( &reg );
                         
+                        /* Update last measurement info */
+                        gRFAL.wum.info.indPha.lastMeas = reg;
+                        
                         /* Convert inputs to TD format */
                         value = rfalConvTDFormat( reg );
                         delta = rfalConvTDFormat( gRFAL.wum.cfg.indPha.delta );
+                        delta |= rfalAddFracTDFormat( gRFAL.wum.cfg.indPha.fracDelta );
                         
                         /* Set first measurement as reference */
                         if( gRFAL.wum.cfg.indPha.reference == 0U )
@@ -4472,12 +4745,14 @@ static void rfalRunWakeUpModeWorker( void )
                         if( ( value >= (gRFAL.wum.cfg.indPha.reference + delta) ) || 
                             ( value <= (gRFAL.wum.cfg.indPha.reference - delta) )   )
                         {
+                            woke = true;
+                            gRFAL.wum.info.indPha.irqWu = true;
                             gRFAL.wum.state = RFAL_WUM_STATE_ENABLED_WOKE;
-                            break;
+                            /* continue wake-up as for HW */
                         }
                         
                         /* Update moving reference if enabled */
-                        if( gRFAL.wum.cfg.indPha.autoAvg )
+                        if( gRFAL.wum.cfg.indPha.autoAvg && (gRFAL.wum.cfg.indPha.aaInclMeas || !woke) )
                         {
                             gRFAL.wum.cfg.indPha.reference = rfalWakeUpModeFilter( gRFAL.wum.cfg.indPha.reference, value, (RFAL_WU_MIN_WEIGHT_VAL<<(uint8_t)gRFAL.wum.cfg.indPha.aaWeight) );
                         }

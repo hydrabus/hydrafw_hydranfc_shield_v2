@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 /*
  *      PROJECT:   ST25R391x firmware
@@ -130,7 +125,7 @@ ReturnCode rfalT1TPollerInitialize( void )
     ReturnCode ret;
     
     EXIT_ON_ERR(ret, rfalSetMode( RFAL_MODE_POLL_NFCA_T1T, RFAL_BR_106, RFAL_BR_106 ) );
-    rfalSetErrorHandling( RFAL_ERRORHANDLING_NFC );
+    rfalSetErrorHandling( RFAL_ERRORHANDLING_NONE );
     
     rfalSetGT( RFAL_GT_NONE );                          /* T1T should only be initialized after NFC-A mode, therefore the GT has been fulfilled */ 
     rfalSetFDTListen( RFAL_FDT_LISTEN_NFCA_POLLER );    /* T1T uses NFC-A FDT Listen with n=9   Digital 1.1  10.7.2                             */

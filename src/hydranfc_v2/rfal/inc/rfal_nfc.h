@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 
 /*
@@ -80,17 +75,18 @@
 ******************************************************************************
 */
 
-#define RFAL_NFC_TECH_NONE               0x0000U  /*!< No technology             */
-#define RFAL_NFC_POLL_TECH_A             0x0001U  /*!< NFC-A technology Flag     */
-#define RFAL_NFC_POLL_TECH_B             0x0002U  /*!< NFC-B technology Flag     */
-#define RFAL_NFC_POLL_TECH_F             0x0004U  /*!< NFC-F technology Flag     */
-#define RFAL_NFC_POLL_TECH_V             0x0008U  /*!< NFC-V technology Flag     */
-#define RFAL_NFC_POLL_TECH_AP2P          0x0010U  /*!< AP2P technology Flag      */
-#define RFAL_NFC_POLL_TECH_ST25TB        0x0020U  /*!< ST25TB technology Flag    */
-#define RFAL_NFC_LISTEN_TECH_A           0x1000U  /*!< NFC-V technology Flag     */
-#define RFAL_NFC_LISTEN_TECH_B           0x2000U  /*!< NFC-V technology Flag     */
-#define RFAL_NFC_LISTEN_TECH_F           0x4000U  /*!< NFC-V technology Flag     */
-#define RFAL_NFC_LISTEN_TECH_AP2P        0x8000U  /*!< NFC-V technology Flag     */
+#define RFAL_NFC_TECH_NONE               0x0000U  /*!< No technology              */
+#define RFAL_NFC_POLL_TECH_A             0x0001U  /*!< NFC-A technology Flag      */
+#define RFAL_NFC_POLL_TECH_B             0x0002U  /*!< NFC-B technology Flag      */
+#define RFAL_NFC_POLL_TECH_F             0x0004U  /*!< NFC-F technology Flag      */
+#define RFAL_NFC_POLL_TECH_V             0x0008U  /*!< NFC-V technology Flag      */
+#define RFAL_NFC_POLL_TECH_AP2P          0x0010U  /*!< AP2P technology Flag       */
+#define RFAL_NFC_POLL_TECH_ST25TB        0x0020U  /*!< ST25TB technology Flag     */
+#define RFAL_NFC_POLL_TECH_PROP          0x0040U  /*!< Proprietary technology Flag*/
+#define RFAL_NFC_LISTEN_TECH_A           0x1000U  /*!< NFC-V technology Flag      */
+#define RFAL_NFC_LISTEN_TECH_B           0x2000U  /*!< NFC-V technology Flag      */
+#define RFAL_NFC_LISTEN_TECH_F           0x4000U  /*!< NFC-V technology Flag      */
+#define RFAL_NFC_LISTEN_TECH_AP2P        0x8000U  /*!< NFC-V technology Flag      */
 
 
 /*
@@ -152,6 +148,7 @@ typedef enum{
     RFAL_NFC_LISTEN_TYPE_NFCV               =  3,   /*!< NFC-V Listener device type  */
     RFAL_NFC_LISTEN_TYPE_ST25TB             =  4,   /*!< ST25TB Listener device type */
     RFAL_NFC_LISTEN_TYPE_AP2P               =  5,   /*!< AP2P Listener device type   */
+    RFAL_NFC_LISTEN_TYPE_PROP               =  6,   /*!< Proprietary Listen dev type */
     RFAL_NFC_POLL_TYPE_NFCA                 =  10,  /*!< NFC-A Poller device type    */
     RFAL_NFC_POLL_TYPE_NFCB                 =  11,  /*!< NFC-B Poller device type    */
     RFAL_NFC_POLL_TYPE_NFCF                 =  12,  /*!< NFC-F Poller device type    */
@@ -190,29 +187,50 @@ typedef struct{
 }rfalNfcDevice;
 
 
-/*! Discovery parameters                                                                                           */
-typedef struct{
-    rfalComplianceMode compMode;                        /*!< Compliancy mode to be used                            */
-    uint16_t           techs2Find;                      /*!< Technologies to search for                            */
-    uint16_t           totalDuration;                   /*!< Duration of a whole Poll + Listen cycle               */
-    uint8_t            devLimit;                        /*!< Max number of devices                                 */
-    rfalBitRate        maxBR;                           /*!< Max Bit rate to be used for communications            */
-    
-    rfalBitRate        nfcfBR;                          /*!< Bit rate to poll for NFC-F                            */
-    uint8_t            nfcid3[RFAL_NFCDEP_NFCID3_LEN];  /*!< NFCID3 to be used on the ATR_REQ/ATR_RES              */
-    uint8_t            GB[RFAL_NFCDEP_GB_MAX_LEN];      /*!< General bytes to be used on the ATR-REQ               */
-    uint8_t            GBLen;                           /*!< Length of the General Bytes                           */
-    rfalBitRate        ap2pBR;                          /*!< Bit rate to poll for AP2P                             */
+/*! Callbacks for Proprietary|Other Technology      Activity 2.1   &   EMVCo 3.0  9.2 */
+typedef ReturnCode (* rfalNfcPropCallback)(void);
 
-    
-    rfalLmConfPA       lmConfigPA;                      /*!< Configuration for Passive Listen mode NFC-A           */
-    rfalLmConfPF       lmConfigPF;                      /*!< Configuration for Passive Listen mode NFC-A           */
-    
-    void               (*notifyCb)( rfalNfcState st );  /*!< Callback to Notify upper layer                        */
-                                                        
-    bool               wakeupEnabled;                   /*!< Enable Wake-Up mode before polling                    */
-    bool               wakeupConfigDefault;             /*!< Wake-Up mode default configuration                    */
-    rfalWakeUpConfig   wakeupConfig;                    /*!< Wake-Up mode configuration                            */
+
+/*! Struct that holds the Proprietary NFC callbacks                                                                                  */
+typedef struct{
+    rfalNfcPropCallback    rfalNfcpPollerInitialize;                    /*!< Prorietary NFC Initialization callback                  */
+    rfalNfcPropCallback    rfalNfcpPollerTechnologyDetection;           /*!< Prorietary NFC Technoly Detection callback              */
+    rfalNfcPropCallback    rfalNfcpPollerStartCollisionResolution;      /*!< Prorietary NFC Start Collision Resolution callback      */
+    rfalNfcPropCallback    rfalNfcpPollerGetCollisionResolutionStatus;  /*!< Prorietary NFC Get Collision Resolution status callback */
+    rfalNfcPropCallback    rfalNfcpStartActivation;                     /*!< Prorietary NFC Start Activation callback                */
+    rfalNfcPropCallback    rfalNfcpGetActivationStatus;                 /*!< Prorietary NFC Get Activation status callback           */
+} rfalNfcPropCallbacks;
+
+
+/*! Discovery parameters                                                                                                             */
+typedef struct{                                                                                             
+    rfalComplianceMode     compMode;                         /*!< Compliancy mode to be used                                         */
+    uint16_t               techs2Find;                       /*!< Technologies to search for                                         */
+    uint16_t               totalDuration;                    /*!< Duration of a whole Poll + Listen cycle        NCI 2.1 Table 46    */
+    uint8_t                devLimit;                         /*!< Max number of devices                      Activity 2.1  Table 11  */
+    rfalBitRate            maxBR;                            /*!< Max Bit rate to be used                        NCI 2.1  Table 28   */
+                                                                                                                   
+    rfalBitRate            nfcfBR;                           /*!< Bit rate to poll for NFC-F                     NCI 2.1  Table 27   */
+    uint8_t                nfcid3[RFAL_NFCDEP_NFCID3_LEN];   /*!< NFCID3 to be used on the ATR_REQ/ATR_RES                           */
+    uint8_t                GB[RFAL_NFCDEP_GB_MAX_LEN];       /*!< General bytes to be used on the ATR-REQ        NCI 2.1  Table 29   */
+    uint8_t                GBLen;                            /*!< Length of the General Bytes                    NCI 2.1  Table 29   */
+    rfalBitRate            ap2pBR;                           /*!< Bit rate to poll for AP2P                      NCI 2.1  Table 31   */
+    bool                   p2pNfcaPrio;                      /*!< NFC-A P2P (true) or ISO14443-4/T4T (false) priority                */
+    rfalNfcPropCallbacks   propNfc;                          /*!< Proprietary Technlogy callbacks                                    */
+                                                                                                                                    
+                                                                                                                                    
+    rfalIsoDepFSxI         isoDepFS;                         /*!< ISO-DEP Poller announced maximum frame size   Digital 2.2 Table 60 */
+    uint8_t                nfcDepLR;                         /*!< NFC-DEP Poller & Listener maximum frame size  Digital 2.2 Table 90 */
+                                                                                                                                    
+    rfalLmConfPA           lmConfigPA;                       /*!< Configuration for Passive Listen mode NFC-A                        */
+    rfalLmConfPF           lmConfigPF;                       /*!< Configuration for Passive Listen mode NFC-A                        */
+                                                                                                                                     
+    void                   (*notifyCb)( rfalNfcState st );   /*!< Callback to Notify upper layer                                     */
+                                                                                                                                     
+    bool                   wakeupEnabled;                    /*!< Enable Wake-Up mode before polling                                 */
+    bool                   wakeupConfigDefault;              /*!< Wake-Up mode default configuration                                 */
+    rfalWakeUpConfig       wakeupConfig;                     /*!< Wake-Up mode configuration                                         */
+    uint16_t               wakeupNPolls;                     /*!< Number of polling cycles before entering Wake-up                   */
 }rfalNfcDiscoverParam;
 
 
@@ -351,11 +369,16 @@ ReturnCode rfalNfcSelect( uint8_t devIdx );
  *
  *
  * \param[in]  txData       : data to be transmitted
- * \param[in]  txDataLen    : size of the data to be transmitted
+ * \param[in]  txDataLen    : size of the data to be transmitted (in bits or bytes - see below)
  * \param[out] rxData       : location of the received data after operation is completed
- * \param[out] rvdLen       : location of thelength of the received data
+ * \param[out] rvdLen       : location of the length of the received data (in bits or bytes - see below)
  * \param[in]  fwt          : FWT to be used in case of RF interface.
  *                            If ISO-DEP or NFC-DEP interface is used, this will be ignored
+ *
+ * \warning In order to support a wider range of protocols, when RF interface is used the lengths 
+ *         are in number of bits (not bytes). Therefore both input txDataLen and output rvdLen refer to 
+ *         bits. If ISO-DEP or NFC-DEP interface is used those are expressed in number of bytes.
+ *
  *
  * \return ERR_WRONG_STATE  : Incorrect state for this operation
  * \return ERR_PARAM        : Invalid parameters

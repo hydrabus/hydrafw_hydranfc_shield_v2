@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 /*
  *      PROJECT:   ST25R391x firmware
@@ -201,7 +196,7 @@ ReturnCode rfalNfcvPollerInitialize( void )
     ReturnCode ret;
             
     EXIT_ON_ERR( ret, rfalSetMode( RFAL_MODE_POLL_NFCV, RFAL_BR_26p48, RFAL_BR_26p48 ) );
-    rfalSetErrorHandling( RFAL_ERRORHANDLING_NFC );
+    rfalSetErrorHandling( RFAL_ERRORHANDLING_NONE );
     
     rfalSetGT( RFAL_GT_NFCV );
     rfalSetFDTListen( RFAL_FDT_LISTEN_NFCV_POLLER );
@@ -305,11 +300,15 @@ ReturnCode rfalNfcvPollerCollisionResolution( rfalComplianceMode compMode, uint8
         /* Send INVENTORY_REQ with one slot   Activity 2.1  9.3.7.1  (Symbol 0)  */
         ret = rfalNfcvPollerInventory( RFAL_NFCV_NUM_SLOTS_1, 0, NULL, &nfcvDevList->InvRes, NULL );
 
-        if( ret == ERR_TIMEOUT )  /* Exit if no device found     Activity 2.1  9.3.7.2 (Symbol 1)  */
+        /* Exit if no device found                              Activity 2.1  9.3.7.2 (Symbol 1)  */
+        /* Exit if no correct frame (no Transmission Error)     Activity 2.1  9.3.7.3 (Symbol 2)  */
+        if( (ret == ERR_TIMEOUT) || ((ret == ERR_PROTO)) ) 
         {
             return ERR_NONE;
         }
-        if( ret == ERR_NONE )     /* Device found without transmission error/collision    Activity 2.1  9.3.7.3 (Symbol 2)  */
+        
+        /* Valid Response found without transmission error/collision    Activity 2.1  9.3.7.6 (Symbol 5)  */
+        if( ret == ERR_NONE )
         {
             (*devCnt)++;
             return ERR_NONE;

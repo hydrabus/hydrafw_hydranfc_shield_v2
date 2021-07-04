@@ -1,17 +1,11 @@
 
 /******************************************************************************
-  * \attention
+  * @attention
   *
-  * <h2><center>&copy; COPYRIGHT 2020 STMicroelectronics</center></h2>
+  * COPYRIGHT 2016 STMicroelectronics, all rights reserved
   *
-  * Licensed under ST MYLIBERTY SOFTWARE LICENSE AGREEMENT (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        www.st.com/myliberty
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied,
   * AND SPECIFICALLY DISCLAIMING THE IMPLIED WARRANTIES OF MERCHANTABILITY,
   * FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
@@ -19,6 +13,7 @@
   * limitations under the License.
   *
 ******************************************************************************/
+
 
 /*
  *      PROJECT:   ST25R391x firmware
@@ -113,7 +108,6 @@ enum
 #define rfalNfcaSelPar( nBy, nbi )         (uint8_t)((((nBy)<<4U) & 0xF0U) | ((nbi)&0x0FU) )         /*!< Calculates SEL_PAR with the bytes/bits to be sent */
 #define rfalNfcaCLn2SELCMD( cl )           (uint8_t)((uint8_t)(RFAL_NFCA_CMD_SEL_CL1) + (2U*(cl)))   /*!< Calculates SEL_CMD with the given cascade level   */
 #define rfalNfcaNfcidLen2CL( len )         ((len) / 5U)                                              /*!< Calculates cascade level by the NFCID length      */
-#define rfalNfcaRunBlocking( e, fn )       do{ (e)=(fn); rfalWorker(); }while( (e) == ERR_BUSY )     /*!< Macro used for the blocking methods               */
 
 /*
 ******************************************************************************
@@ -128,7 +122,7 @@ typedef enum{
     RFAL_NFCA_CR_SDD,                      /*!< Perform anticollsion state      */
     RFAL_NFCA_CR_SEL,                      /*!< Perform CL Selection state      */
     RFAL_NFCA_CR_DONE                      /*!< Collision Resolution done state */
-}colResState;
+}rfalNfcaColResState;
 
 
 /*! Colission Resolution context */
@@ -145,7 +139,7 @@ typedef struct{
     uint8_t*              nfcId1;           /*!< Location to place the NFCID1 (Single CR)                */
     uint8_t*              nfcId1Len;        /*!< Location to place the NFCID1 length (Single CR)         */
     uint8_t               cascadeLv;        /*!< Current Cascading Level (Single CR)                     */
-    colResState           state;            /*!< Single Collision Resolution state (Single CR)           */
+    rfalNfcaColResState   state;            /*!< Single Collision Resolution state (Single CR)           */
     uint8_t               bytesTxRx;        /*!< TxRx bytes used during anticollision loop (Single CR)   */
     uint8_t               bitsTxRx;         /*!< TxRx bits used during anticollision loop (Single CR)    */
     uint16_t              rxLen;    
@@ -153,12 +147,12 @@ typedef struct{
     uint8_t               retries;          /*!< Retries to be performed upon a timeout error (Single CR)*/
     uint8_t               backtrackCnt;     /*!< Backtrack retries (Single CR)                           */
     bool                  doBacktrack;      /*!< Backtrack flag (Single CR)                              */
-}colResParams;
+}rfalNfcaColResParams;
 
 
 /*! RFAL NFC-A instance */
 typedef struct{
-    colResParams          CR;               /*!< Collision Resolution context                            */
+    rfalNfcaColResParams          CR;       /*!< Collision Resolution context                            */
 } rfalNfca;
 
 
@@ -477,7 +471,7 @@ ReturnCode rfalNfcaPollerInitialize( void )
     ReturnCode ret;
     
     EXIT_ON_ERR( ret, rfalSetMode( RFAL_MODE_POLL_NFCA, RFAL_BR_106, RFAL_BR_106 ) );
-    rfalSetErrorHandling( RFAL_ERRORHANDLING_NFC );
+    rfalSetErrorHandling( RFAL_ERRORHANDLING_NONE );
     
     rfalSetGT( RFAL_GT_NFCA );
     rfalSetFDTListen( RFAL_FDT_LISTEN_NFCA_POLLER );
@@ -529,7 +523,7 @@ ReturnCode rfalNfcaPollerSingleCollisionResolution( uint8_t devLimit, bool *coll
     ReturnCode ret;
     
     EXIT_ON_ERR( ret, rfalNfcaPollerStartSingleCollisionResolution( devLimit, collPending, selRes, nfcId1, nfcId1Len ) );
-    rfalNfcaRunBlocking( ret, rfalNfcaPollerGetSingleCollisionResolutionStatus() );
+    rfalRunBlocking( ret, rfalNfcaPollerGetSingleCollisionResolutionStatus() );
     
     return ret;
 }
@@ -697,7 +691,7 @@ ReturnCode rfalNfcaPollerFullCollisionResolution( rfalComplianceMode compMode, u
     ReturnCode ret;
     
     EXIT_ON_ERR( ret, rfalNfcaPollerStartFullCollisionResolution( compMode, devLimit, nfcaDevList, devCnt ) );
-    rfalNfcaRunBlocking( ret, rfalNfcaPollerGetFullCollisionResolutionStatus() );
+    rfalRunBlocking( ret, rfalNfcaPollerGetFullCollisionResolutionStatus() );
     
     return ret;
 }

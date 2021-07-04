@@ -2,3 +2,8 @@ en.STSW-ST25RFAL002 V2.2.0 / 22-May-2020 https://www.st.com/en/embedded-software
 B.VERNOUX June 2020 src\st25r3916\st25r3916.c fixed ST25R3916_TEST_TMR_TOUT_8FC
 B.VERNOUX June 2020 src\rfal_analogConfig.c fixed rfalAnalogConfigInitialize() when RFAL_ANALOG_CONFIG_CUSTOM is defined
 G.VINET September 2020 src\rfal_isoDep.c add isoDepTxRawMode, rfalIsoDepGetTransceiveStatusRawMode, isoDepDataExchangePICCRawMode
+B.VERNOUX July 2021 Updated RFAL to en.STSW-ST25RFAL002 V2.4.0 / 14-Jun-2021 https://www.st.com/en/embedded-software/stsw-st25rfal002.html
+* src\rfal_isoDep.c
+ * Refactored isoDepTxRawMode to rfalIsoDepTxRawMode
+ * Refactored rfalIsoDepGetTransceiveStatusRawMode
+ * Refactored isoDepDataExchangePICCRawMode to rfalIsoDepDataExchangePICCRawMode
