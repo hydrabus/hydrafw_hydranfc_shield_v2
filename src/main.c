@@ -37,7 +37,7 @@
 #include "hydranfc.h"
 #endif
 #ifdef HYDRANFC_V2
-#include "hydranfc_v2_common.h"
+#include "hydranfc_v2.h"
 #endif
 #include "hydrabus/hydrabus_bbio.h"
 #include "hydrabus/hydrabus_sump.h"
