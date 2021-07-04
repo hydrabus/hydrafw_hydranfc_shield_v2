@@ -1,7 +1,7 @@
 /*
  * HydraBus/HydraNFC v2
  *
- * Copyright (C) 2020 Benjamin VERNOUX
+ * Copyright (C) 2020/2021 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@
 #include "st25r3916_aat.h"
 
 #include "rfal_poller.h"
+
+#include "hydranfc_v2_common.h"
 #include "hydranfc_v2_ce.h"
 #include "hydranfc_v2_reader.h"
 
@@ -63,9 +65,6 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos);
 static int show(t_hydra_console *con, t_tokenline_parsed *p);
 
 static thread_t *key_sniff_thread = NULL;
-static volatile int irq_count;
-volatile int irq;
-volatile int irq_end_rx;
 uint8_t globalCommProtectCnt;
 
 static int nfc_obsv = 0; /* 0 = OFF, 1=ON */
@@ -75,161 +74,12 @@ static int nfc_obsv_rx = 0;
 static int nfc_aat_a = 0;
 static int nfc_aat_b = 0;
 
-/* Do not Enable DPO to have maximum performances/range */
-//#define DPO_ENABLE true
-
-#ifdef DPO_ENABLE
-static rfalDpoEntry dpoSetup[] = {
-	// new antenna board
-	{.rfoRes=0, .inc=255, .dec=115},
-	{.rfoRes=2, .inc=100, .dec=0x00}
-};
-#endif
-
-static void (* st25r3916_irq_fn)(void) = NULL;
-
 /*
  * Works only on positive numbers !!
  */
 static int round_int(float x)
 {
 	return (int)(x + 0.5f);
-}
-
-/* Triggered when the Ext IRQ is pressed or released. */
-static void extcb1(void * arg)
-{
-	(void) arg;
-
-	if(st25r3916_irq_fn != NULL)
-		st25r3916_irq_fn();
-
-	irq_count++;
-	irq = 1;
-}
-
-void rfalPreTransceiveCb(void)
-{
-	rfalDpoAdjust();
-}
-
-static ReturnCode hydranfc_v2_init_RFAL(t_hydra_console *con)
-{
-	ReturnCode err;
-	/* RFAL initalisation */
-	rfalAnalogConfigInitialize();
-	err = rfalInitialize();
-	if(err != ERR_NONE) {
-		cprintf(con, "hydranfc_v2_init_RFAL rfalInitialize() error=%d\r\n", err);
-		return err;
-	}
-
-	/* DPO setup */
-#ifdef DPO_ENABLE
-	rfalDpoInitialize();
-	rfalDpoSetMeasureCallback( rfalChipMeasureAmplitude );
-	err = rfalDpoTableWrite(dpoSetup,sizeof(dpoSetup)/sizeof(rfalDpoEntry));
-	if(err != ERR_NONE) {
-		cprintf(con, "hydranfc_v2_init_RFAL rfalDpoTableWrite() error=%d\r\n", err);
-		return err;
-	}
-	rfalDpoSetEnabled(true);
-	rfalSetPreTxRxCallback(&rfalPreTransceiveCb);
-#endif
-	return err;
-}
-
-extern t_mode_config mode_con1;
-
-static bool init_gpio_spi_nfc(t_hydra_console *con)
-{
-	/*
-	 * Initializes the SPI driver 2. The SPI2 signals are routed as follow:
-	 * ST25R3916 IO4_CS SPI mode / HydraBus PC1 - NSS
-	 * ST25R3916 DATA_CLK SPI mode / HydraBus PB10 - SCK
-	 * ST25R3916 IO6_MISO SPI mode / HydraBus PC2 - MISO
-	 * ST25R3916 IO7_MOSI SPI mode / HydraBus PC3 - MOSI
-	 * Used for communication with ST25R3916 in SPI mode with NSS.
-	 */
-	mode_con1.proto.config.spi.dev_gpio_pull = MODE_CONFIG_DEV_GPIO_NOPULL;
-	//mode_con1.proto.config.spi.dev_speed = 5; /* 5 250 000 Hz */
-	mode_con1.proto.config.spi.dev_speed = 6; /* 10 500 000 Hz */
-	mode_con1.proto.config.spi.dev_phase = 1;
-	mode_con1.proto.config.spi.dev_polarity = 0;
-	mode_con1.proto.config.spi.dev_bit_lsb_msb = DEV_FIRSTBIT_MSB;
-	mode_con1.proto.config.spi.dev_mode = DEV_MASTER;
-	bsp_spi_init(BSP_DEV_SPI2, &mode_con1.proto);
-
-	/*
-	 * Initializes the SPI driver 1. The SPI1 signals are routed as follows:
-	 * Shall be configured as SPI Slave for ST25R3916 NFC data sampling on MOD pin.
-	 * NSS. (Not used use Software).
-	 * ST25R3916 MCU_CLK pin28 output / HydraBus PA5 - SCK.(AF5) => SPI Slave CLK input (Sniffer mode/RX Transparent Mode)
-	 * ST25R3916 ST25R3916 MOSI SPI pin31 (IN) / HydraBus PA6 - MISO.(AF5) (MCU TX Transparent Mode)
-	 * ST25R3916 ST25R3916 MISO_SDA pin32 (OUT) / HydraBus PA7 - MOSI.(AF5) => SPI Slave MOSI input (Sniffer mode/RX Transparent Mode)
-	 */
-	/* spiStart() is done in sniffer see sniffer.c */
-	/* HydraBus SPI1 Slave CLK input */
-	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
-	/* HydraBus SPI1 Slave MISO. Not used/Not connected */
-	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
-	/* HydraBus SPI1 Slave MOSI. connected to ST25R3916 MOD Pin */
-	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
-
-	/* Configure K1/2 Buttons as Input */
-	bsp_gpio_init(BSP_GPIO_PORTB, 8, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K1 Button */
-	bsp_gpio_init(BSP_GPIO_PORTB, 9, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL); /* K2 Button */
-
-	/* Configure D1/2/3/4 LEDs as Output */
-	D1_OFF;
-	D2_OFF;
-	D3_OFF;
-	D4_OFF;
-
-	/* LED_D1 or TST_PÏN */
-	bsp_gpio_init(BSP_GPIO_PORTB, 0, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
-
-#ifndef MAKE_DEBUG
-	// can't use LED on PB3 if using SWO
-	bsp_gpio_init(BSP_GPIO_PORTB, 3, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
-#endif
-
-	bsp_gpio_init(BSP_GPIO_PORTB, 4, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
-	bsp_gpio_init(BSP_GPIO_PORTB, 5, MODE_CONFIG_DEV_GPIO_OUT_PUSHPULL, MODE_CONFIG_DEV_GPIO_NOPULL);
-
-	palDisablePadEvent(GPIOA, 1);
-	/* ST25R3916 IRQ output / HydraBus PA1 input */
-	palClearPad(GPIOA, 1);
-	palSetPadMode(GPIOA, 1, PAL_MODE_INPUT | PAL_STM32_OSPEED_MID1);
-	/* Activates the PAL driver callback */
-	//palDisablePadEvent(GPIOA, 1);
-	palEnablePadEvent(GPIOA, 1, PAL_EVENT_MODE_RISING_EDGE);
-	palSetPadCallback(GPIOA, 1, &extcb1, NULL);
-
-	/* Init st25r3916 IRQ function callback */
-	st25r3916_irq_fn = st25r3916Isr;
-	hal_st25r3916_spiInit(ST25R391X_SPI_DEVICE);
-	if (hydranfc_v2_init_RFAL(con) != ERR_NONE) {
-		cprintf(con, "HydraNFC v2 not found.\r\n");
-		return FALSE;
-	}
-	return TRUE;
-}
-
-static void deinit_gpio_spi_nfc(t_hydra_console *con)
-{
-	(void)(con);
-	palClearPad(GPIOA, 1);
-	palSetPadMode(GPIOA, 1, PAL_MODE_INPUT);
-	palDisablePadEvent(GPIOA, 1);
-
-	bsp_spi_deinit(BSP_DEV_SPI2);
-
-	bsp_gpio_init(BSP_GPIO_PORTA, 5, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
-	bsp_gpio_init(BSP_GPIO_PORTA, 6, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
-	bsp_gpio_init(BSP_GPIO_PORTA, 7, MODE_CONFIG_DEV_GPIO_IN, MODE_CONFIG_DEV_GPIO_NOPULL);
-
-	st25r3916_irq_fn = NULL;
 }
 
 THD_FUNCTION(key_sniff, arg)
@@ -304,312 +154,6 @@ THD_FUNCTION(key_sniff, arg)
 		chThdSleepMilliseconds(100);
 	}
 }
-
-#if 0
-// TODO hydranfc_v2_scan_iso14443A
-#define MIFARE_UL_DATA (MIFARE_UL_DATA_MAX/4)
-#define MIFARE_CL1_MAX (5)
-#define MIFARE_CL2_MAX (5)
-void hydranfc_v2_scan_iso14443A(t_hydranfc_v2_scan_iso14443A *data)
-{
-	uint8_t data_buf[MIFARE_DATA_MAX];
-	uint8_t CL1_buf[MIFARE_CL1_MAX];
-	uint8_t CL2_buf[MIFARE_CL2_MAX];
-
-	uint8_t CL1_buf_size = 0;
-	uint8_t CL2_buf_size = 0;
-
-	uint8_t i;
-
-	/* Clear data elements */
-	memset(data, 0, sizeof(t_hydranfc_v2_scan_iso14443A));
-
-	/* End Test delay */
-	irq_count = 0;
-
-	/* Test ISO14443-A/Mifare read UID */
-	Trf797xInitialSettings();
-	Trf797xResetFIFO();
-
-	/*
-	 * Write Modulator and SYS_CLK Control Register (0x09) (13.56Mhz SYS_CLK
-	 * and default Clock 13.56Mhz))
-	 */
-	data_buf[0] = MODULATOR_CONTROL;
-	data_buf[1] = 0x31;
-	Trf797xWriteSingle(data_buf, 2);
-
-	/*
-	 * Configure Mode ISO Control Register (0x01) to 0x88 (ISO14443A RX bit
-	 * rate, 106 kbps) and no RX CRC (CRC is not present in the response))
-	 */
-	data_buf[0] = ISO_CONTROL;
-	data_buf[1] = 0x88;
-	Trf797xWriteSingle(data_buf, 2);
-
-	/*
-		data_buf[0] = ISO_CONTROL;
-		Trf797xReadSingle(data_buf, 1);
-		if (data_buf[0] != 0x88)
-			cprintf(con, "Error ISO Control Register read=0x%02lX (should be 0x88)\r\n",
-				(uint32_t)data_buf[0]);
-	*/
-
-	/* Turn RF ON (Chip Status Control Register (0x00)) */
-	Trf797xTurnRfOn();
-
-	/* Send REQA (7 bits) and receive ATQA (2 bytes) */
-	data_buf[0] = 0x26; /* REQA (7bits) */
-	data->atqa_buf_nb_rx_data = Trf797x_transceive_bits(data_buf[0], 7, data->atqa_buf, MIFARE_ATQA_MAX,
-	                            10, /* 10ms TX/RX Timeout */
-	                            0); /* TX CRC disabled */
-	/* Re-send REQA */
-	if (data->atqa_buf_nb_rx_data == 0) {
-		/* Send REQA (7 bits) and receive ATQA (2 bytes) */
-		data_buf[0] = 0x26; /* REQA (7 bits) */
-		data->atqa_buf_nb_rx_data = Trf797x_transceive_bits(data_buf[0], 7, data->atqa_buf, MIFARE_ATQA_MAX,
-		                            10, /* 10ms TX/RX Timeout */
-		                            0); /* TX CRC disabled */
-	}
-	if (data->atqa_buf_nb_rx_data > 0) {
-		/* Send AntiColl Cascade Level1 (2 bytes) and receive CT+3 UID bytes+BCC (5 bytes) [tag 7 bytes UID]  or UID+BCC (5 bytes) [tag 4 bytes UID] */
-		data_buf[0] = 0x93;
-		data_buf[1] = 0x20;
-
-		CL1_buf_size = Trf797x_transceive_bytes(data_buf, 2, CL1_buf, MIFARE_CL1_MAX,
-		                                        10, /* 10ms TX/RX Timeout */
-		                                        0); /* TX CRC disabled */
-
-		/* Check tag 7 bytes UID */
-		if (CL1_buf[0] == 0x88) {
-			for (i = 0; i < 3; i++) {
-				data->uid_buf[data->uid_buf_nb_rx_data] = CL1_buf[1 + i];
-				data->uid_buf_nb_rx_data++;
-			}
-
-			/* Send AntiColl Cascade Level1 (2 bytes)+CT+3 UID bytes+BCC (5 bytes) and receive SAK1 (1 byte) */
-			data_buf[0] = 0x93;
-			data_buf[1] = 0x70;
-
-			for (i = 0; i < CL1_buf_size; i++) {
-				data_buf[2 + i] = CL1_buf[i];
-			}
-
-			data->sak1_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, (2 + CL1_buf_size), data->sak1_buf, MIFARE_SAK_MAX,
-			                            20, /* 10ms TX/RX Timeout */
-			                            1); /* TX CRC disabled */
-			if(data->sak1_buf_nb_rx_data >= 3)
-				data->sak1_buf_nb_rx_data -= 2; /* Remove 2 last bytes (CRC) */
-
-			if (data->sak1_buf_nb_rx_data > 0) {
-
-				/* Send AntiColl Cascade Level2 (2 bytes) and receive 4 UID bytes+BCC (5 bytes)*/
-				data_buf[0] = 0x95;
-				data_buf[1] = 0x20;
-
-				CL2_buf_size = Trf797x_transceive_bytes(data_buf, 2, CL2_buf, MIFARE_CL2_MAX,
-				                                        10, /* 10ms TX/RX Timeout */
-				                                        0); /* TX CRC disabled */
-
-				if (CL2_buf_size > 0) {
-					for (i = 0; i < 4; i++) {
-						data->uid_buf[data->uid_buf_nb_rx_data] = CL2_buf[i];
-						data->uid_buf_nb_rx_data++;
-					}
-
-					/*
-					data_buf[0] = RSSI_LEVELS;
-					Trf797xReadSingle(data_buf, 1);
-					if (data_buf[0] < 0x40)
-						cprintf(con, "RSSI error: 0x%02lX (should be > 0x40)\r\n", (uint32_t)data_buf[0]);
-					*/
-					/*
-					 * Select RX with CRC_A
-					 * Configure Mode ISO Control Register (0x01) to 0x08
-					 * (ISO14443A RX bit rate, 106 kbps) and RX CRC (CRC
-					 * is present in the response)
-					 */
-					data_buf[0] = ISO_CONTROL;
-					data_buf[1] = 0x08;
-					Trf797xWriteSingle(data_buf, 2);
-
-					/* Send AntiColl Cascade Level2 (2 bytes)+4 UID bytes(4 bytes) and receive SAK2 (1 byte) */
-					data_buf[0] = 0x95;
-					data_buf[1] = 0x70;
-
-					for (i = 0; i < CL2_buf_size; i++) {
-						data_buf[2 + i] = CL2_buf[i];
-					}
-
-					data->sak2_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, (2 + CL2_buf_size), data->sak2_buf, MIFARE_SAK_MAX,
-					                            20, /* 10ms TX/RX Timeout */
-					                            1); /* TX CRC disabled */
-
-					if (data->sak2_buf_nb_rx_data > 0) {
-						/* Check if it is a Mifare Ultra Light */
-						if( (data->atqa_buf[0] == 0x44) && (data->atqa_buf[1] == 0x00) &&
-						    (data->sak1_buf[0] == 0x04) && (data->sak2_buf[1] == 0x00)
-						  ) {
-							for (i = 0; i < 16; i+=4) {
-								/* Send Read 16 bytes Mifare UL (2Bytes+CRC) */
-								data_buf[0] = 0x30;
-								data_buf[1] = (uint8_t)i;
-								data->mf_ul_data_nb_rx_data += Trf797x_transceive_bytes(data_buf, 2, &data->mf_ul_data[data->mf_ul_data_nb_rx_data], MIFARE_UL_DATA,
-								                               20, /* 20ms TX/RX Timeout */
-								                               1); /* TX CRC enabled */
-							}
-						}
-					} else {
-						/* Send HALT 2Bytes (CRC is added automatically) */
-						data_buf[0] = 0x50;
-						data_buf[1] = 0x00;
-						data->halt_buf_nb_rx_data += Trf797x_transceive_bytes(data_buf, 2, data->halt_buf, MIFARE_HALT_MAX,
-						                             20, /* 20ms TX/RX Timeout */
-						                             1); /* TX CRC enabled */
-					}
-				}
-			}
-		}
-
-		/* tag 4 bytes UID */
-		else {
-			data->uid_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, 2, data->uid_buf, MIFARE_UID_MAX,
-			                           10, /* 10ms TX/RX Timeout */
-			                           0); /* TX CRC disabled */
-			if (data->uid_buf_nb_rx_data > 0) {
-				/*
-				data_buf[0] = RSSI_LEVELS;
-				Trf797xReadSingle(data_buf, 1);
-				if (data_buf[0] < 0x40)
-					cprintf(con, "RSSI error: 0x%02lX (should be > 0x40)\r\n", (uint32_t)data_buf[0]);
-				*/
-
-				/*
-				* Select RX with CRC_A
-				* Configure Mode ISO Control Register (0x01) to 0x08
-				* (ISO14443A RX bit rate, 106 kbps) and RX CRC (CRC
-				* is present in the response)
-				*/
-				data_buf[0] = ISO_CONTROL;
-				data_buf[1] = 0x08;
-				Trf797xWriteSingle(data_buf, 2);
-
-				/* Finish Select (6 bytes) and receive SAK1 (1 byte) */
-				data_buf[0] = 0x93;
-				data_buf[1] = 0x70;
-				for (i = 0; i < data->uid_buf_nb_rx_data; i++) {
-					data_buf[2 + i] = data->uid_buf[i];
-				}
-				data->sak1_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, (2 + data->uid_buf_nb_rx_data),  data->sak1_buf, MIFARE_SAK_MAX,
-				                            20, /* 20ms TX/RX Timeout */
-				                            1); /* TX CRC enabled */
-				/* Send HALT 2Bytes (CRC is added automatically) */
-				data_buf[0] = 0x50;
-				data_buf[1] = 0x00;
-				data->halt_buf_nb_rx_data = Trf797x_transceive_bytes(data_buf, 2, data->halt_buf, MIFARE_HALT_MAX,
-				                            20, /* 20ms TX/RX Timeout */
-				                            1); /* TX CRC enabled */
-			}
-		}
-	}
-
-	/* Turn RF OFF (Chip Status Control Register (0x00)) */
-	Trf797xTurnRfOff();
-}
-#endif
-
-#if 0
-// TODO hydranfc_v2_scan_mifare
-void hydranfc_v2_scan_mifare(t_hydra_console *con)
-{
-	int i;
-	uint8_t bcc;
-	t_hydranfc_v2_scan_iso14443A* data;
-	t_hydranfc_v2_scan_iso14443A data_buf;
-
-	data = &data_buf;
-	hydranfc_v2_scan_iso14443A(data);
-
-	if(data->atqa_buf_nb_rx_data > 0) {
-		cprintf(con, "ATQA:");
-		for (i = 0; i < data->atqa_buf_nb_rx_data; i++)
-			cprintf(con, " %02X", data->atqa_buf[i]);
-		cprintf(con, "\r\n");
-	}
-
-	if(data->sak1_buf_nb_rx_data > 0) {
-		cprintf(con, "SAK1:");
-		for (i = 0; i < data->sak1_buf_nb_rx_data; i++)
-			cprintf(con, " %02X", data->sak1_buf[i]);
-		cprintf(con, "\r\n");
-	}
-
-	if(data->sak2_buf_nb_rx_data > 0) {
-		cprintf(con, "SAK2:");
-		for (i = 0; i < data->sak2_buf_nb_rx_data; i++)
-			cprintf(con, " %02X", data->sak2_buf[i]);
-		cprintf(con, "\r\n");
-	}
-
-	if(data->uid_buf_nb_rx_data > 0) {
-		if(data->uid_buf_nb_rx_data >= 7) {
-			cprintf(con, "UID:");
-			for (i = 0; i < data->uid_buf_nb_rx_data ; i++) {
-				cprintf(con, " %02X", data->uid_buf[i]);
-			}
-			cprintf(con, "\r\n");
-		} else {
-			cprintf(con, "UID:");
-			bcc = 0;
-			for (i = 0; i < data->uid_buf_nb_rx_data - 1; i++) {
-				cprintf(con, " %02X", data->uid_buf[i]);
-				bcc ^= data->uid_buf[i];
-			}
-			cprintf(con, " (BCC %02X %s)\r\n", data->uid_buf[i],
-			        bcc == data->uid_buf[i] ? "ok" : "NOT OK");
-		}
-	}
-
-	if (data->mf_ul_data_nb_rx_data > 0) {
-#define ISO14443A_SEL_L1_CT 0x88 /* TX CT for 1st Byte */
-		uint8_t expected_uid_bcc0;
-		uint8_t obtained_uid_bcc0;
-		uint8_t expected_uid_bcc1;
-		uint8_t obtained_uid_bcc1;
-
-		cprintf(con, "DATA:");
-		for (i = 0; i < data->mf_ul_data_nb_rx_data; i++) {
-			if(i % 16 == 0)
-				cprintf(con, "\r\n");
-
-			cprintf(con, " %02X", data->mf_ul_data[i]);
-		}
-		cprintf(con, "\r\n");
-
-		/* Check Data UID with BCC */
-		cprintf(con, "DATA UID:");
-		for (i = 0; i < 3; i++)
-			cprintf(con, " %02X", data->mf_ul_data[i]);
-		for (i = 4; i < 8; i++)
-			cprintf(con, " %02X", data->mf_ul_data[i]);
-		cprintf(con, "\r\n");
-
-		expected_uid_bcc0 = (ISO14443A_SEL_L1_CT ^ data->mf_ul_data[0] ^ data->mf_ul_data[1] ^ data->mf_ul_data[2]); // BCC1
-		obtained_uid_bcc0 = data->mf_ul_data[3];
-		cprintf(con, " (DATA BCC0 %02X %s)\r\n", expected_uid_bcc0,
-		        expected_uid_bcc0 == obtained_uid_bcc0 ? "ok" : "NOT OK");
-
-		expected_uid_bcc1 = (data->mf_ul_data[4] ^ data->mf_ul_data[5] ^ data->mf_ul_data[6] ^ data->mf_ul_data[7]); // BCC2
-		obtained_uid_bcc1 = data->mf_ul_data[8];
-		cprintf(con, " (DATA BCC1 %02X %s)\r\n", expected_uid_bcc1,
-		        expected_uid_bcc1 == obtained_uid_bcc1 ? "ok" : "NOT OK");
-	}
-	/*
-	cprintf(con, "irq_count: 0x%02ld\r\n", (uint32_t)irq_count);
-	irq_count = 0;
-	*/
-}
-#endif
 
 #if 0
 // TODO hydranfc_v2_read_mifare_ul
@@ -732,88 +276,6 @@ int hydranfc_v2_read_mifare_ul(t_hydra_console *con, char* filename)
 		cprintf(con, "Error no data, file %s not written\r\n", filename);
 		return FALSE;
 	}
-	/*
-	cprintf(con, "irq_count: 0x%02ld\r\n", (uint32_t)irq_count);
-	irq_count = 0;
-	*/
-}
-#endif
-
-#if 0
-// TODO hydranfc_v2_scan_vicinity
-void hydranfc_v2_scan_vicinity(t_hydra_console *con)
-{
-	static uint8_t data_buf[VICINITY_UID_MAX];
-	uint8_t fifo_size;
-	int i;
-
-	/* End Test delay */
-	irq_count = 0;
-
-	/* Test ISO15693 read UID */
-	Trf797xInitialSettings();
-	Trf797xResetFIFO();
-
-	/* Write Modulator and SYS_CLK Control Register (0x09) (13.56Mhz SYS_CLK and default Clock 13.56Mhz)) */
-	data_buf[0] = MODULATOR_CONTROL;
-	data_buf[1] = 0x31;
-	Trf797xWriteSingle(data_buf, 2);
-
-	/* Configure Mode ISO Control Register (0x01) to 0x02 (ISO15693 high bit rate, one subcarrier, 1 out of 4) */
-	data_buf[0] = ISO_CONTROL;
-	data_buf[1] = 0x02;
-	Trf797xWriteSingle(data_buf, 2);
-
-	/* Configure Test Settings 1 to BIT6/0x40 => MOD Pin becomes receiver subcarrier output (Digital Output for RX/TX) */
-	/*
-	data_buf[0] = TEST_SETTINGS_1;
-	data_buf[1] = BIT6;
-	Trf797xWriteSingle(data_buf, 2);
-
-	data_buf[0] = TEST_SETTINGS_1;
-	Trf797xReadSingle(data_buf, 1);
-	if (data_buf[0] != 0x40)
-	{
-		cprintf(con, "Error Test Settings Register(0x1A) read=0x%02lX (shall be 0x40)\r\n", (uint32_t)data_buf[0]);
-		err++;
-	}
-	*/
-
-	/* Turn RF ON (Chip Status Control Register (0x00)) */
-	Trf797xTurnRfOn();
-
-	McuDelayMillisecond(10);
-
-	/* Send Inventory(3B) and receive data + UID */
-	data_buf[0] = 0x26; /* Request Flags */
-	data_buf[1] = 0x01; /* Inventory Command */
-	data_buf[2] = 0x00; /* Mask */
-
-	fifo_size = Trf797x_transceive_bytes(data_buf, 3, data_buf, VICINITY_UID_MAX,
-	                                     10, /* 10ms TX/RX Timeout (shall be less than 10ms (6ms) in High Speed) */
-	                                     1); /* CRC enabled */
-	if (fifo_size > 0) {
-		/* fifo_size should be 10. */
-		cprintf(con, "UID:");
-		for (i = 0; i < fifo_size; i++)
-			cprintf(con, " 0x%02lX", (uint32_t)data_buf[i]);
-		cprintf(con, "\r\n");
-
-		/* Read RSSI levels and oscillator status(0x0F/0x4F) */
-		data_buf[0] = RSSI_LEVELS;
-		Trf797xReadSingle(data_buf, 1);
-		if (data_buf[0] < 0x40) {
-			cprintf(con, "RSSI error: 0x%02lX (should be > 0x40)\r\n", (uint32_t)data_buf[0]);
-		}
-	}
-
-	/* Turn RF OFF (Chip Status Control Register (0x00)) */
-	Trf797xTurnRfOff();
-
-	/*
-	cprintf(con, "irq_count: 0x%02ld\r\n", (uint32_t)irq_count);
-	irq_count = 0;
-	*/
 }
 #endif
 
@@ -859,13 +321,13 @@ static void hydranfc_card_emul_iso14443a(t_hydra_console *con)
 		cprintf(con, "URI %s\r\n", user_tag_properties.uri);
 	}
 
-	/* Init st25r3916 IRQ function callback */
-	st25r3916_irq_fn = st25r3916Isr;
+	/* Set st25r3916 IRQ function callback */
+	hydranfc_v2_set_irq(st25r3916Isr);
 
 	hydranfc_ce_common(con, FALSE);
 
-	irq_count = 0;
-	st25r3916_irq_fn = NULL;
+	/* Reset st25r3916 IRQ function callback */
+	hydranfc_v2_set_irq(NULL);
 }
 
 static int phase_degree(uint8_t phase_raw)
@@ -909,8 +371,8 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 		return t;
 	}
 
-	/* Stop & Start External IRQ */
-	st25r3916_irq_fn = NULL;
+	/* Reset st25r3916 IRQ function callback */
+	hydranfc_v2_set_irq(NULL);
 
 	action = 0;
 	period = 1000;
@@ -1340,8 +802,8 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			nfc_technology_str_t tag_tech_str;
 			nfc_tech = proto->config.hydranfc.nfc_technology;
 
-			/* Init st25r3916 IRQ function callback */
-			st25r3916_irq_fn = st25r3916Isr;
+			/* Set st25r3916 IRQ function callback */
+			hydranfc_v2_set_irq(st25r3916Isr);
 
 			nfc_technology_to_str(nfc_tech, &tag_tech_str);
 			if (continuous) {
@@ -1355,8 +817,8 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 				scan(con, nfc_tech);
 			}
 
-			irq_count = 0;
-			st25r3916_irq_fn = NULL;
+			/* Reset st25r3916 IRQ function callback */
+			hydranfc_v2_set_irq(NULL);
 			break;
 		}
 
@@ -1436,24 +898,25 @@ static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos)
 			break;
 
 		case T_CARD_CONNECT_AUTO: {
-			/* Init st25r3916 IRQ function callback */
-			st25r3916_irq_fn = st25r3916Isr;
+			/* Set st25r3916 IRQ function callback */
+			hydranfc_v2_set_irq(st25r3916Isr);
+
 			hydranfc_v2_reader_connect(con);
 
-			irq_count = 0;
-			st25r3916_irq_fn = NULL;
+			/* Reset st25r3916 IRQ function callback */
+			hydranfc_v2_set_irq(NULL);
 
 			break;
 		}
 
 		case T_CARD_SEND: {
-			/* Init st25r3916 IRQ function callback */
-			st25r3916_irq_fn = st25r3916Isr;
+			/* Set st25r3916 IRQ function callback */
+			hydranfc_v2_set_irq(st25r3916Isr);
+
 			hydranfc_v2_reader_send(con, (uint8_t *) p->buf);
 
-			irq_count = 0;
-			st25r3916_irq_fn = NULL;
-
+			/* Reset st25r3916 IRQ function callback */
+			hydranfc_v2_set_irq(NULL);
 			break;
 		}
 
@@ -1525,8 +988,7 @@ static int init(t_hydra_console *con, t_tokenline_parsed *p)
 		proto->config.hydranfc.nfc_technology = NFC_ALL;
 	}
 
-	if(init_gpio_spi_nfc(con) ==  FALSE) {
-		deinit_gpio_spi_nfc(con);
+	if(hydranfc_v2_init(con, st25r3916Isr) ==  FALSE) {
 		return tokens_used;
 	}
 
@@ -1566,21 +1028,7 @@ void hydranfc_cleanup(t_hydra_console *con)
 		key_sniff_thread = NULL;
 	}
 
-	deinit_gpio_spi_nfc(con);
-}
-
-/** \brief Check if HydraNFC is detected
- *
- * \return bool: return TRUE if success or FALSE if failure
- *
- */
-bool hydranfc_v2_is_detected(void)
-{
-	if(init_gpio_spi_nfc(NULL) ==  FALSE) {
-		deinit_gpio_spi_nfc(NULL);
-		return FALSE;
-	}
-	return TRUE;
+	hydranfc_v2_cleanup(con);
 }
 
 /** \brief Init HydraNFC functions

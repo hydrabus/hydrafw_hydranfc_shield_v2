@@ -37,7 +37,7 @@
 #include "hydranfc.h"
 #endif
 #ifdef HYDRANFC_V2
-#include "hydranfc_v2_nfc_mode.h"
+#include "hydranfc_v2_common.h"
 #endif
 #include "hydrabus/hydrabus_bbio.h"
 #include "hydrabus/hydrabus_sump.h"
@@ -329,8 +329,8 @@ int main(void)
 		if(hydranfc_shield_v2_detected == TRUE) {
 			/* If K1_BUTTON is pressed */
 			if (K1_BUTTON) {
-				hydranfc_cleanup(NULL);
-				hydranfc_init(NULL);
+				hydranfc_v2_cleanup(NULL);
+				hydranfc_v2_init(NULL, NULL);
 				chThdSleepMilliseconds(1000);
 			}
 		}
