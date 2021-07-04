@@ -44,9 +44,8 @@
 #include "rfal_poller.h"
 #include "rfal_nfca.h"
 
-#include "hydranfc_v2_common.h"
-#include "hydranfc_v2_nfc_mode.h"
-#include "hydranfc_v2_dnfc_mode.h"
+#include "hydrabus_mode.h"
+#include "hydranfc_v2.h"
 
 static int exec(t_hydra_console *con, t_tokenline_parsed *p, int token_pos);
 static int show(t_hydra_console *con, t_tokenline_parsed *p);

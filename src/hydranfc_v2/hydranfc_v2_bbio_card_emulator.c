@@ -40,8 +40,7 @@
 #include "bsp_print_dbg.h"
 #include <string.h>
 
-#include "hydranfc_v2_common.h"
-#include "hydranfc_v2_nfc_mode.h"
+#include "hydranfc_v2.h"
 #include "hydranfc_v2_bbio_card_emulator.h"
 
 enum cardEmulationCommand {

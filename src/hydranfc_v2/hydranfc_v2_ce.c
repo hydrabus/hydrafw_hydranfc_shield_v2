@@ -1,7 +1,7 @@
 /*
  * HydraBus/HydraNFC v2
  *
- * Copyright (C) 2020 Benjamin VERNOUX
+ * Copyright (C) 2020/2021 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,12 +34,12 @@
 #include "st25r3916_irq.h"
 
 #include "bsp_print_dbg.h"
-#include "hydranfc_v2_ce.h"
-#include "hydranfc_v2_nfc_mode.h"
 
 #include "ff.h"
 #include "microsd.h"
 
+#include "hydranfc_v2.h"
+#include "hydranfc_v2_ce.h"
 
 static uint8_t rxtxFrameBuf[512] __attribute__ ((section(".cmm")));
 

@@ -28,8 +28,9 @@
 #include "st25r3916.h"
 
 #include "bsp_print_dbg.h"
+
+#include "hydranfc_v2.h"
 #include "hydranfc_v2_ce.h"
-#include "hydranfc_v2_nfc_mode.h"
 
 void ceNfcaCardemu4A(uint8_t mode, rfalIsoDepTxRxParam *isoDepTxRxParam);
 void ceNfcfCardemu3(uint8_t mode, rfalTransceiveContext *ctx);

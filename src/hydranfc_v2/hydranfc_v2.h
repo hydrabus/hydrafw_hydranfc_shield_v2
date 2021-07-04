@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef _HYDRANFC_V2_COMMON_H_
-#define _HYDRANFC_V2_COMMON_H_
+#ifndef _HYDRANFC_V2_H_
+#define _HYDRANFC_V2_H_
 
 #include "common.h"
 
@@ -54,5 +54,5 @@ void hydranfc_v2_set_irq(irq_callback_t st25r3916_irq_callback);
 
 void hydranfc_v2_cleanup(t_hydra_console *con);
 
-#endif /* _HYDRANFC_V2_NFC_MODE_H_ */
+#endif /* _HYDRANFC_V2_H_ */
 

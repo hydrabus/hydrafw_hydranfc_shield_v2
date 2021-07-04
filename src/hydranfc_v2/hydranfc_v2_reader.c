@@ -2,7 +2,7 @@
  * HydraBus/HydraNFC
  *
  * Copyright (C) 2020 Guillaume VINET
- * Copyright (C) 2014-2020 Benjamin VERNOUX
+ * Copyright (C) 2014-2021 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 
 #include "common.h"
 #include "tokenline.h"
-#include "hydranfc_v2_nfc_mode.h"
 #include "rfal_rf.h"
 #include "hydrabus_bbio.h"
 #include "hydranfc_v2_bbio_reader.h"
@@ -31,8 +30,10 @@
 #include "rfal_nfca.h"
 #include "rfal_nfcb.h"
 #include "rfal_nfcv.h"
-#include "hydranfc_v2_reader.h"
 #include <string.h>
+
+#include "hydranfc_v2.h"
+#include "hydranfc_v2_reader.h"
 
 static uint8_t tx_buffer[260];
 static uint8_t rx_buffer[260];

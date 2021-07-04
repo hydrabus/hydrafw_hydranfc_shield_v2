@@ -31,8 +31,7 @@
 #include "rfal_nfcb.h"
 #include "rfal_nfcv.h"
 
-#include "hydranfc_v2_common.h"
-#include "hydranfc_v2_nfc_mode.h"
+#include "hydranfc_v2.h"
 
 extern t_mode_config mode_con1;
 
