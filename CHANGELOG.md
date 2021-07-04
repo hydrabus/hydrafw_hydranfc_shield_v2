@@ -1,6 +1,19 @@
 # CHANGELOG of 'hydrafw' for HydraBus v1 & HydraNFC Shield v2
 ----------------------
 
+#### 11.12.2020 - [HydraFW v0.2.1 Beta](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/releases/tag/v0.2.1-beta)
+
+##### Generic:
+ * RAM optimization related to sdcard buffers. 
+ * Updating the submodule 'tokenline' to the latest version 
+
+##### NFC BBIO mode
+ * BBIO card emulation ISO 14443-A - RAW MODE (#16) (Thanks to gvinet for the pull request/contributions)
+ * bbio-card-emulator-fix-and-features (#18) (Thanks to gvinet for the pull request/contributions)
+
+#### NFC Shield v2 `nfc` mode
+ * mifare UL card emulator (#17)  (Thanks to AAsyunkin-se for the pull request/contributions)
+
 #### 12.09.2020 - [HydraFW v0.2 Beta](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/releases/tag/v0.2-beta)
 
 ##### Generic:
