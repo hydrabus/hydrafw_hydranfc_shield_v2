@@ -987,6 +987,26 @@ static void show_registers(t_hydra_console *con)
 	ReturnCode err;
 	unsigned int i;
 	t_st25r3916Regs regDump;
+	/* Translation of Reg Space B index to real register address */
+	const uint8_t reg_space_b_idx_to_addr[ST25R3916_SPACE_B_REG_LEN] = 
+	{
+		0x05,	// Index 0 
+		0x06,	// Index 1 
+		0x0B,	// Index 2 
+		0x0C,	// Index 3 
+		0x0D,	// Index 4 
+		0x0F,	// Index 5 
+		0x15,	// Index 6 
+		0x28,	// Index 7 
+		0x29,	// Index 8 
+		0x2A,	// Index 9 
+		0x2B,	// Index 10
+		0x2C,	// Index 11
+		0x30,	// Index 12
+		0x31,	// Index 13
+		0x32,	// Index 14
+		0x33	// Index 15
+	};
 
 	err = st25r3916GetRegsDump(&regDump);
 	if(err != ERR_NONE) {
@@ -1002,7 +1022,7 @@ static void show_registers(t_hydra_console *con)
 	/* ST25R3916 space B */
 	cprintf(con, "ST25R3916 Registers space B:\r\n");
 	for (i = 0; i < ST25R3916_SPACE_B_REG_LEN; i++) {
-		cprintf(con, "0x%02x\t: 0x%02x\r\n", i,	regDump.RsB[i]);
+		cprintf(con, "0x%02x\t: 0x%02x\r\n", reg_space_b_idx_to_addr[i], regDump.RsB[i]);
 	}
 }
 
