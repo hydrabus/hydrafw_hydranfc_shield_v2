@@ -1,7 +1,7 @@
 /*
  * HydraBus/HydraNFC v2
  *
- * Copyright (C) 2020 Benjamin VERNOUX
+ * Copyright (C) 2020-2024 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,12 +112,26 @@ typedef struct {
 	RfalPollerRfInterfaceEnum_t rfInterface;           /* Device's interface */
 } RfalPollerRfInterfaceDevice_t;
 
-/** Detection mode for the demo */
+/** Detection mode */
 typedef enum {
 	DETECT_MODE_POLL = 0,     /** Continuous polling for tags */
 	DETECT_MODE_WAKEUP = 1,   /** Waiting for the ST25R3916 wakeup detection */
 	DETECT_MODE_AWAKEN = 2    /** Awaken by the ST25R3916 wakeup feature */
 } detectMode_t;
+
+/** NFC Card Type */
+typedef enum {
+	NFC_T_NONE = 			0,
+	NFC_T_MFCLASSIC_1K =	BIT0,
+	NFC_T_MFCLASSIC_1K_2K =	BIT1,
+	NFC_T_MFCLASSIC_4K =	BIT2,
+	NFC_T_MFMINI = 			BIT3,
+	NFC_T_MFDESFIRE = 		BIT4,
+	NFC_T_NTAG424DNA =		BIT5,
+	NFC_T_MFPLUS = 			BIT6,
+	NFC_T_MFULTRALIGHT = 	BIT7,
+	NFC_T_OTHER = 			BIT8
+} nfc_card_type_t;
 
 /*
  ******************************************************************************
@@ -170,7 +184,7 @@ static bool RfalPollerTechDetection(t_hydra_console *con, nfc_technology_t nfc_t
 static bool RfalPollerCollResolution(t_hydra_console *con);
 static bool RfalPollerDeactivate(void);
 static void RfalPollerRun(t_hydra_console *con, nfc_technology_t nfc_tech);
-
+static nfc_card_type_t detect_nfc_card_type(t_hydra_console *con, uint8_t* uid, uint8_t uid_len, uint16_t atqa, uint8_t sak);
 /*
 void cprintf(t_hydra_console *con, const char *fmt, ...)
 {
@@ -1207,6 +1221,10 @@ static bool RfalPollerCollResolution(t_hydra_console *con)
 					cprintf(con,"%02X",nfcaDevList[i].nfcId1[j]);
 				cprintf(con, "\r\n");
 
+				detect_nfc_card_type(con, 
+									 &nfcaDevList[i].nfcId1[0], nfcaDevList[i].nfcId1Len,
+									 ((nfcaDevList[i].sensRes.platformInfo << 8)| nfcaDevList[i].sensRes.anticollisionInfo),
+									 nfcaDevList[i].selRes.sak);
 			}
 		}
 	}
@@ -1378,4 +1396,336 @@ static bool RfalPollerDeactivate( void )
 	}
 
 	return true;
+}
+
+/*
+ Integrated Circuit Manufacturer (ICM) https://www.kartenbezogene-identifier.de/de/chiphersteller-kennungen.html
+ Based on ISO/IEC JTC1/SC17 STANDING DOCUMENT 5 (Updated March 2018) Register of IC manufacturers
+*/
+static void print_manufacturer_nfc_card(t_hydra_console *con, uint8_t* uid, uint8_t uid_len)
+{
+	if(uid_len > 0)
+	{
+		cprintf(con, "MANUFACTURER: ");
+		switch(uid[0])
+		{
+			case 0x01: cprintf(con, "Motorola"); break;
+			case 0x02: cprintf(con, "STMicroelectronics"); break;
+			case 0x03: cprintf(con, "Hitachi Ltd"); break;
+			case 0x04: cprintf(con, "NXP Semiconductors"); break;
+			case 0x05: cprintf(con, "Infineon Technologies"); break;
+			case 0x06: cprintf(con, "Cylink"); break;
+			case 0x07: cprintf(con, "Texas Instruments"); break;
+			case 0x08: cprintf(con, "Fujitsu Limited"); break;
+			case 0x09: cprintf(con, "Matsushita Electronics"); break;
+			case 0x0A: cprintf(con, "NEC"); break;
+			case 0x0B: cprintf(con, "Oki Electric Industry Co Ltd"); break;
+			case 0x0C: cprintf(con, "Toshiba Corp"); break;
+			case 0x0D: cprintf(con, "Mitsubishi Electric Corp"); break;
+			case 0x0E: cprintf(con, "Samsung Electronics Co Ltd"); break;
+			case 0x0F: cprintf(con, "Hynix"); break;
+			case 0x10: cprintf(con, "LG-Semiconductors Co Ltd"); break;
+			case 0x11: cprintf(con, "Emosyn-EM Microelectronics"); break;
+			case 0x12: cprintf(con, "INSIDE Technology"); break;
+			case 0x13: cprintf(con, "ORGA Kartensysteme GmbH"); break;
+			case 0x14: cprintf(con, "Sharp Corporation"); break;
+			case 0x15: cprintf(con, "ATMEL"); break;
+			case 0x16: cprintf(con, "EM Microelectronic-Marin"); break;
+			case 0x17: cprintf(con, "SMARTRAC TECHNOLOGY GmbH"); break;
+			case 0x18: cprintf(con, "ZMD AG"); break;
+			case 0x19: cprintf(con, "XICOR Inc"); break;
+			case 0x1A: cprintf(con, "Sony Corporation"); break;
+			case 0x1B: cprintf(con, "Malaysia Microelectronic Solutions Sdn Bhd"); break;
+			case 0x1C: cprintf(con, "Emosyn"); break;
+			case 0x1D: cprintf(con, "Shanghai Fudan Microelectronics Co Ltd"); break;
+			case 0x1E: cprintf(con, "Magellan Technology Pty Limited"); break;
+			case 0x1F: cprintf(con, "Melexis NV BO"); break;
+			case 0x20: cprintf(con, "Renesas Technology Corp"); break;
+			case 0x21: cprintf(con, "TAGSYS"); break;
+			case 0x22: cprintf(con, "Transcore"); break;
+			case 0x23: cprintf(con, "Shanghai Belling Corp Ltd"); break;
+			case 0x24: cprintf(con, "Masktech Germany GmbH"); break;
+			case 0x25: cprintf(con, "Innovision Research and Technology Plc"); break;
+			case 0x26: cprintf(con, "Hitachi ULSI Systems Co Ltd"); break;
+			case 0x27: cprintf(con, "Yubico AB"); break;
+			case 0x28: cprintf(con, "Ricoh"); break;
+			case 0x29: cprintf(con, "ASK"); break;
+			case 0x2A: cprintf(con, "Unicore Microsystems LLC"); break;
+			case 0x2B: cprintf(con, "Dallas semiconductor/Maxim"); break;
+			case 0x2C: cprintf(con, "Impinj Inc"); break;
+			case 0x2D: cprintf(con, "RightPlug Alliance"); break;
+			case 0x2E: cprintf(con, "Broadcom Corporation"); break;
+			case 0x2F: cprintf(con, "MStar Semiconductor Inc"); break;
+			case 0x30: cprintf(con, "BeeDar Technology Inc"); break;
+			case 0x31: cprintf(con, "RFIDsec"); break;
+			case 0x32: cprintf(con, "Schweizer Electronic AG"); break;
+			case 0x33: cprintf(con, "AMIC Technology Corp"); break;
+			case 0x34: cprintf(con, "Mikron JSC"); break;
+			case 0x35: cprintf(con, "Fraunhofer Institute for Photonic Microsystems"); break;
+			case 0x36: cprintf(con, "IDS Microship AG"); break;
+			case 0x37: cprintf(con, "Kovio"); break;
+			case 0x38: cprintf(con, "HMT Microelectronic Ltd"); break;
+			case 0x39: cprintf(con, "Silicon Craft Technology"); break;
+			case 0x3A: cprintf(con, "Advanced Film Device Inc."); break;
+			case 0x3B: cprintf(con, "Nitecrest Ltd"); break;
+			case 0x3C: cprintf(con, "Verayo Inc."); break;
+			case 0x3D: cprintf(con, "HID Global"); break;
+			case 0x3E: cprintf(con, "Productivity Engineering Gmbh"); break;
+			case 0x3F: cprintf(con, "Austriamicrosystems AG"); break;
+			case 0x40: cprintf(con, "Gemalto SA"); break;
+			case 0x41: cprintf(con, "Renesas Electronics Corporation"); break;
+			case 0x42: cprintf(con, "3Alogics Inc"); break;
+			case 0x43: cprintf(con, "Top TroniQ Asia Limited"); break;
+			case 0x44: cprintf(con, "Gentag Inc"); break;
+			case 0x45: cprintf(con, "Invengo Information Technology Co.Ltd"); break;
+			case 0x46: cprintf(con, "Guangzhou Sysur Microelectronics, Inc"); break;
+			case 0x47: cprintf(con, "CEITEC S.A."); break;
+			case 0x48: cprintf(con, "Shanghai Quanray Electronics Co. Ltd."); break;
+			case 0x49: cprintf(con, "MediaTek Inc"); break;
+			case 0x4A: cprintf(con, "Angstrem PJSC"); break;
+			case 0x4B: cprintf(con, "Celisic Semiconductor"); break;
+			case 0x4C: cprintf(con, "LEGIC Identsystems AG"); break;
+			case 0x4D: cprintf(con, "Balluff GmbH"); break;
+			case 0x4E: cprintf(con, "Oberthur Technologies"); break;
+			case 0x4F: cprintf(con, "Silterra Malaysia Sdn. Bhd."); break;
+			case 0x50: cprintf(con, "DELTA Danish Electronics, Light & Acoustics"); break;
+			case 0x51: cprintf(con, "Giesecke & Devrient GmbH"); break;
+			case 0x52: cprintf(con, "Shenzhen China Vision Microelectronics Co., Ltd."); break;
+			case 0x53: cprintf(con, "Shanghai Feiju Microelectronics Co. Ltd."); break;
+			case 0x54: cprintf(con, "Intel Corporation"); break;
+			case 0x55: cprintf(con, "Microsensys GmbH"); break;
+			case 0x56: cprintf(con, "Sonix Technology Co., Ltd."); break;
+			case 0x57: cprintf(con, "Qualcomm Technologies Inc"); break;
+			case 0x58: cprintf(con, "Realtek Semiconductor Corp"); break;
+			case 0x59: cprintf(con, "Freevision Technologies Co. Ltd"); break;
+			case 0x5A: cprintf(con, "Giantec Semiconductor Inc."); break;
+			case 0x5B: cprintf(con, "JSC Angstrem-T"); break;
+			case 0x5C: cprintf(con, "STARCHIP France"); break;
+			case 0x5D: cprintf(con, "SPIRTECH"); break;
+			case 0x5E: cprintf(con, "GANTNER Electronic GmbH"); break;
+			case 0x5F: cprintf(con, "Nordic Semiconductor"); break;
+			case 0x60: cprintf(con, "Verisiti Inc"); break;
+			case 0x61: cprintf(con, "Wearlinks Technology Inc."); break;
+			case 0x62: cprintf(con, "Userstar Information Systems Co., Ltd"); break;
+			case 0x63: cprintf(con, "Pragmatic Printing Ltd."); break;
+			case 0x64: cprintf(con, "Associação do Laboratório de Sistemas Integráveis Tecnológico – LSI-TEC"); break;
+			case 0x65: cprintf(con, "Tendyron Corporation"); break;
+			case 0x66: cprintf(con, "MUTO Smart Co., Ltd."); break;
+			case 0x67: cprintf(con, "ON Semiconductor"); break;
+			case 0x68: cprintf(con, "TÜBİTAK BİLGEM"); break;
+			case 0x69: cprintf(con, "Huada Semiconductor Co., Ltd"); break;
+			case 0x6A: cprintf(con, "SEVENEY"); break;
+			case 0x6B: cprintf(con, "ISSM"); break;
+			case 0x6C: cprintf(con, "Wisesec Ltd"); break;
+			case 0x7E: cprintf(con, "Holtek"); break;
+			default:
+				cprintf(con, "Unknown");
+		}
+		cprintf(con, "\r\n");
+	} else
+	{
+		cprintf(con, "MANUFACTURER: Unknown\r\n");
+	}
+}
+
+/*
+ See MIFARE Type Identification Procedure AN10833 Rev3.6 - 11 July 2016 https://www.nxp.com/docs/en/application-note/AN10833.pdf
+  => See Table 5. ATQA Coding of NXP Contactless Card ICs
+  => See Table 6. UIDs (4 Bytes) SAK coding of NXP Contactless Card ICs
+  => MIFARE Ultralight EV1, MIFARE Plus EV1 and MIFARE DESFire EV2 support the command “GET_VERSION” to exactly identify the IC
+ See also http://nfc-tools.org/index.php/ISO14443A
+ See also https://www.nxp.com/docs/en/application-note/AN10834.pdf Rev. 4.1 — 20 March 2020 => Figure 3. MIFARE Card Activation examples*
+ Note: Detection accuracy is not very good for some tags as it based only on atqa/sak
+*/
+nfc_card_type_t detect_nfc_card_type(t_hydra_console *con, uint8_t* uid, uint8_t uid_len, uint16_t atqa, uint8_t sak)
+{
+	nfc_card_type_t type = NFC_T_NONE;
+
+	print_manufacturer_nfc_card(con, uid, uid_len);
+
+	cprintf(con, "TYPE: ");
+	switch(sak)
+	{
+		case 0x00: // MIFARE Ultralight CL2 & MIFARE Ultralight C => Double Size UID (7 bytes)
+			if (atqa == 0x0044) {
+				cprintf(con, "NXP MIFARE Ultralight");
+				type |= NFC_T_MFULTRALIGHT;
+			} else {
+				cprintf(con, "Unknown");
+				type |= NFC_T_OTHER;
+			}
+		break;
+
+		case 0x01:
+			cprintf(con, "NXP TNP3xxx");
+			type |= NFC_T_OTHER;
+		break;
+
+		case 0x04:
+			cprintf(con, "NXP Any MIFARE CL1 (except DESFire)");
+			type |= NFC_T_MFDESFIRE;
+		break;
+
+		case 0x08:
+			switch(atqa)
+			{
+				case 0x0004:
+				case 0x0044: 
+					cprintf(con, "NXP MIFARE CLASSIC 1K");
+					type |= NFC_T_MFCLASSIC_1K;
+				break;
+
+				default:
+					cprintf(con, "NXP MIFARE CLASSIC 1K/Plus 2K\r\n");
+					type |= NFC_T_MFCLASSIC_1K_2K;
+				break;
+			}
+		break;
+
+		case 0x09:
+			if (atqa == 0x0004) {
+				cprintf(con, "NXP MIFARE Mini 0.3K");
+				type |= NFC_T_MFMINI;
+			} else {
+				cprintf(con, "NXP MIFARE other");
+				type |= NFC_T_OTHER;
+			}
+		break;
+
+		case 0x10:
+			cprintf(con, "NXP MIFARE Plus 2K");
+			type |= NFC_T_MFPLUS;
+		break;
+
+		case 0x11:
+			cprintf(con, "NXP MIFARE Plus 4K");
+			type |= NFC_T_MFPLUS;
+		break;
+
+		case 0x18:
+			switch(atqa)
+			{
+				case 0x0002:
+					cprintf(con, "NXP MIFARE CLASSIC 4K");
+					type |= NFC_T_MFCLASSIC_4K;
+				break;
+
+				case 0x0042:
+					cprintf(con, "\r\nMIFARE Plus 4K / Plus EV1 4K\r\n");
+					cprintf(con, "MIFARE Plus CL2 4K / Plus CL2 EV1 4K");
+					type |= NFC_T_MFPLUS;
+				break;
+
+				default:
+					cprintf(con, "MIFARE Classic 4K / Classic 4K CL2");
+					type |= NFC_T_MFCLASSIC_4K;
+				break;
+			}
+			break;
+
+		case 0x20:
+			switch(atqa)
+			{
+				case 0x0044:
+					cprintf(con, "MIFARE Plus");
+					type |= NFC_T_MFPLUS;
+				break;
+
+				case 0x0048:
+					cprintf(con, "IBM JCOP31/JCOP41");
+					type |= NFC_T_OTHER;
+				break;
+
+				case 0x0304:
+					cprintf(con, "NXP NTAG424DNA (Random ID feature)");
+					type |= NFC_T_NTAG424DNA;
+				break;
+
+				case 0x0344:
+					cprintf(con, "\r\nMIFARE DESFire MF3ICD40\r\n");
+					cprintf(con, "MIFARE DESFire EV1 2K/4K/8K / DESFire EV1 CL2 2K/4K/8K\r\n");
+					cprintf(con, "MIFARE NTAG424DNA");
+					type |= NFC_T_MFDESFIRE;
+				break;
+
+				default:
+					cprintf(con, "Unknown");
+					type |= NFC_T_OTHER;
+/*
+					cprintf(con, "\r\nMIFARE Plus 2K/4K / Plus EV1 2K/4K\r\n");
+					cprintf(con, "MIFARE Plus CL2 2K/4K / Plus CL2 EV1 2K/4K");
+					type |= NFC_T_MFPLUS;
+*/
+				break;
+			}
+			break;
+
+		case 0x24:
+			switch(atqa)
+			{
+				case 0x0344:
+					cprintf(con, "MIFARE DESFire CL1 / DESFire EV1 CL1");
+					type |= NFC_T_MFDESFIRE;
+				break;
+
+				default:
+				 cprintf(con, "NXP MIFARE DESFire | DESFire EV1");
+				 type |= NFC_T_MFDESFIRE;
+				break;
+			}
+			break;
+
+		case 0x28:
+			switch(atqa)
+			{
+				case 0x0004:
+					cprintf(con, "IBM JCOP41");
+					type |= NFC_T_OTHER;
+				break;
+
+				case 0x0304:
+					cprintf(con, "IBM JCOP31");
+					type |= NFC_T_OTHER;
+				break;
+
+				case 0x0344:
+					cprintf(con, "MIFARE DESFire CL1 / DESFire EV1 CL1");
+					type |= NFC_T_MFDESFIRE;
+				break;
+			}
+			break;
+
+		case 0x38:
+			cprintf(con, "Nokia 6212 or 6131 MIFARE CLASSIC 4K");
+			type |= NFC_T_MFCLASSIC_4K;
+			break;
+
+		case 0x88:
+			cprintf(con, "Infineon MIFARE CLASSIC 1K");
+			type |= NFC_T_MFCLASSIC_1K_2K;
+			break;
+
+		case 0x98:
+			if (atqa == 0x0002) {
+				cprintf(con, "Gemplus MPCOS");
+				type |= NFC_T_OTHER;
+			}else {
+				cprintf(con, "Unknown Gemplus MPCOS");
+				type |= NFC_T_OTHER;
+			}
+			break;
+
+		default:
+			if (atqa == 0x0c00) {
+				cprintf(con, "Innovision R&T Jewel");
+				type |= NFC_T_OTHER;
+			} else {
+				cprintf(con, "Unknown");
+				type |= NFC_T_OTHER;
+			}
+			break;
+	}
+	cprintf(con, "\r\n");
+
+	return type;
 }

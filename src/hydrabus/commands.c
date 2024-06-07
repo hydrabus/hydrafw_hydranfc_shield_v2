@@ -2,7 +2,7 @@
  * HydraBus/HydraNFC
  *
  * Copyright (C) 2014 Bert Vermeulen <bert@biot.com>
- * Copyright (C) 2014-2020 Benjamin VERNOUX
+ * Copyright (C) 2014-2024 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -546,6 +546,11 @@ t_token tokens_connect_auto_opt[] = {
 		.help = "Emulate Type 4 Tag with preset Tag properties"\
 	},\
 	{\
+		T_EMUL_MF_ULTRALIGHT,\
+		.subtokens = tokens_mode_nfc_emul_mf_ul,\
+		.help = "Emul Tag Mifare Ultralight (optional image file from microSD)"\
+	},\
+	{\
 		T_CARD_CONNECT_AUTO,\
 		.help = "Connect to a smartcard(NFC-A/B) or NFC-V tag"\
 	},\
@@ -558,22 +563,17 @@ t_token tokens_connect_auto_opt[] = {
 		T_CARD_SEND,         \
 		.arg_type = T_ARG_STRING,              \
 		.help = "Send APDU(NFC-A/B) or data+crc(NFC-V) to a tag"\
-	},\
-	{\
-		T_EMUL_MF_ULTRALIGHT,\
-		.subtokens = tokens_mode_nfc_emul_mf_ul,\
-		.help = "Emul Tag Mifare Ultralight (optional image file from microSD)"\
-	},\
+	},
 /*
+	{\
+		T_EMUL_MIFARE,\
+		.arg_type = T_ARG_UINT,\
+		.help = "Emul Tag Mifare UID (uid)"\
+	},\
 	{\
 		T_READ_MF_ULTRALIGHT,\
 		.arg_type = T_ARG_STRING,\
 		.help = "Read Mifare UltraLight write to microSD"\
-	},\
-	{\
-		T_EMUL_MF_ULTRALIGHT,\
-		.subtokens = tokens_mode_nfc_emul_mf_ul,\
-		.help = "Emul Tag Mifare Ultralight (optional read from microSD)"\
 	},\
 	{\
 		T_CLONE_MF_ULTRALIGHT,\
@@ -584,17 +584,6 @@ t_token tokens_connect_auto_opt[] = {
 		.subtokens = tokens_mode_nfc_sniff,\
 		.help = "Sniff (default ISO14443A see options for more details)"\
 	},\
-	{\
-		T_EMUL_MIFARE,\
-		.arg_type = T_ARG_UINT,\
-		.help = "Emul Tag Mifare UID (uid)"\
-	},\
-
-//	{\
-//		T_EMUL_ISO14443A,\
-//		.help = "Emul Tag ISO14443A SDD UID"\
-//	},\
-
 	{\
 		T_DIRECT_MODE_0,\
 		.help = "Enter Direct Mode 0 (IO6/PC2=subcarrier)"\
