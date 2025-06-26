@@ -2,7 +2,7 @@
  * HydraBus/HydraNFC
  *
  * Copyright (C) 2020 Guillaume VINET
- * Copyright (C) 2014-2021 Benjamin VERNOUX
+ * Copyright (C) 2014-2025 Benjamin VERNOUX
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -478,7 +478,12 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con) {
 	uint8_t bbio_subcommand, clen;
 	uint8_t *rx_data = (uint8_t *) g_sbuf + 4096;
 
-	hydranfc_v2_init(con, NULL);
+	/* Check if HydraNFC v2 hardware initialization is successful */
+	/* Initialize with IRQ callback like reader mode does */
+	if (!hydranfc_v2_init(con, st25r3916Isr)) {
+		/* If initialization fails, exit without printing mode ID */
+		return;
+	}
 
 	bbio_mode_id(con);
 	init();
@@ -488,9 +493,6 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con) {
 		if (chnRead(con->sdu, &bbio_subcommand, 1) == 1) {
 			switch (bbio_subcommand) {
 				case BBIO_NFC_CE_START_EMULATION:
-					/* Set st25r3916 IRQ function callback */
-					hydranfc_v2_set_irq(st25r3916Isr);
-
 					hydranfc_ce_set_processCmd_ptr(&bbio_processCmd);
 					ce_set_cardA_activated_ptr(&cardA_activated);
 					g_con = con;
@@ -499,15 +501,9 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con) {
 
 					bbio_subcommand = BBIO_NFC_CE_END_EMULATION;
 					cprint(con, (char *) &bbio_subcommand, 1);
-
-					/* Reset st25r3916 IRQ function callback */
-					hydranfc_v2_set_irq(NULL);
 					break;
 
 				case BBIO_NFC_CE_START_EMULATION_RAW:
-					/* Set st25r3916 IRQ function callback */
-					hydranfc_v2_set_irq(st25r3916Isr);
-
 					hydranfc_ce_set_processCmd_ptr(&bbio_processCmd);
 					ce_set_cardA_activated_ptr(&cardA_activated);
 					g_con = con;
@@ -516,9 +512,6 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con) {
 
 					bbio_subcommand = BBIO_NFC_CE_END_EMULATION;
 					cprint(con, (char *) &bbio_subcommand, 1);
-
-					/* Reset st25r3916 IRQ function callback */
-					hydranfc_v2_set_irq(NULL);
 					break;
 
 				case BBIO_NFC_CE_SET_UID: {
@@ -572,4 +565,7 @@ void bbio_mode_hydranfc_v2_card_emulator(t_hydra_console *con) {
 			}
 		}
 	}
+	
+	/* Cleanup when exiting BBIO mode via button press */
+	hydranfc_v2_cleanup(con);
 }
