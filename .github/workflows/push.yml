@@ -35,7 +35,6 @@ jobs:
       - name: Build src/build-scripts/hex2dfu
         run: cd src/build-scripts && make clean all
 
-      - name: Build hydrafw
       - name: Build firmware
         run: source build.env && chmod +x src/build-scripts/* && arm-none-eabi-gcc --version  &&  arm-none-eabi-gcc -print-search-dirs  &&  make  V=1  -j$(nproc)  -C src/
 
