@@ -1,5 +1,13 @@
 # CHANGELOG of 'hydrafw' for HydraBus v1 & HydraNFC Shield v2
 ----------------------
+#### 28.06.2025 - [HydraFW v0.2.2](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/releases/tag/v0.2.2)
+
+##### Generic:
+ * Added Automatic CI/Build of the Firmware https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/blob/master/.github/workflows/push.yml
+ * Remove Python dependency to Build/Flash the Firmware #20
+
+##### NFC BBIO mode
+ * Fix issue #21 "BBIO1 Mode with Python not working: HydraNFC v2 not found"
 
 #### 11.12.2020 - [HydraFW v0.2.1 Beta](https://github.com/hydrabus/hydrafw_hydranfc_shield_v2/releases/tag/v0.2.1-beta)
 
