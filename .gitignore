@@ -16,6 +16,7 @@ hydrafwEm.elay
 *.hdr
 /src/.settings
 /src/.idea/
+.vscode/
 src/hydrafw_hydranfc_shield_v2 Debug.launch
 
 /src/hydranfc_v2/rfal/doc/*.chw
