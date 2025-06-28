@@ -37,7 +37,13 @@ jobs:
         run: cd src/build-scripts && make clean all
 
       - name: Build hydrafw
-        run: source  build.env  &&  arm-none-eabi-gcc --version  &&  arm-none-eabi-gcc -print-search-dirs  &&  make  V=1  -j$(nproc)  -C src/
+      - name: Build firmware
+        run: |
+          source build.env
+          chmod +x src/build-scripts/*
+          arm-none-eabi-gcc --version
+          arm-none-eabi-gcc -print-search-dirs
+          make V=1 -j$(nproc) -C src/
 
       - name: Archive hydrafw artifacts
         uses: actions/upload-artifact@v4
