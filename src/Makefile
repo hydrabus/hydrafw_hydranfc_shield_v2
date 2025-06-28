@@ -15,7 +15,7 @@ export HYDRAFW_HYDRANFC ?= 2
 export HYDRAFW_NO_BTNS_HYDRANFC ?= 1
 
 export HYDRAFW_DEBUG ?= 0
-export FW_REVISION := $(shell python build-scripts/hydrafw-revision.py)
+export FW_REVISION := $(shell build-scripts/hydrafw-revision)
 
 HYDRAFW_OPTS =
 
