@@ -6,7 +6,7 @@ This specific firmware for HydraBus v1/HydraNFC Shield v2 is a fork of https://g
 
 You can Buy HydraBus v1/HydraNFC Shield v2 Online: http://hydrabus.com/buy-online
 
-![HydraBus+HydraNFC Shield V2 boards](HydraBus_v1_HydraNFC_Shield_v2.jpg)
+![HydraBus v1.0_Rev1.5+HydraNFC Shield V2 R1.5 boards](HydraBus_v1.0_Rev1.5_Case_HydraNF_Shield_v2_R1.5.jpg)
 
 HydraNFC Shield v2 is shield for [HydraBus v1](https://hydrabus.com/products) and it is based on [STMicroelectronics ST25R3916 NFC chipset](https://www.st.com/en/nfc/st25r3916.html) which is today the most powerful and versatile NFC chipset available on the market.
 
