@@ -8,7 +8,6 @@ on:
     branches:
       - master
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,19 +30,14 @@ jobs:
         run: echo "GITHUB_CI_PR_SHA=${{github.event.pull_request.head.sha}}" >> "${GITHUB_ENV}"  &&  echo "GITHUB_CI_CD=1" >> "${GITHUB_ENV}"
 
       - name: Install standalone reference GCC toolchain
-        run: bash  scripts/env.sh
+        run: bash scripts/env.sh
 
       - name: Build src/build-scripts/hex2dfu
         run: cd src/build-scripts && make clean all
 
       - name: Build hydrafw
       - name: Build firmware
-        run: |
-          source build.env
-          chmod +x src/build-scripts/*
-          arm-none-eabi-gcc --version
-          arm-none-eabi-gcc -print-search-dirs
-          make V=1 -j$(nproc) -C src/
+        run: source build.env && chmod +x src/build-scripts/* && arm-none-eabi-gcc --version  &&  arm-none-eabi-gcc -print-search-dirs  &&  make  V=1  -j$(nproc)  -C src/
 
       - name: Archive hydrafw artifacts
         uses: actions/upload-artifact@v4
