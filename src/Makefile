@@ -78,8 +78,19 @@ ifeq ($(USE_THUMB),)
 endif
 
 # Enable this if you want to see the full log while compiling.
-ifeq ($(USE_VERBOSE_COMPILE),)
-  USE_VERBOSE_COMPILE = no
+ifeq ($(V),1)
+  USE_VERBOSE_COMPILE = yes
+endif
+
+# Also set directives to use with commands depending on verbosity status.
+ifeq ($(USE_VERBOSE_COMPILE),yes)
+  # if verbose build then print out the full commands without description
+  OUT_LOG = @\#
+  OUT_CMD =
+else
+  # if silent build then print out only short description for commands
+  OUT_LOG = @
+  OUT_CMD = @
 endif
 
 # If enabled, this option makes the build process faster by not compiling
@@ -314,6 +325,20 @@ ULIBDIR =
 # List all user libraries here
 ULIBS =
 
+# hex2dfu  utility, depending on platform
+ifeq ($(OS), Windows_NT)
+HEX2DFU_BIN = ./build-scripts/hex2dfu.exe
+else
+HEX2DFU_BIN = ./build-scripts/hex2dfu
+endif
+
+# Flash tool with arguments depending on platform
+ifeq ($(OS), Windows_NT)
+FLASH_CMD = ../utils/windows_dfu_util/DfuSeCommand.exe -c --de 0 -d --fn
+else
+FLASH_CMD = dfu-util -d 0483:df11 -a 0 -R -D
+endif
+
 #
 # End of user defines
 ##############################################################################
@@ -325,30 +350,29 @@ include $(RULESPATH)/rules.mk
 FORCE:
 .PHONY: FORCE
 
-%.hdr: FORCE
-ifeq ($(USE_VERBOSE_COMPILE),yes)
-	echo Creating ./common/hydrafw_version.hdr
-	-rm -f $(OBJDIR)/common.o
-	python build-scripts/hydrafw-version.py ./common/hydrafw_version.hdr
-else
-	@echo Compiler Version
-	$(CC) --version
-	@echo
-	@echo Creating ./common/hydrafw_version.hdr
-	@rm -f $(OBJDIR)/common.o
-	@python build-scripts/hydrafw-version.py ./common/hydrafw_version.hdr
-endif
+build-scripts/hex2dfu:
+	make -C build-scripts/
 
-%.dfu: %.hex $(LDSCRIPT)
-ifeq ($(USE_VERBOSE_COMPILE),yes)
-	python build-scripts/dfu-convert.py -r $(FW_REVISION) -i $< $@
-else
-	@echo Creating $@
-	@python build-scripts/dfu-convert.py -r $(FW_REVISION) -i $< $@
-endif
+%.hdr: FORCE
+	$(OUT_LOG) echo Creating ./common/hydrafw_version.hdr
+	$(OUT_CMD) rm -f $(OBJDIR)/common.o
+	$(OUT_CMD) build-scripts/hydrafw-version ./common/hydrafw_version.hdr
+
+%.dfu: %.hex $(LDSCRIPT) $(HEX2DFU_BIN)
+	$(OUT_LOG) echo Creating $@
+	$(OUT_LOG) echo $(HEX2DFU_BIN) -l ST... -r $(FW_REVISION) -i $< -o $@
+	$(OUT_CMD) $(HEX2DFU_BIN) -l ST... -r $(FW_REVISION) -i $< -o $@
 
 # This rule hook is defined in the ChibiOS build system
 PRE_MAKE_ALL_RULE_HOOK: ./common/hydrafw_version.hdr
 
 # This rule hook is defined in the ChibiOS build system
 POST_MAKE_ALL_RULE_HOOK: $(BUILDDIR)/$(PROJECT).dfu
+
+# This rule hook for `make clean` is defined in the ChibiOS build system
+CLEAN_RULE_HOOK: $(shell rm -f ./common/hydrafw_version.hdr)
+
+# Custom rule to flash firmware when hydrabus is connected in dfu mode
+flash: $(BUILDDIR)/$(PROJECT).dfu
+	$(OUT_LOG) echo Flashing $^
+	$(OUT_CMD) $(FLASH_CMD) $^

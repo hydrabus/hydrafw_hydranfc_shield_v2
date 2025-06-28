@@ -1,0 +1,17 @@
+python tx_bench.py COM4 1 10000 >> bench_1B.txt
+python tx_bench.py COM4 4 10000 >> bench_4B.txt
+python tx_bench.py COM4 8 10000 >> bench_8B.txt
+python tx_bench.py COM4 16 10000 >> bench_16B.txt
+python tx_bench.py COM4 64 5000 >> bench_64B.txt
+python tx_bench.py COM4 128 2000 >> bench_128B.txt
+python tx_bench.py COM4 256 2000 >> bench_256B.txt
+python tx_bench.py COM4 500 2000 >> bench_500B.txt
+python tx_bench.py COM4 512 2000 >> bench_512B.txt
+python tx_bench.py COM4 1000 1000 >> bench_1000B.txt
+python tx_bench.py COM4 1008 1000 >> bench_1008B.txt
+python tx_bench.py COM4 1024 1000 >> bench_1024B.txt
+python tx_bench.py COM4 1280 800 >> bench_1280B.txt
+python tx_bench.py COM4 2000 500 >> bench_2000B.txt
+python tx_bench.py COM4 2048 500 >> bench_2048B.txt
+python tx_bench.py COM4 3000 400 >> bench_3000B.txt
+python tx_bench.py COM4 4096 300 >> bench_4096B.txt
